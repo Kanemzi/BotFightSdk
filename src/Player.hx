@@ -1,9 +1,12 @@
 
-abstract class Player<TAction : EnumValue> {
-    var history : Array<TAction>;
+class Player<TAction : EnumValue> {
+	public var id(default, null) : Int;
+	public var name(default, null) : String;
 
-    public function getLastAction() : TAction {
-        if( history.length == 0 ) return null;
-        return history[history.length - 1];
-    } 
+	var history : Array<TAction>;
+
+	public function getLastAction() : TAction {
+		if( history.length == 0 ) return null;
+		return history[history.length - 1];
+	} 
 }

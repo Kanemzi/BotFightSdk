@@ -24,7 +24,7 @@
                 "type": "haxe",
                 "args": "active configuration"
             },
-            "args": ["ExampleBot.hl", "ExampleBot.hl"]
+            "args": ["--bots", "ExampleBot.hl", "ExampleBot.hl", "--headless", "--machin", "a", "b"]
         }
     ]
 }

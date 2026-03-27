@@ -12,14 +12,13 @@ enum Action {
 	Move(x: Int, y: Int);
 }
 
-class BotGamePlayer extends Player<Action> {	
+class BotGamePlayerState {	
 }
 
 class BotGameState extends GameState {
 }
 
-class BotGameServer extends GameServer<Action, BotGamePlayer, BotGameState> {
-
+class BotGameServer extends GameServer<BotGameState, Action> {
 	var view : BotGameView = null;
 
 	public function new(args : Array<String>) {
@@ -40,9 +39,14 @@ class BotGameServer extends GameServer<Action, BotGamePlayer, BotGameState> {
 		return null;
 	}
 
-	function update(state : BotGameState) : GameStatus<Action> {
-		return Draw;
+	function turn(state : BotGameState) : Void {
 	}
 
-	public static function main() new BotGameServer(Sys.args());
+	function parseAction(action : String ) : Action {
+		return Wait;
+	}
+
+	public static function main() {
+		new Runner(BotGameServer, Sys.args());
+	}
 }

@@ -4,3 +4,4 @@
 -hl BotGameServer.hl
 -main BotGameServer
 -debug
+-D dump=pretty

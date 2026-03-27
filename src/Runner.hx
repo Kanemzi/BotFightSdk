@@ -1,8 +1,30 @@
 import haxe.Json;
-import common.GameServer.ServerConfig;
+import GameServer;
 
-class Loader {
+final class RunnerArgs {
+	var args : Map<String, Array<String>>;
+	public inline function new(a : Array<String>) {
+		args = new Map();
+		var last : String = null;
+		for (arg in a) {
+			if (StringTools.startsWith(arg, "--")) {
+				last = arg.substring(2);
+				args.set(last, []);
+				continue;
+			}
 
+			if (last == null)
+				continue;
+
+			args.get(last)?.push(arg);
+		}
+	}
+
+	inline function has(arg : String) return args.exists(arg);
+	inline function getParams(arg : String) return args.get(arg);
+}
+
+final class Runner {
 	/*
 		Program launcher : Starts server and bot processes, checks compatibility among them
 			- Allows starting a specific number of matches, registering stats, etc...
@@ -20,10 +42,29 @@ class Loader {
 				- Allows wrapping user code in with other boilerplate / compatibility code
 	*/
 
+
+
+	@:generic
+	public function new<S : GameState, A : EnumValue>(cl : Class<GameServer<S, A>>, args : Array<String>) {
+		var gs = Type.createInstance(cl, [args]);
+
+		var args = new RunnerArgs(args);
+		trace(@:privateAccess args.args);
+
+		trace(gs);
+	}
+/*
 	public static function main() {
 		var args = Sys.args();
 		trace(args);
 		var serverPath = args.shift();
+
+//		var a = new BotGameServer(args);
+//		trace(a);
+
+		var s = @:privateAccess GameServer.create(args);
+		trace(s.getConfig());
+		return;
 
 		var config : ServerConfig = null;
 		try {
@@ -50,5 +91,5 @@ class Loader {
 		trace(m);
 		p.close();
 
-	}
+	}*/
 }
