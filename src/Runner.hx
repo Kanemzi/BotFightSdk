@@ -20,8 +20,8 @@ final class RunnerArgs {
 		}
 	}
 
-	inline function has(arg : String) return args.exists(arg);
-	inline function getParams(arg : String) return args.get(arg);
+	public inline function has(arg : String) return args.exists(arg);
+	public inline function getParams(arg : String) return args.get(arg);
 }
 
 final class Runner {
@@ -49,9 +49,12 @@ final class Runner {
 		var gs = Type.createInstance(cl, [args]);
 
 		var args = new RunnerArgs(args);
-		trace(@:privateAccess args.args);
+        for( p in args.getParams("bots") ) {
+            gs.addPlayer(p);
+        }
 
 		trace(gs);
+        gs.run();
 	}
 /*
 	public static function main() {

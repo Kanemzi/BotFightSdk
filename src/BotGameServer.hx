@@ -1,49 +1,84 @@
 import GameServer;
-
+/*
 class BotGameView extends hxd.App {
     override function init() {
         var tf = new h2d.Text(hxd.res.DefaultFont.get(), s2d);
         tf.text = "Bot Game";
     }
-}
+}*/
 
 enum Action {
-	Wait;
-	Move(x: Int, y: Int);
+	/*@:format("^WAIT$")*/ Wait;
+	/*@:format("^MOVE (\d+) (\d+)$")*/ Move(x: Int, y: Int);
+    /*@:format("^GIVE (\d+) (\d+)$")*/ Give(id : Int, amount : Int);
+    Say(message : String);
 }
 
-class BotGamePlayerState {	
+@:structInit
+class BotGamePlayerState implements hxbit.NetworkSerializable {
+    @:s public var x : Int;
+    @:s public var y : Int;
+    @:s public var energy : Int;
+
+    public function new(x, y, energy) {
+        this.x = x;
+        this.y = y;
+        this.energy = energy;
+    }
+}
+
+enum Tile {
+    Empty;
+    Food(amount : Int);
+    Wall;
 }
 
 class BotGameState extends GameState {
+    @:s public var players : Array<BotGamePlayerState>;
+    @:s public var grid : Array<Tile>;
+
+    public function new() {}
 }
 
 class BotGameServer extends GameServer<BotGameState, Action> {
-	var view : BotGameView = null;
+    public static inline final WIDTH = 16;
+    public static inline final HEIGHT = 7;
+    public static inline final START_ENERGY = 10;
+
+	//var view : BotGameView = null;
 
 	public function new(args : Array<String>) {
-		if( !args.contains("--headless") )
-			view = new BotGameView();
 		super(args);
 	}
 
 	function getConfig() return {
-		version: "1.0",
+		version: 1,
 		minPlayers : 2,
 		maxPlayers : 2,
 	}
 
 	function init() : BotGameState {
-		Sys.stdout().writeString('Game Starting... (headless : ${view == null})');
-        Sys.stdout().flush();
-		return null;
+        var state = new BotGameState();
+        state.grid = [for (_ in 0...WIDTH * HEIGHT) Empty];
+        state.players = [for (i in 0...players.length) {
+            var player = players[i];
+            new BotGamePlayerState(
+                Std.int((HEIGHT - 1) / 2),
+                i == 0 ? 1 : WIDTH - 2,
+                START_ENERGY,
+            );
+        }];
+		return state;
 	}
 
 	function turn(state : BotGameState) : Void {
+        for( p in state.players ) {
+            p.x += Std.random(3) - 1;
+        }
 	}
 
-	function parseAction(action : String ) : Action {
-		return Wait;
+	function parseAction(action : String) : Action {
+        return Action.parse(action);
 	}
 
 	public static function main() {

@@ -1,18 +1,17 @@
 import sys.thread.Thread;
-import macros.GameServerMacros;
 
 typedef ServerConfig = {
-	var version : String;
+	var version : Int;
 	var minPlayers : Int;
 	var maxPlayers : Int;
 }
-
+/*
 enum DisqualifyReason {
 	Timeout;
 	InvalidAction(action : String);
 }
 
-/*
+
 enum PlayerStatus {
 	None;
 	Win;
@@ -25,21 +24,18 @@ enum PartyKind {
 	Tournament(bo : Int, playerCount : Int);
 }
 
-interface PlayerState {}
-abstract class GameState {
-	var playerState : Array<PlayerState>;
+abstract class GameState implements hxbit.Serializable {}
 
-	@:generic public function getPlayerState<T : EnumValue>(p : Player<T>) {
-		if (p.id >= playerState.length)
-			throw 'No state for player [id=${p.id}]';
-		return playerState[p.id];
-	}
-}
-
+@:genericBuild(Macros.buildActionParser())
 abstract class GameServer<TState : GameState, TAction : EnumValue> {
 	var players : Array<Player<TAction>>;
-	var state : TState;
-	
+	var history : Array<TState>;
+
+    var state(get, never) : TState;
+    function get_state() return history[history.length - 1];
+    
+    var serializer : hxbit.Serializer;
+
 	abstract public function getConfig() : ServerConfig;
 	abstract function init() : TState;
 	abstract function turn(state : TState) : Void;
@@ -54,12 +50,27 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 		}
 
 		// @todo check bot count using config
-
-		state = init();
+        players = [];
+        history = [];
+        serializer = new hxbit.Serializer();
 	}
 
-	function run() {
+    public function addPlayer(botPath : String) {
+        var id = players.length;
+        players.push(new Player(id, botPath));
+    }
 
+	public function run() {
+        history.push(init());
+
+        while( history.length < 100 ) {
+            var copy : TState = cast serializer.unserialize(serializer.serialize(state), GameState);
+            history.push(copy);
+            trace('--- Turn ${history.length} ---');
+            trace('before : $state');
+            turn(state);
+            trace('after : $state');
+        }
 	}
 
 }

@@ -1,6 +1,7 @@
 -cp src
--lib heaps
--lib hlsdl
+#-lib heaps
+#-lib hlsdl
+-lib hxbit
 -hl BotGameServer.hl
 -main BotGameServer
 -debug
