@@ -49,6 +49,8 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 	abstract function init() : TState; // Initializes the game state
 	abstract function update(state : TState) : Void; // Updates the state based on last player actions
 	abstract function parseAction(action : String ) : TAction; // @auto generated
+    abstract function getDefaultAction() : TAction; // Will be used for timed-out players 
+    abstract function getExpectedActionCount(player : Player) : Int; 
 
 	public function new(args : Array<String>, config : ServerConfig) {
 		this.config = config;
@@ -96,9 +98,12 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 		}
 	}
 
-	function collectActions(players : Array<Player<TAction>>) {
+	function collectActions(players : Array<Player<TAction>>) : Array<TAction> {
 		for (p in players) {
 			// retrieve actions from player with timeout
+            var c = getExpectedActionCount(p);
+            var to = turn <= 1 ? config.firstTurnTimeout : config.turnTimeout;
+            p.collectActions(c, to);
 		}
 		return [];
 	}
