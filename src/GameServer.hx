@@ -1,9 +1,11 @@
 import sys.thread.Thread;
 
 typedef ServerConfig = {
-	var version : Int;
 	var minPlayers : Int;
 	var maxPlayers : Int;
+	var firstTurnTimeout : Int;
+	var turnTimeout : Int;
+	var turnModel : Class<TurnModel>;
 }
 /*
 enum DisqualifyReason {
@@ -24,30 +26,32 @@ enum PartyKind {
 	Tournament(bo : Int, playerCount : Int);
 }
 
-abstract class GameState implements hxbit.Serializable {}
+abstract class GameState implements hxbit.Serializable {
+	abstract function serializeForPlayer<TAction :EnumValue>(player : Player<TAction>) : String;
+}
 
 @:autoBuild(Macros.buildActionParser())
+@:access(GameState)
 abstract class GameServer<TState : GameState, TAction : EnumValue> {
+	var config : ServerConfig;
 	var players : Array<Player<TAction>>;
 	var history : Array<TState>;
 
     var state(get, never) : TState;
     function get_state() return history[history.length - 1];
     
+	var turnModel : TurnModel;
+	var turn(get, never) : Int;
+	function get_turn() return history.length;
+
     var serializer : hxbit.Serializer;
 
-	abstract public function getConfig() : ServerConfig;
-	abstract function init() : TState;
-	abstract function turn(state : TState) : Void;
-	abstract function parseAction(action : String ) : TAction;
+	abstract function init() : TState; // Initializes the game state
+	abstract function update(state : TState) : Void; // Updates the state based on last player actions
+	abstract function parseAction(action : String ) : TAction; // @auto generated
 
-	public function new(args : Array<String>) {
-		if( args.contains("--config") ) {
-			var config = haxe.Json.stringify(getConfig());
-			Sys.stdout().writeString('$config\n');
-			Sys.stdout().flush();
-			return;
-		}
+	public function new(args : Array<String>, config : ServerConfig) {
+		this.config = config;
 
 		// @todo check bot count using config
         players = [];
@@ -57,20 +61,46 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 
     public function addPlayer(botPath : String) {
         var id = players.length;
-        players.push(new Player(id, botPath));
+        players.push(new Player(id, botPath.split(".")[0], botPath));
     }
 
 	public function run() {
-        history.push(init());
+		if (players.length < config.minPlayers || players.length > config.maxPlayers)
+			throw "Trying to run a game with an invalid amount of players";
 
+		turnModel = Type.createInstance(config.turnModel, []);
+
+        history.push(init());
         while( history.length < 3 ) {
             var copy : TState = cast serializer.unserialize(serializer.serialize(state), GameState);
-            history.push(copy);
-            trace('--- Turn ${history.length} ---');
+            
+			// collect player actions
+			var playing = turnModel.getPlayingThisTurn(players, state, turn);
+
+			sendStates(playing);
+			var actions = collectActions(playing);
+
+			trace('--- Turn ${history.length} ---');
             trace('before : $state');
-            turn(state);
+            update(state);
             trace('after : $state');
+			
+			history.push(copy);
         }
+	}
+
+	function sendStates(players : Array<Player<TAction>>) {
+		for (p in players) {
+			var s = state.serializeForPlayer(p);
+			// @todo send string to player
+		}
+	}
+
+	function collectActions(players : Array<Player<TAction>>) {
+		for (p in players) {
+			// retrieve actions from player with timeout
+		}
+		return [];
 	}
 
 }

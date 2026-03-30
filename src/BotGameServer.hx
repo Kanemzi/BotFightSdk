@@ -1,11 +1,4 @@
 import GameServer;
-/*
-class BotGameView extends hxd.App {
-    override function init() {
-        var tf = new h2d.Text(hxd.res.DefaultFont.get(), s2d);
-        tf.text = "Bot Game";
-    }
-}*/
 
 enum Action {
 	Wait;
@@ -38,6 +31,10 @@ class BotGameState extends GameState {
     @:s public var grid : Array<Tile>;
 
     public function new() {}
+
+    function serializeForPlayer<TAction :EnumValue>(player : Player<TAction>) : String {
+        return "";
+    }
 }
 
 class BotGameServer extends GameServer<BotGameState, Action> {
@@ -45,23 +42,20 @@ class BotGameServer extends GameServer<BotGameState, Action> {
     public static inline final HEIGHT = 7;
     public static inline final START_ENERGY = 10;
 
-	//var view : BotGameView = null;
-
 	public function new(args : Array<String>) {
-		super(args);
-	}
-
-	function getConfig() return {
-		version: 1,
-		minPlayers : 2,
-		maxPlayers : 2,
+		super(args, {
+            minPlayers : 2,
+            maxPlayers : 2,
+            firstTurnTimeout : 1000,
+            turnTimeout : 50,
+            turnModel : TurnModel.SimultaneousTurn,
+        });
 	}
 
 	function init() : BotGameState {
         var state = new BotGameState();
         state.grid = [for (_ in 0...WIDTH * HEIGHT) Empty];
         state.players = [for (i in 0...players.length) {
-            var player = players[i];
             new BotGamePlayerState(
                 Std.int((HEIGHT - 1) / 2),
                 i == 0 ? 1 : WIDTH - 2,
@@ -72,7 +66,7 @@ class BotGameServer extends GameServer<BotGameState, Action> {
 		return state;
 	}
 
-	function turn(state : BotGameState) : Void {
+	function update(state : BotGameState) : Void {
         for( p in state.players ) {
             p.x += Std.random(3) - 1;
         }
