@@ -8,9 +8,9 @@ class BotGameView extends hxd.App {
 }*/
 
 enum Action {
-	/*@:format("^WAIT$")*/ Wait;
-	/*@:format("^MOVE (\d+) (\d+)$")*/ Move(x: Int, y: Int);
-    /*@:format("^GIVE (\d+) (\d+)$")*/ Give(id : Int, amount : Int);
+	Wait;
+	Move(x: Int, y: Int);
+    Give(id : Int, amount : Int);
     Say(message : String);
 }
 
@@ -68,6 +68,7 @@ class BotGameServer extends GameServer<BotGameState, Action> {
                 START_ENERGY,
             );
         }];
+
 		return state;
 	}
 
@@ -75,10 +76,6 @@ class BotGameServer extends GameServer<BotGameState, Action> {
         for( p in state.players ) {
             p.x += Std.random(3) - 1;
         }
-	}
-
-	function parseAction(action : String) : Action {
-        return Action.parse(action);
 	}
 
 	public static function main() {

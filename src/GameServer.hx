@@ -26,7 +26,7 @@ enum PartyKind {
 
 abstract class GameState implements hxbit.Serializable {}
 
-@:genericBuild(Macros.buildActionParser())
+@:autoBuild(Macros.buildActionParser())
 abstract class GameServer<TState : GameState, TAction : EnumValue> {
 	var players : Array<Player<TAction>>;
 	var history : Array<TState>;
@@ -63,7 +63,7 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 	public function run() {
         history.push(init());
 
-        while( history.length < 100 ) {
+        while( history.length < 3 ) {
             var copy : TState = cast serializer.unserialize(serializer.serialize(state), GameState);
             history.push(copy);
             trace('--- Turn ${history.length} ---');
