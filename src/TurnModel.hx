@@ -1,4 +1,4 @@
-import GameServer.GameState;
+import GameState;
 
 interface TurnModel {
     public function getPlayingThisTurn<TAction : EnumValue>(players : Array<Player<TAction>>, state : GameState, turn : Int) : Array<Player<TAction>>;

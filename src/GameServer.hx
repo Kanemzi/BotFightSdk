@@ -26,14 +26,10 @@ enum PartyKind {
 	Tournament(bo : Int, playerCount : Int);
 }
 
-abstract class GameState implements hxbit.Serializable {
-	abstract function serializeForPlayer<TAction :EnumValue>(player : Player<TAction>) : String;
-}
-
 @:autoBuild(Macros.buildActionParser())
 @:access(GameState)
 abstract class GameServer<TState : GameState, TAction : EnumValue> {
-	var config : ServerConfig;
+	var config(default, null) : ServerConfig;
 	var players : Array<Player<TAction>>;
 	var history : Array<TState>;
 
@@ -48,9 +44,9 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 
 	abstract function init() : TState; // Initializes the game state
 	abstract function update(state : TState) : Void; // Updates the state based on last player actions
-	abstract function parseAction(action : String ) : TAction; // @auto generated
-    abstract function getDefaultAction() : TAction; // Will be used for timed-out players 
-    abstract function getExpectedActionCount(player : Player) : Int; 
+	public abstract function parseAction(action : String) : TAction; // @auto generated
+    public abstract function getDefaultAction() : TAction; // Will be used for timed-out players 
+    abstract function getExpectedActionCount(player : Player<TAction>) : Int; 
 
 	public function new(args : Array<String>, config : ServerConfig) {
 		this.config = config;
@@ -103,7 +99,7 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 			// retrieve actions from player with timeout
             var c = getExpectedActionCount(p);
             var to = turn <= 1 ? config.firstTurnTimeout : config.turnTimeout;
-            p.collectActions(c, to);
+            p.collectActions(c, to / 1000., this);
 		}
 		return [];
 	}

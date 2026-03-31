@@ -72,6 +72,9 @@ class BotGameServer extends GameServer<BotGameState, Action> {
         }
 	}
 
+    public function getDefaultAction() return Wait;
+    public function getExpectedActionCount(player : Player<Action>) return 1;
+
 	public static function main() {
 		new Runner(BotGameServer, Sys.args());
 	}
