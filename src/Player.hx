@@ -4,23 +4,27 @@ import sys.io.Process;
 import sys.thread.Thread;
 import utils.Mutex;
 
+import ActionCollector;
 
 enum Status { 
 	Alive;
 	Killed;
 	TimedOut;
 	Crashed;
+    Invalid;
 }
 
-typedef PlayerId = Int;
+abstract class TurnException extends std.haxe.Exception {}
+class TimeoutException extends TurnException {}
+class InvalidActionException extends TurnException {}
 
-@:structInit @:generic
-final class ActionsResult<TAction : EnumValue> implements hxbit.Serializable {
-	@:s public var id : PlayerId;
-	@:s public var error : Null<String>;
+@:structInit @:publicFields
+final class ActionsResult<Ta : EnumValue> implements hxbit.Serializable {
+	@:s var id : PlayerId;
+	@:s var error : Null<String>;
 	
-	public var actions : Array<TAction>;
-	public var time : Int;
+	var actions : Array<Ta>;
+	var time : Int;
 
 	public function customSerialize(ctx : hxbit.Serializer) @:privateAccess {
 		ctx.addInt(actions?.length);
@@ -33,8 +37,10 @@ final class ActionsResult<TAction : EnumValue> implements hxbit.Serializable {
 	}
 }
 
+typedef PlayerId = Int;
+
 @:access(GameServer)
-final class Player<TAction : EnumValue> {
+final class Player<Ta : EnumValue> {
 	public var id(default, null) : PlayerId;
 	public var name(default, null) : String;
 	public var status(default, null) : Mutex<Status>;
@@ -63,7 +69,7 @@ final class Player<TAction : EnumValue> {
 	}
 
     public function isKilled() return switch (status.get()) {
-        case Killed, TimedOut, Crashed: true;
+        case Killed, TimedOut, Crashed, Invalid: true;
         case Alive : false;
     }
 
@@ -91,40 +97,34 @@ final class Player<TAction : EnumValue> {
 		for (s in state) process.stdin.writeString('$s\n');
 	}
 
-	public function collectActions<TState : GameState>(expected : Int, timeout : Float, gs : GameServer<TState, TAction>) : ActionsResult<TAction> {
-		var raw : Array<String> = [];
+	public function collectActions<Ts : GameState>(turnProfile : ActionCollector<Ta>, timeout : Float, gs : GameServer<Ts, Ta>) : ActionsResult<Ta> {
+		final start = Timer.stamp();
+        final deadline = start + timeout;
 
-		var start = Timer.stamp();
-		var now = start;
+        function next() {
+            while (Timer.stamp() <= deadline) {
+                var line = buffer.get(false)?.shift();
+                var action = gs.parseAction(line);
+                if (action == null ) throw new InvalidActionException('Invalid action "$line"');
+                if (action != null) return action;
+                Sys.sleep(0.001);
+            }
+            throw new TimeoutException('Turn timeout reached (${timeout}s)');
+        }
 
-		if (status.get() == Alive) { // When not alive, just fill with default actions
-			while (raw.length < expected) {
+        var actions : Array<Ta> = null;
+        var error : String = null;
+        try {
+            actions = turnProfile.collect(next);
+        } catch (e : TurnException) {
+            error = e.message;
+            var s = if (process.exitCode(false) != null) Crashed
+                else if (Std.isOfType(e, TimeoutException)) TimedOut
+                else Invalid;
+            kill(s);
+        }
 
-				var line = null;
-				buffer.execute(b -> line = b.shift(), false);
-				if (line != null)
-					raw.push(line);
-	
-				now = Timer.stamp();
-                var elapsed = now - start; 
-				if (elapsed > timeout) {
-					var code = process.exitCode(false); 
-					kill(code == null ? TimedOut : Crashed);
-					break;
-				}
-			}
-		}
-
-		var actions = [for (i in 0...expected)
-			(i < raw.length ? gs.parseAction(raw[i]) : null) ?? gs.getDefaultAction()
-		];
-		var time = now - start;
-		var error = null;
-		if (status.get() != Alive) {
-			// @todo error message 
-		}
-
-		var res : ActionsResult<TAction> = {id: id, actions : actions, time : Std.int(time * 1000), error : error};
-		return res;
+        final time = Timer.stamp() - start;
+		return {id : id, actions : actions, time : Std.int(time * 1000), error : error};
 	}
 }

@@ -15,7 +15,7 @@ class Macros {
 				var e = params[1];
 				switch (e) {
 					case TEnum(_, _): e;
-					default: Context.error('TAction should be an EnumValue', pos);
+					default: Context.error('Ta should be an EnumValue', pos);
 				}
 			default:
 				Context.error('Invalid GameServer implementation : $type', pos);

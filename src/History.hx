@@ -1,16 +1,16 @@
 import Player.ActionsResult;
 
 @:generic
-class HistoryTurn<TState : GameState, TAction : EnumValue> implements hxbit.Serializable {
-	@:s @:noPrivateAccess var actions : Array<ActionsResult<TAction>>;
+class HistoryTurn<Ts : GameState, Ta : EnumValue> implements hxbit.Serializable {
+	@:s @:noPrivateAccess var actions : Array<ActionsResult<Ta>>;
 	@:s @:noPrivateAccess var _state : GameState;
 
-	public function new(state : TState, actions : Array<ActionsResult<TAction>>) {
+	public function new(state : Ts, actions : Array<ActionsResult<Ta>>) {
 		this.actions = actions;
 		_state = state;
 	}
 
-	public var state(get, never) : TState;
+	public var state(get, never) : Ts;
 	function get_state() return cast _state;
 }
 
@@ -25,10 +25,10 @@ class HistoryPlayer implements hxbit.Serializable {
 }
 
 @:publicFields @:generic
-class History<TState : GameState, TAction : EnumValue> implements hxbit.Serializable {
+class History<Ts : GameState, Ta : EnumValue> implements hxbit.Serializable {
 	@:s var version : String;
 	@:s var players : Array<HistoryPlayer>;
-	@:s var turns : Array<HistoryTurn<TState, TAction>>;
+	@:s var turns : Array<HistoryTurn<Ts, Ta>>;
 	
 	var length(get, never) : Int;
 	function get_length() return turns.length;
@@ -39,7 +39,7 @@ class History<TState : GameState, TAction : EnumValue> implements hxbit.Serializ
 		turns = [];
 	}
 
-	function addTurn(actions : Array<ActionsResult<TAction>>, state : TState) {
+	function addTurn(actions : Array<ActionsResult<Ta>>, state : Ts) {
 		turns.push(new HistoryTurn(state, actions));
 	}
 }

@@ -1,6 +1,7 @@
 import sys.thread.Thread;
 
 import Player.ActionsResult;
+import ActionCollector;
 
 typedef ServerConfig = {
 	var version : String;
@@ -20,12 +21,12 @@ enum PartyKind {
 
 @:autoBuild(Macros.buildActionParser())
 @:access(GameState)
-abstract class GameServer<TState : GameState, TAction : EnumValue> {
+abstract class GameServer<Ts : GameState, Ta : EnumValue> {
 	var config(default, null) : ServerConfig;
-	var players : Array<Player<TAction>>;
-	var history : History<TState, TAction>; // @todo save player and server logs per turn
+	var players : Array<Player<Ta>>;
+	var history : History<Ts, Ta>; // @todo save player and server logs per turn
 
-	var state(get, never) : TState;
+	var state(get, never) : Ts;
 	function get_state() return cast history.turns[history.turns.length - 1].state;
 	
 	var turnModel : TurnModel;
@@ -34,13 +35,11 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 
 	var serializer : hxbit.Serializer;
 
-	abstract function init() : TState; // Initializes the game state
-	abstract function update(state : TState, ) : Void; // Updates the state based on last player actions
-	abstract function serializeStateForPlayer(player : Player<TAction>) : Array<String>;
-	public abstract function parseAction(action : String) : TAction; // @auto generated
-	public abstract function getDefaultAction() : TAction; // Will be used for timed-out players 
-	abstract function getExpectedActionCount(player : Player<TAction>) : Int; 
-
+	abstract function init() : Ts; // Initializes the game state
+	abstract function update(state : Ts, ) : Void; // Updates the state based on last player actions
+	abstract function serializeStateForPlayer(player : Player<Ta>) : Array<String>;
+	public abstract function parseAction(action : String) : Ta; // @auto generated
+    abstract function getTurnActionProfile(player : Player<Ta>) : TurnActionProfile<Ta>;
 
 	public function new(args : Array<String>, config : ServerConfig) {
 		this.config = config;
@@ -67,7 +66,7 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 		history.addTurn([], init());
 
 		while (history.length < config.maxTurns + 1) {
-			var newState : TState = cast serializer.unserialize(serializer.serialize(state), GameState);
+			var newState : Ts = cast serializer.unserialize(serializer.serialize(state), GameState);
 
 			final playing = turnModel.getPlayingThisTurn(getAlivePlayers(), newState, turn);
 			final actions = playing.map(playTurn);
@@ -87,13 +86,13 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 		trace(hist);
 	}
 
-	function playTurn(player : Player<TAction>) : ActionsResult<TAction> {
-		final c = getExpectedActionCount(player);
+	function playTurn(player : Player<Ta>) : ActionsResult<Ta> {
+        final tp = getTurnActionProfile(player);
 		final timeout = turn <= 1 ? config.firstTurnTimeout : config.turnTimeout;
 		final state = serializeStateForPlayer(player);
 		
 		player.sendState(state);
-		return player.collectActions(c, timeout / 1000., this);
+		return player.collectActions(tp, timeout / 1000., this);
 	}
 
 	public static function actionToString(action : EnumValue) {

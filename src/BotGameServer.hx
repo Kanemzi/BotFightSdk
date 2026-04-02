@@ -1,4 +1,5 @@
 import GameServer;
+import ActionCollector;
 
 enum Action {
 	Wait;
@@ -84,8 +85,7 @@ class BotGameServer extends GameServer<BotGameState, Action> {
 		return res;
 	}
 
-	public function getDefaultAction() return Wait;
-	public function getExpectedActionCount(player : Player<Action>) return 1;
+	public function getTurnActionProfile(player : Player<Action>) return Fixed(1);
 
 	public static function main() {
 		new Runner(BotGameServer, Sys.args());
