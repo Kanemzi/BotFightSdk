@@ -39,12 +39,10 @@ final class Player<TAction : EnumValue> {
 	public var name(default, null) : String;
 	public var status(default, null) : Mutex<Status>;
 
+	var buffer : Mutex<Array<String>>;
 	var process : Process;
 	var thread : Thread;
-	var buffer : Mutex<Array<String>>;
-
-	//var logs : Mutex<Array<String>>;
-	var logsThread : Thread;
+	var logger : Thread;
 
 	public function new(id, path) {
 		this.id = id;
@@ -52,42 +50,40 @@ final class Player<TAction : EnumValue> {
 		buffer = new Mutex([]);
 		process = new Process('hl $path');
 
-		this.name = process.stdout.readLine();
-		
-		thread = Thread.create(processThread);
-		//logs = new Mutex([]);
-		logsThread = Thread.create(() -> {
-			try while (true) {
+        // @todo : setup a timeout here
+		name = process.stdout.readLine();
+
+		thread = Thread.create(processInputs);
+        logger = Thread.create(() -> {
+			try while (process != null) {
 				var line = process.stderr.readLine();
 				trace('[$name] : $line');
-				//logs.execute(b -> b.push(line));
-			} catch(e : haxe.io.Eof) {}
+			} catch (_) {}
 		});
 	}
 
-	function setStatus(s : Status) {
-		status.set(s);
-		switch (s) {
-			case Alive:
-			case Killed, TimedOut, Crashed:
-				thread?.disposeNative();
-				logsThread?.disposeNative();
-		}
+    public function isKilled() return switch (status.get()) {
+        case Killed, TimedOut, Crashed: true;
+        case Alive : false;
+    }
+
+	public function kill(reason = Killed) {
+        if( isKilled() ) return;
+		status.set(reason);
+        process.kill();
+        process.close();
+        process = null;
 	}
 
-	public function kill() {
-		setStatus(Killed);
-	}
-
-	function processThread() {
-		try while (true) {
+	function processInputs() {
+		try while (process != null) {
 			var line = process.stdout.readLine();
 			if (status.get() != Alive)
 				break;
-			
+
 			buffer.execute(b -> b.push(line));
-		} catch(e : haxe.io.Eof) {
-			setStatus(Crashed);
+		} catch (_) {
+			kill(Crashed);
 		}
 	}
 
@@ -100,12 +96,6 @@ final class Player<TAction : EnumValue> {
 
 		var start = Timer.stamp();
 		var now = start;
-/*
-		logs.execute(logs -> {
-			while( logs.length > 0 ) {
-				trace('[$name] : ${logs.shift()}');
-			}
-		});*/
 
 		if (status.get() == Alive) { // When not alive, just fill with default actions
 			while (raw.length < expected) {
@@ -116,12 +106,10 @@ final class Player<TAction : EnumValue> {
 					raw.push(line);
 	
 				now = Timer.stamp();
-				if (now - start > timeout) {
+                var elapsed = now - start; 
+				if (elapsed > timeout) {
 					var code = process.exitCode(false); 
-					setStatus(switch (code) {
-						case null: TimedOut;
-						default: Crashed;
-					});
+					kill(code == null ? TimedOut : Crashed);
 					break;
 				}
 			}

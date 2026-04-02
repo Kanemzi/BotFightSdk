@@ -1,8 +1,21 @@
+-debug
+
+--each
+
+-cp src/bots
+-hl ExampleBot.hl
+-main ExampleBot
+
+
+--next
+
+
 -cp src
+
+-lib hxbit
 #-lib heaps
 #-lib hlsdl
--lib hxbit
+
 -hl BotGameServer.hl
 -main BotGameServer
--debug
 -D dump=pretty

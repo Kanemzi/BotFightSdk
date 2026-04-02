@@ -1,23 +1,23 @@
+import sys.thread.Thread;
+
 class ExampleBot {
 
     public static function getConfig() return {
-        name : "Michel"
+        name : "Michel~" + Std.random(10000)
     }
 
     public static function main() {
-        //trace("BONJOUR");
-        var sin = Sys.stdin();
-        var sout = Sys.stdout();
+        final stdin = Sys.stdin();
+        final stdout = Sys.stdout();
 
-        sout.writeString('${getConfig().name}\n');
-        
-        //trace("test");
+        stdout.writeString('${getConfig().name}\n');
         while (true) {
-            var me = sin.readLine();
-            var o = sin.readLine();
+            var me = stdin.readLine();
+            var o = stdin.readLine();
             Sys.stderr().writeString('me : $me, o : $o\n');
+            Sys.sleep(Std.random(500) / 1000.);
             var action = Std.random(100) < 50 ? "WAIT" : "MOVE 2 1";
-            sout.writeString('$action\n');
+            stdout.writeString('$action\n');
         }
     }
 }

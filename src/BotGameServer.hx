@@ -44,8 +44,8 @@ class BotGameServer extends GameServer<BotGameState, Action> {
 			minPlayers : 2,
 			maxPlayers : 2,
 			maxTurns : 10,
-			firstTurnTimeout : 1000,
-			turnTimeout : 50,
+			firstTurnTimeout : 100000,
+			turnTimeout : 100000,
 			turnModel : TurnModel.SimultaneousTurn,
 		});
 	}

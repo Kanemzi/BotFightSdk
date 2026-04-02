@@ -4,36 +4,43 @@ class Mutex<T> {
 	@:noPrivateAccess var val : T;
 	@:noPrivateAccess var mut : sys.thread.Mutex;
 
-	public function new(v : T) {
+	inline public function new(v : T) {
 		mut = new sys.thread.Mutex();
 		set(v);
 	}
 
-	function acquire(block : Bool) {
-		if (block) {
-			mut.acquire();
-			return true;
-		} else
-			return mut.tryAcquire();
+	inline function acquire(block : Bool) {
+		if (block) mut.acquire();
+		return block || mut.tryAcquire();
 	}
 
-	public function get(block = true) : T {
-		if (!acquire(block)) return null;
-		var v = val;
-		mut.release();
-		return v;
+	public inline function get(block = true) : T {
+        var v : Null<T> = null;
+        if (acquire(block)) {
+            v = val;
+            mut.release();
+        } 
+        return v;
 	}
 
-	public function set(v : T, block = true) : Bool {
-		if (!acquire(block)) return false;
-		val = v;
-		mut.release();
-		return true;
+	public inline function set(v : T, block = true) : Bool {
+		var ok = acquire(block); 
+        if (ok) {
+            val = v;
+		    mut.release();
+        }
+        return ok; 
 	}
 
-	public function execute(f : T -> Void, block = true) {
-		if (!acquire(block)) return;
-		f(val);
-		mut.release();
+	public inline function execute(f : T -> Void, block = true) {
+		if (acquire(block)) {
+            try {
+                f(val);
+                mut.release();
+            } catch (e) {
+                mut.release();
+                throw e;
+            }
+        }
 	}
 }

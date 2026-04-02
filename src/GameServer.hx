@@ -66,15 +66,16 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 		history = new History(config.version, players.map(p -> p.name));
 		history.addTurn([], init());
 
-		while( history.length < config.maxTurns ) {
+		while (history.length < config.maxTurns + 1) {
 			var newState : TState = cast serializer.unserialize(serializer.serialize(state), GameState);
 
 			final playing = turnModel.getPlayingThisTurn(getAlivePlayers(), newState, turn);
 			final actions = playing.map(playTurn);
 
 			trace('--- Turn ${history.turns.length} ---');
-			trace('Playing : ${playing.map(n -> n.name)}');
+			trace('Played : ${actions.map(a -> '[${players[a.id]} : ${a.time}ms]').join(" ")}');
 			trace('before : $state');
+
 			update(newState);
 			trace('after : $state');
 			
