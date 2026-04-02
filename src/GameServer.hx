@@ -1,24 +1,16 @@
 import sys.thread.Thread;
 
+import Player.ActionsResult;
+
 typedef ServerConfig = {
+	var version : String;
 	var minPlayers : Int;
 	var maxPlayers : Int;
+	var maxTurns : Int;
 	var firstTurnTimeout : Int;
 	var turnTimeout : Int;
 	var turnModel : Class<TurnModel>;
 }
-/*
-enum DisqualifyReason {
-	Timeout;
-	InvalidAction(action : String);
-}
-
-
-enum PlayerStatus {
-	None;
-	Win;
-	Disqualified<DisqualifyReason>;
-}*/
 
 enum PartyKind {
 	Multiple(count : Int);
@@ -31,36 +23,39 @@ enum PartyKind {
 abstract class GameServer<TState : GameState, TAction : EnumValue> {
 	var config(default, null) : ServerConfig;
 	var players : Array<Player<TAction>>;
-	var history : Array<TState>;
+	var history : History<TState, TAction>; // @todo save player and server logs per turn
 
-    var state(get, never) : TState;
-    function get_state() return history[history.length - 1];
-    
+	var state(get, never) : TState;
+	function get_state() return cast history.turns[history.turns.length - 1].state;
+	
 	var turnModel : TurnModel;
 	var turn(get, never) : Int;
-	function get_turn() return history.length;
+	function get_turn() return history.turns.length;
 
-    var serializer : hxbit.Serializer;
+	var serializer : hxbit.Serializer;
 
 	abstract function init() : TState; // Initializes the game state
-	abstract function update(state : TState) : Void; // Updates the state based on last player actions
+	abstract function update(state : TState, ) : Void; // Updates the state based on last player actions
+	abstract function serializeStateForPlayer(player : Player<TAction>) : Array<String>;
 	public abstract function parseAction(action : String) : TAction; // @auto generated
-    public abstract function getDefaultAction() : TAction; // Will be used for timed-out players 
-    abstract function getExpectedActionCount(player : Player<TAction>) : Int; 
+	public abstract function getDefaultAction() : TAction; // Will be used for timed-out players 
+	abstract function getExpectedActionCount(player : Player<TAction>) : Int; 
+
 
 	public function new(args : Array<String>, config : ServerConfig) {
 		this.config = config;
 
 		// @todo check bot count using config
-        players = [];
-        history = [];
-        serializer = new hxbit.Serializer();
+		players = [];
+		serializer = new hxbit.Serializer();
 	}
 
-    public function addPlayer(botPath : String) {
-        var id = players.length;
-        players.push(new Player(id, botPath.split(".")[0], botPath));
-    }
+	public function addPlayer(botPath : String) {
+		var id = players.length;
+		players.push(new Player(id, botPath.split(".")[0], botPath));
+	}
+
+	inline function getAlivePlayers() return players.filter(p -> p.status.get() == Alive);
 
 	public function run() {
 		if (players.length < config.minPlayers || players.length > config.maxPlayers)
@@ -68,40 +63,49 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 
 		turnModel = Type.createInstance(config.turnModel, []);
 
-        history.push(init());
-        while( history.length < 3 ) {
-            var copy : TState = cast serializer.unserialize(serializer.serialize(state), GameState);
-            
-			// collect player actions
-			var playing = turnModel.getPlayingThisTurn(players, state, turn);
+		history = new History(config.version, players.map(p -> p.name));
+		history.addTurn([], init());
 
-			sendStates(playing);
-			var actions = collectActions(playing);
+		while( history.length < config.maxTurns ) {
+			var newState : TState = cast serializer.unserialize(serializer.serialize(state), GameState);
 
-			trace('--- Turn ${history.length} ---');
-            trace('before : $state');
-            update(state);
-            trace('after : $state');
+			final playing = turnModel.getPlayingThisTurn(getAlivePlayers(), newState, turn);
+			final actions = playing.map(playTurn);
+
+			trace('--- Turn ${history.turns.length} ---');
+			trace('before : $state');
+			update(newState);
+			trace('after : $state');
 			
-			history.push(copy);
-        }
-	}
-
-	function sendStates(players : Array<Player<TAction>>) {
-		for (p in players) {
-			var s = state.serializeForPlayer(p);
-			// @todo send string to player
+			history.addTurn(actions, newState);
 		}
+
+		var bytes = serializer.serialize(history);
+		var hist = serializer.unserialize(bytes, History);
+		trace(hist);
 	}
 
-	function collectActions(players : Array<Player<TAction>>) : Array<TAction> {
-		for (p in players) {
-			// retrieve actions from player with timeout
-            var c = getExpectedActionCount(p);
-            var to = turn <= 1 ? config.firstTurnTimeout : config.turnTimeout;
-            p.collectActions(c, to / 1000., this);
-		}
-		return [];
+	function playTurn(player : Player<TAction>) : ActionsResult<TAction> {
+		final c = getExpectedActionCount(player);
+		final timeout = turn <= 1 ? config.firstTurnTimeout : config.turnTimeout;
+		final state = serializeStateForPlayer(player);
+		
+		player.sendState(state);
+		return player.collectActions(c, timeout / 1000., this);
 	}
 
+	public static function parseActionRuntime<TAction : EnumValue>(e : Enum<TAction>, action : String) : TAction {
+		//var xml = Xml.parse(haxe.rtti.Rtti.getXml(e)).firstElement();
+		//var enumDef = haxe.rtti.XmlParser.processEnum(xml, "");
+		//trace(enumDef);
+		return null;
+	}
+
+
+	public static function actionToString<TAction : EnumValue>(action : TAction) {
+		if (action == null) return "";
+		var name = action.getName().toUpperCase();
+		var params = Type.enumParameters(action).map(Std.string);
+		return [name].concat(params).join(" ");
+	}
 }

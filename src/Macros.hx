@@ -66,6 +66,8 @@ class Macros {
 			matchers.push(block);
 		}
 		
+		var comp = Context.toComplexType(actionType);
+		
 		var parseFn = {
 			name: "parseAction",
 			access: [],
@@ -75,16 +77,25 @@ class Macros {
 					type: macro : String,
 					opt: false,
 				}],
-				ret: Context.toComplexType(actionType),
+				ret: comp,
 				expr: macro {
 					if (action == null) return null;
-					action = StringTools.trim(action);
+					action = action.trim();
 					$b{matchers};
 					return null;
 				}
 			}),
 			pos: pos,
 		};
+
+
+		// @todo just generate a cast on null instead to avoid creating a usedless field
+		fields.push({
+			name : "__action",
+			access: [AStatic, AInline, AFinal],
+			kind: FVar(macro : hxbit.Serializable.SerializableEnum<$comp>, macro null),
+			pos: pos,
+		});
 
 		fields.push(parseFn);
 		return fields;

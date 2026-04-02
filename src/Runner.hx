@@ -3,11 +3,11 @@ import GameServer;
 
 final class RunnerArgs {
 	var args : Map<String, Array<String>>;
-	public inline function new(a : Array<String>) {
+	public inline function new(as : Array<String>) {
 		args = new Map();
 		var last : String = null;
-		for (arg in a) {
-			if (StringTools.startsWith(arg, "--")) {
+		for (arg in as) {
+			if (arg.startsWith("--")) {
 				last = arg.substring(2);
 				args.set(last, []);
 				continue;

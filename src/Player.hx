@@ -12,33 +12,46 @@ enum Status {
 	Crashed;
 }
 
-@:structInit
+typedef PlayerId = Int;
+
+@:structInit @:generic
 final class ActionsResult<TAction : EnumValue> implements hxbit.Serializable {
-	var actions : Array<TAction>;
-	var error : Null<String>;
-	var time : Int;
+	@:s public var id : PlayerId;
+	@:s public var error : Null<String>;
+	
+//	@:s @:noPrivateAccess var _actions : Array<EnumValue>;
+	public var actions : Array<TAction>;
+
+	public var time : Int;
+
+	public function customSerialize(ctx : hxbit.Serializer) @:privateAccess {
+		ctx.addInt(actions?.length);
+		for (a in actions) ctx.addDynamic(a);
+	}
+
+	public function customUnserialize(ctx : hxbit.Serializer) @:privateAccess {
+		var len = ctx.getInt();
+		actions = [for (_ in 0...len) ctx.getDynamic()];
+	}
 }
 
 @:access(GameServer)
 final class Player<TAction : EnumValue> {
-	public var id(default, null) : Int;
+	public var id(default, null) : PlayerId;
 	public var name(default, null) : String;
-	// public var path(default, null) : String;
-	public var history(default, null) : Array<TAction>;
 	public var status(default, null) : Mutex<Status>;
 
 	var process : Process;
-	var buffer : Mutex<Array<String>>;
 	var thread : Thread;
+	var buffer : Mutex<Array<String>>;
 
 	public function new(id, name, path) {
 		this.id = id;
 		this.name = name;
-		// this.path = path;
-		process = new Process('hl $path');
 		status = new Mutex(Alive);
 		buffer = new Mutex([]);
-		thread = Thread.create(processThread);
+		process = new Process('hl $path');
+		//thread = Thread.create(processThread);
 	}
 
 	public function kill() {
@@ -46,7 +59,6 @@ final class Player<TAction : EnumValue> {
 	}
 
 	function processThread() {
-		// var process = new Process('hl $path');
 		while (true) {
 			var line = process.stdout.readLine();
 			if (status.get() != Alive)
@@ -56,13 +68,15 @@ final class Player<TAction : EnumValue> {
 		}
 	}
 
-	public function getLastAction() : TAction {
-		if( history.length == 0 ) return null;
-		return history[history.length - 1];
+	public function sendState(state : Array<String>) {
+		//for (s in state) process.stdin.writeString('$s\n');
 	}
 
 	public function collectActions<TState : GameState>(expected : Int, timeout : Float, gs : GameServer<TState, TAction>) : ActionsResult<TAction> {
 		var raw : Array<String> = [];
+
+		var res : ActionsResult<TAction> = {id: id, actions : [for( _ in 0...expected) gs.getDefaultAction()], time : Std.int(2 * 1000), error : null};
+		return res;
 
 		var start = Timer.stamp();
 		var now = start;
@@ -96,6 +110,7 @@ final class Player<TAction : EnumValue> {
 			// @todo error message 
 		}
 
-		return {actions : actions, time : Std.int(time * 1000), error : error};
+		var res : ActionsResult<TAction> = {id: id, actions : actions, time : Std.int(time * 1000), error : error};
+		return res;
 	}
 }
