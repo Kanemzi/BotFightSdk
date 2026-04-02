@@ -14,7 +14,7 @@ class Mutex<T> {
 			mut.acquire();
 			return true;
 		} else
-			return !mut.tryAcquire();
+			return mut.tryAcquire();
 	}
 
 	public function get(block = true) : T {

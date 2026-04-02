@@ -19,9 +19,7 @@ final class ActionsResult<TAction : EnumValue> implements hxbit.Serializable {
 	@:s public var id : PlayerId;
 	@:s public var error : Null<String>;
 	
-//	@:s @:noPrivateAccess var _actions : Array<EnumValue>;
 	public var actions : Array<TAction>;
-
 	public var time : Int;
 
 	public function customSerialize(ctx : hxbit.Serializer) @:privateAccess {
@@ -45,54 +43,82 @@ final class Player<TAction : EnumValue> {
 	var thread : Thread;
 	var buffer : Mutex<Array<String>>;
 
-	public function new(id, name, path) {
+	//var logs : Mutex<Array<String>>;
+	var logsThread : Thread;
+
+	public function new(id, path) {
 		this.id = id;
-		this.name = name;
 		status = new Mutex(Alive);
 		buffer = new Mutex([]);
 		process = new Process('hl $path');
-		//thread = Thread.create(processThread);
+
+		this.name = process.stdout.readLine();
+		
+		thread = Thread.create(processThread);
+		//logs = new Mutex([]);
+		logsThread = Thread.create(() -> {
+			try while (true) {
+				var line = process.stderr.readLine();
+				trace('[$name] : $line');
+				//logs.execute(b -> b.push(line));
+			} catch(e : haxe.io.Eof) {}
+		});
+	}
+
+	function setStatus(s : Status) {
+		status.set(s);
+		switch (s) {
+			case Alive:
+			case Killed, TimedOut, Crashed:
+				thread?.disposeNative();
+				logsThread?.disposeNative();
+		}
 	}
 
 	public function kill() {
-		status.set(Killed);
+		setStatus(Killed);
 	}
 
 	function processThread() {
-		while (true) {
+		try while (true) {
 			var line = process.stdout.readLine();
 			if (status.get() != Alive)
 				break;
 			
 			buffer.execute(b -> b.push(line));
+		} catch(e : haxe.io.Eof) {
+			setStatus(Crashed);
 		}
 	}
 
 	public function sendState(state : Array<String>) {
-		//for (s in state) process.stdin.writeString('$s\n');
+		for (s in state) process.stdin.writeString('$s\n');
 	}
 
 	public function collectActions<TState : GameState>(expected : Int, timeout : Float, gs : GameServer<TState, TAction>) : ActionsResult<TAction> {
 		var raw : Array<String> = [];
 
-		var res : ActionsResult<TAction> = {id: id, actions : [for( _ in 0...expected) gs.getDefaultAction()], time : Std.int(2 * 1000), error : null};
-		return res;
-
 		var start = Timer.stamp();
 		var now = start;
+/*
+		logs.execute(logs -> {
+			while( logs.length > 0 ) {
+				trace('[$name] : ${logs.shift()}');
+			}
+		});*/
 
 		if (status.get() == Alive) { // When not alive, just fill with default actions
 			while (raw.length < expected) {
 
 				var line = null;
-				buffer.execute(b -> line = b.shift());
+				buffer.execute(b -> line = b.shift(), false);
 				if (line != null)
 					raw.push(line);
 	
 				now = Timer.stamp();
 				if (now - start > timeout) {
 					var code = process.exitCode(false); 
-					status.set(switch (code) {
+					setStatus(switch (code) {
 						case null: TimedOut;
 						default: Crashed;
 					});

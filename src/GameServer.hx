@@ -52,7 +52,7 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 
 	public function addPlayer(botPath : String) {
 		var id = players.length;
-		players.push(new Player(id, botPath.split(".")[0], botPath));
+		players.push(new Player(id, botPath));
 	}
 
 	inline function getAlivePlayers() return players.filter(p -> p.status.get() == Alive);
@@ -73,6 +73,7 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 			final actions = playing.map(playTurn);
 
 			trace('--- Turn ${history.turns.length} ---');
+			trace('Playing : ${playing.map(n -> n.name)}');
 			trace('before : $state');
 			update(newState);
 			trace('after : $state');
@@ -94,16 +95,7 @@ abstract class GameServer<TState : GameState, TAction : EnumValue> {
 		return player.collectActions(c, timeout / 1000., this);
 	}
 
-	public static function parseActionRuntime<TAction : EnumValue>(e : Enum<TAction>, action : String) : TAction {
-		//var xml = Xml.parse(haxe.rtti.Rtti.getXml(e)).firstElement();
-		//var enumDef = haxe.rtti.XmlParser.processEnum(xml, "");
-		//trace(enumDef);
-		return null;
-	}
-
-
-	public static function actionToString<TAction : EnumValue>(action : TAction) {
-		if (action == null) return "";
+	public static function actionToString(action : EnumValue) {
 		var name = action.getName().toUpperCase();
 		var params = Type.enumParameters(action).map(Std.string);
 		return [name].concat(params).join(" ");
