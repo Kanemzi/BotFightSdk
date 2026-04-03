@@ -1,0 +1,15 @@
+-debug
+-cp src
+--each
+
+-hl ExampleBot.hl
+-main bots.ExampleBot
+
+
+--next
+-lib hxbit
+-lib heaps
+-lib hlsdl
+-hl WarServer.hl
+-main games.war.WarServer
+-D dump=pretty

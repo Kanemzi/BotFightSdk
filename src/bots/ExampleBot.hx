@@ -1,3 +1,5 @@
+package bots;
+
 class ExampleBot {
 
     public static function getConfig() return {

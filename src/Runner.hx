@@ -1,5 +1,6 @@
 import haxe.Json;
-import GameServer;
+import core.GameServer;
+import core.GameState;
 
 final class RunnerArgs {
 	var args : Map<String, Array<String>>;
@@ -42,14 +43,12 @@ final class Runner {
 				- Allows wrapping user code in with other boilerplate / compatibility code
 	*/
 
-
-
 	@:generic
 	public function new<S : GameState, A : EnumValue>(cl : Class<GameServer<S, A>>, args : Array<String>) {
 		var gs = Type.createInstance(cl, [args]);
 
 		var args = new RunnerArgs(args);
-        for( p in args.getParams("bots") ) {
+        for (p in args.getParams("bots")) {
             gs.addPlayer(p);
         }
 
@@ -82,7 +81,7 @@ final class Runner {
 		}
 	
 		var botCount = args.length;
-		if( botCount < config.minPlayers || botCount > config.maxPlayers ) {
+		if (botCount < config.minPlayers || botCount > config.maxPlayers) {
 			trace("The amount of bots does not match the game server config");
 			return;
 		}				

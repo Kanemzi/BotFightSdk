@@ -1,7 +1,9 @@
-import Player.InvalidActionException;
+package core.action;
+
+import core.Exception.InvalidActionException;
+import core.GameServer;
 
 using Lambda;
-import GameServer;
 
 typedef ActionCond<Ta : EnumValue> = Ta -> Bool;
 
@@ -15,7 +17,7 @@ abstract ActionCollector<Ta : EnumValue>(TurnActionProfile<Ta>) from TurnActionP
     public function new(v) { this = v; }
     public function collect(reader : Void -> Ta) : Array<Ta> {
         function validate(a : Ta, ?cond : ActionCond<Ta>) {
-            if( cond != null && !cond(a) ) // @todo send an error message explaining the mistake to the player based on the collector structure
+            if (cond != null && !cond(a)) // @todo send an error message explaining the mistake to the player based on the collector structure
                 throw new InvalidActionException('Unexepected action "${ActionParser.toString(a)}"');
             return a;
         }

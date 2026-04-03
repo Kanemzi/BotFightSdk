@@ -1,7 +1,9 @@
-import sys.thread.*;
+package core;
 
-import Player.ActionsResult;
-import ActionCollector;
+import sys.thread.*;
+import core.action.ActionParser;
+import core.action.ActionCollector;
+import core.action.ActionsResult;
 
 typedef ServerConfig = {
 	var version : String;
@@ -18,18 +20,6 @@ enum PartyKind {
 	BestOf(bo : Int);
 	Tournament(bo : Int, playerCount : Int);
 }
-
-@:autoBuild(Macros.buildActionParser())
-abstract class ActionParser<Ta : EnumValue> {
-	public abstract function parseAction(action : String) : Ta; // @auto generated
-    
-	public static function toString(action : EnumValue) {
-		var name = action.getName().toUpperCase();
-		var params = Type.enumParameters(action).map(Std.string);
-		return [name].concat(params).join(" ");
-	}
-}
-typedef Word = String;
 
 @:access(GameState)
 abstract class GameServer<Ts : GameState, Ta : EnumValue> extends ActionParser<Ta> {
@@ -48,8 +38,8 @@ abstract class GameServer<Ts : GameState, Ta : EnumValue> extends ActionParser<T
 
 	var serializer : hxbit.Serializer;
 
-	abstract function init() : Ts; // Initializes the game state
-	abstract function update(state : Ts, ) : Void; // Updates the state based on last player actions
+	abstract function init(?seed : Int) : Ts; // Initializes the game state
+	abstract function update(state : Ts) : Void; // Updates the state based on last player actions
 	abstract function serializeStateForPlayer(player : Player<Ta>) : Array<String>;
 	abstract function getTurnActionProfile(player : Player<Ta>) : TurnActionProfile<Ta>;
 
@@ -77,8 +67,9 @@ abstract class GameServer<Ts : GameState, Ta : EnumValue> extends ActionParser<T
         final wto = Math.max(config.firstTurnTimeout, config.turnTimeout) * 2;
         turnWorkers = new ElasticThreadPool(players.length, wto / 1000.);
 
+        final seed = Std.random(1 << 16 - 1); // @todo allow reading from command line args
 		history = new History(config.version, players.map(p -> p.name));
-		history.addTurn([], init());
+		history.addTurn([], init(seed));
 
 		while (history.length < config.maxTurns + 1) {
 			var newState : Ts = cast serializer.unserialize(serializer.serialize(state), GameState);
@@ -86,6 +77,7 @@ abstract class GameServer<Ts : GameState, Ta : EnumValue> extends ActionParser<T
 			final playing = turnModel.getPlayingThisTurn(getAlivePlayers(), newState, turn);
             final actions = playTurns(playing);
 
+            // @todo remove these logs, they should be stored in history for replay
 			trace('--- Turn ${history.turns.length} ---');
 			trace('Played : ${actions.map(a -> '[${players[a.id]} : ${a.time}ms]').join(" ")}');
 			trace('before : $state');
@@ -101,10 +93,10 @@ abstract class GameServer<Ts : GameState, Ta : EnumValue> extends ActionParser<T
 		var hist = serializer.unserialize(bytes, History);
 		trace(hist);
 
+        return history;
         // @todo return history. Runner is in charge of wrapping and organizing histories
 	}
 
-    // Starts all turns simultaneously and wait for all results
     function playTurns(players : Array<Player<Ta>>) : Array<ActionsResult<Ta>> {
         if (players.length == 0) return [];
 

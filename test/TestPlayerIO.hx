@@ -16,14 +16,14 @@ class TestPlayerIO implements PlayerIO {
 	}
 	public function readLine(timeout : Float) {
 		var line = poll();
-		if( line != null ) {
+		if (line != null) {
 //			Sys.sleep(delay);
 			return line;
 		}
 		throw new TimeoutException('No more actions available in buffer');
 	}
 
-	public function writeString(s : String) { }
+	public function writeString(s : String) {}
 	public function dispose() buffer = [];
 	public function isDisposed() return buffer.length == 0; 
 }

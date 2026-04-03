@@ -1,4 +1,6 @@
-import Player.ActionsResult;
+package core;
+
+import core.action.ActionsResult;
 
 @:generic
 class HistoryTurn<Ts : GameState, Ta : EnumValue> implements hxbit.Serializable {

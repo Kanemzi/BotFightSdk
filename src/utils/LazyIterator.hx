@@ -41,9 +41,9 @@ class IndexedLazyIteratorItem<T> {
 	}
   
 	inline public function hasNext(): Bool {
-		while( !hasNextItem && it.hasNext() ) {
+		while (!hasNextItem && it.hasNext()) {
 			var i = it.next();
-			if( f(i) ) {
+			if (f(i)) {
 				nextItem = i;
 				hasNextItem = true;
 			}
@@ -52,7 +52,7 @@ class IndexedLazyIteratorItem<T> {
 	}
 
 	inline public function next(): T {
-		if( !hasNextItem ) hasNext();
+		if (!hasNextItem) hasNext();
 		hasNextItem = false;
 		return nextItem;
 	}
@@ -79,7 +79,7 @@ class UtilsIterators {
 
 	inline public static function collect<T>(iter: Iterator<T>) {
 		var res = [];
-		while( iter.hasNext() ) res.push(iter.next());
+		while (iter.hasNext()) res.push(iter.next());
 		return res;
 	}
 
@@ -93,7 +93,7 @@ class UtilsIterators {
 
 	inline public static function count<T>(iter: Iterator<T>) {
 		var n = 0;
-		for( _ in iter ) n++;
+		for (_ in iter) n++;
 		return n;
 	}
 
@@ -115,7 +115,7 @@ class UtilsIterators {
 	}
 
 	inline public static function foreach<T>(iter: Iterator<T>, f : T->Bool) {
-		for( i in iter ) if( !f(i) ) break;	
+		for (i in iter) if (!f(i)) break;	
 	}
 
 	inline public static function fold<T, U>(iter: Iterator<T>, acc : U, f : (T, U) -> U) {
@@ -129,7 +129,7 @@ class UtilsIterators {
 
 	inline public static function indexOf<T>(iter: Iterator<T>, item : T) : Int {
 		var it = iter.enumerate().filter(e -> e.v == item);
-		if( it.hasNext() ) return -1;
+		if (it.hasNext()) return -1;
 		return it.next().i;
 	}
 }

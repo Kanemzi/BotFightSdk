@@ -1,4 +1,4 @@
-import GameState;
+package core;
 
 interface TurnModel {
     public function getPlayingThisTurn<Ta : EnumValue>(players : Array<Player<Ta>>, state : GameState, turn : Int) : Array<Player<Ta>>;
