@@ -14,15 +14,6 @@ class Mutex<T> {
 		return block || mut.tryAcquire();
 	}
 
-	public inline function get(block = true) : T {
-        var v : Null<T> = null;
-        if (acquire(block)) {
-            v = val;
-            mut.release();
-        } 
-        return v;
-	}
-
 	public inline function set(v : T, block = true) : Bool {
 		var ok = acquire(block); 
         if (ok) {
@@ -43,4 +34,18 @@ class Mutex<T> {
             }
         }
 	}
+
+    public inline function map<U>(f : T -> U, block = true) : Null<U> {
+        var res = null;
+        if (acquire(block)) {
+            try {
+                res = f(val);
+                mut.release();
+            } catch (e) {
+                mut.release();
+                throw e;
+            }
+        }
+        return res;
+    }
 }

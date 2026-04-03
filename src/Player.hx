@@ -9,10 +9,11 @@ import ActionCollector;
 
 enum Status { 
 	Alive;
-	Killed;
+	Defeated;
 	TimedOut;
-	Crashed;
     Invalid;
+	Crashed;
+    Terminated;
 }
 
 abstract class PlayerException extends std.haxe.Exception {}
@@ -22,6 +23,7 @@ class InvalidActionException extends PlayerException {}
 @:structInit @:publicFields
 final class ActionsResult<Ta : EnumValue> implements hxbit.Serializable {
 	@:s var id : PlayerId;
+    @:s var status : Status;
 	@:s var error : Null<String>;
 	
 	var actions : Array<Ta>;
@@ -67,12 +69,13 @@ class ProcessPlayerIO implements PlayerIO {
 
 	function reader(i : haxe.io.Input, o : Mutex<Array<String>>) {
 		try while (process != null) {
-			o.get().push(i.readLine());
+            final line = i.readLine();
+			o.execute(o -> o.push(line));
 		} catch (_) { } // @todo raise something to the player
 	}
 
 	public function poll(t : InputKind = Data) : Null<String> {
-		return (t == Logs ? logs : buffer).get(false)?.shift();
+		return (t == Logs ? logs : buffer).map(b -> b.shift(), false);
 	}
 
 	public function readLine(timeout : Float) : String {
@@ -122,13 +125,13 @@ final class Player<Ta : EnumValue> {
 		}
 	}
 
-    public function isKilled() return switch (status) {
-        case Killed, TimedOut, Crashed, Invalid: true;
-        case Alive : false;
+    public function isAlive() return switch (status) {
+        case Defeated, TimedOut, Invalid, Crashed, Terminated: false;
+        case Alive: true;
     }
 
-	public function kill(reason = Killed) {
-        if( isKilled() ) return;
+	public function kill(reason : Status) {
+        if( !isAlive() ) return;
 		status = reason;
 		io.dispose();
 	}
@@ -168,6 +171,12 @@ final class Player<Ta : EnumValue> {
         }
 
         final time = Timer.stamp() - start;
-		return {id : id, actions : actions, time : Std.int(time * 1000), error : error};
+		return {
+            id : id,
+            actions : actions,
+            time : Std.int(time * 1000),
+            status : status,
+            error : error
+        };
 	}
 }

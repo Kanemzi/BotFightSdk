@@ -1,5 +1,3 @@
-import sys.thread.Thread;
-
 class ExampleBot {
 
     public static function getConfig() return {
@@ -15,7 +13,7 @@ class ExampleBot {
             var me = stdin.readLine();
             var o = stdin.readLine();
             Sys.stderr().writeString('me : $me, o : $o\n');
-            Sys.sleep(Std.random(500) / 1000.);
+            Sys.sleep(1.0/*Std.random(500) / 1000.*/);
             var action = Std.random(100) < 50 ? "WAIT" : "MOVE 2 1";
             stdout.writeString('$action\n');
         }

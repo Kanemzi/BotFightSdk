@@ -1,4 +1,4 @@
-import sys.thread.Thread;
+import sys.thread.*;
 
 import Player.ActionsResult;
 import ActionCollector;
@@ -44,6 +44,8 @@ abstract class GameServer<Ts : GameState, Ta : EnumValue> extends ActionParser<T
 	var turn(get, never) : Int;
 	function get_turn() return history.turns.length;
 
+    var turnWorkers : ElasticThreadPool;
+
 	var serializer : hxbit.Serializer;
 
 	abstract function init() : Ts; // Initializes the game state
@@ -64,13 +66,16 @@ abstract class GameServer<Ts : GameState, Ta : EnumValue> extends ActionParser<T
 		players.push(new Player(id, botPath));
 	}
 
-	inline function getAlivePlayers() return players.filter(p -> p.status == Alive);
+	inline function getAlivePlayers() return players.filter(p -> p.isAlive());
 
 	public function run() {
 		if (players.length < config.minPlayers || players.length > config.maxPlayers)
 			throw "Trying to run a game with an invalid amount of players";
 
 		turnModel = Type.createInstance(config.turnModel, []);
+        
+        final wto = Math.max(config.firstTurnTimeout, config.turnTimeout) * 2;
+        turnWorkers = new ElasticThreadPool(players.length, wto / 1000.);
 
 		history = new History(config.version, players.map(p -> p.name));
 		history.addTurn([], init());
@@ -79,7 +84,7 @@ abstract class GameServer<Ts : GameState, Ta : EnumValue> extends ActionParser<T
 			var newState : Ts = cast serializer.unserialize(serializer.serialize(state), GameState);
 
 			final playing = turnModel.getPlayingThisTurn(getAlivePlayers(), newState, turn);
-			final actions = playing.map(playTurn);
+            final actions = playTurns(playing);
 
 			trace('--- Turn ${history.turns.length} ---');
 			trace('Played : ${actions.map(a -> '[${players[a.id]} : ${a.time}ms]').join(" ")}');
@@ -91,10 +96,35 @@ abstract class GameServer<Ts : GameState, Ta : EnumValue> extends ActionParser<T
 			history.addTurn(actions, newState);
 		}
 
+        dispose();
 		var bytes = serializer.serialize(history);
 		var hist = serializer.unserialize(bytes, History);
 		trace(hist);
+
+        // @todo return history. Runner is in charge of wrapping and organizing histories
 	}
+
+    // Starts all turns simultaneously and wait for all results
+    function playTurns(players : Array<Player<Ta>>) : Array<ActionsResult<Ta>> {
+        if (players.length == 0) return [];
+
+        var results = [];
+        var mutex = new Mutex();
+        var lock = new Lock();
+        for (p in players) {
+            turnWorkers.run(() -> {
+                final res = playTurn(p);
+                mutex.acquire();
+                results.push(res);
+                if (results.length == players.length)
+                    lock.release();
+                mutex.release();
+            });
+        }
+
+        lock.wait();
+        return results;
+    }
 
 	function playTurn(player : Player<Ta>) : ActionsResult<Ta> {
         final tp = getTurnActionProfile(player);
@@ -104,4 +134,8 @@ abstract class GameServer<Ts : GameState, Ta : EnumValue> extends ActionParser<T
 		player.sendState(state);
 		return player.collectActions(tp, timeout / 1000., this);
 	}
+
+    function dispose() {
+        for (p in players) p.kill(Terminated);
+    }
 }
