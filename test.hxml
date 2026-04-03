@@ -1,0 +1,9 @@
+-cp src
+-main TestMain
+-lib munit
+-lib hxbit
+-lib hamcrest
+
+-cp test
+-hl build/hl_test.hl
+-D dump=pretty

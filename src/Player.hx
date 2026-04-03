@@ -1,3 +1,4 @@
+import GameServer.ActionParser;
 import haxe.io.Input;
 import haxe.Timer;
 import sys.io.Process;
@@ -14,9 +15,9 @@ enum Status {
     Invalid;
 }
 
-abstract class TurnException extends std.haxe.Exception {}
-class TimeoutException extends TurnException {}
-class InvalidActionException extends TurnException {}
+abstract class PlayerException extends std.haxe.Exception {}
+class TimeoutException extends PlayerException {}
+class InvalidActionException extends PlayerException {}
 
 @:structInit @:publicFields
 final class ActionsResult<Ta : EnumValue> implements hxbit.Serializable {
@@ -37,77 +38,119 @@ final class ActionsResult<Ta : EnumValue> implements hxbit.Serializable {
 	}
 }
 
+enum InputKind { Data; Logs; }
+interface PlayerIO {
+	function poll(t : InputKind = Data) : Null<String>;
+	function readLine(timeout : Float) : String;
+	function writeString(s : String) : Void;
+	function dispose() : Void;
+	function isDisposed() : Bool;
+}
+
+class ProcessPlayerIO implements PlayerIO {
+	var buffer : Mutex<Array<String>>;
+	var logs : Mutex<Array<String>>;
+	
+	var process : Process;
+	var thread : Thread;
+	var logger : Thread;
+
+	public function new(path : String) {
+		process = new Process('hl $path');
+		
+		buffer = new Mutex([]);
+		logs = new Mutex([]);
+
+		thread = Thread.create(reader.bind(process.stdout, buffer));
+        logger = Thread.create(reader.bind(process.stderr, logs));
+	}
+
+	function reader(i : haxe.io.Input, o : Mutex<Array<String>>) {
+		try while (process != null) {
+			o.get().push(i.readLine());
+		} catch (_) { } // @todo raise something to the player
+	}
+
+	public function poll(t : InputKind = Data) : Null<String> {
+		return (t == Logs ? logs : buffer).get(false)?.shift();
+	}
+
+	public function readLine(timeout : Float) : String {
+		final start = Timer.stamp();
+        final deadline = start + timeout;
+		while (Timer.stamp() <= deadline) {
+			final line = poll();
+			if( line != null) return line;
+			Sys.sleep(0.001);
+		}
+		throw new TimeoutException('Timeout reached (${timeout}s)');
+	}
+
+	public function writeString(s : String) {
+		process?.stdin.writeString('$s\n');
+	}
+
+	public function dispose() {
+		process.kill();
+        process.close();
+        process = null;
+	}
+
+	public function isDisposed() return process == null || process.exitCode(false) != null;
+}
+
 typedef PlayerId = Int;
 
 @:access(GameServer)
 final class Player<Ta : EnumValue> {
 	public var id(default, null) : PlayerId;
 	public var name(default, null) : String;
-	public var status(default, null) : Mutex<Status>;
+	public var status(default, null) : Status;
 
-	var buffer : Mutex<Array<String>>;
-	var process : Process;
-	var thread : Thread;
-	var logger : Thread;
+	var io : PlayerIO;
 
-	public function new(id, path) {
+	public function new(id, ?path : String, ?io : PlayerIO) {
 		this.id = id;
-		status = new Mutex(Alive);
-		buffer = new Mutex([]);
-		process = new Process('hl $path');
+		this.io = io ?? new ProcessPlayerIO(path);
+		status = Alive;
 
-        // @todo : setup a timeout here
-		name = process.stdout.readLine();
-
-		thread = Thread.create(processInputs);
-        logger = Thread.create(() -> {
-			try while (process != null) {
-				var line = process.stderr.readLine();
-				trace('[$name] : $line');
-			} catch (_) {}
-		});
+		try {
+			name = this.io.readLine(1000);
+		} catch( e : TimeoutException) {
+			// @todo catch some sort of generic PlayerProtocolException in GameServer to end the game
+			trace('Player $path didn\'t send its name');
+		}
 	}
 
-    public function isKilled() return switch (status.get()) {
+    public function isKilled() return switch (status) {
         case Killed, TimedOut, Crashed, Invalid: true;
         case Alive : false;
     }
 
 	public function kill(reason = Killed) {
         if( isKilled() ) return;
-		status.set(reason);
-        process.kill();
-        process.close();
-        process = null;
-	}
-
-	function processInputs() {
-		try while (process != null) {
-			var line = process.stdout.readLine();
-			if (status.get() != Alive)
-				break;
-
-			buffer.execute(b -> b.push(line));
-		} catch (_) {
-			kill(Crashed);
-		}
+		status = reason;
+		io.dispose();
 	}
 
 	public function sendState(state : Array<String>) {
-		for (s in state) process.stdin.writeString('$s\n');
+		io.writeString('$state\n');
 	}
 
-	public function collectActions<Ts : GameState>(turnProfile : ActionCollector<Ta>, timeout : Float, gs : GameServer<Ts, Ta>) : ActionsResult<Ta> {
+	public function collectActions<Ts : GameState>(turnProfile : ActionCollector<Ta>, timeout : Float, ap : ActionParser<Ta>) : ActionsResult<Ta> {
 		final start = Timer.stamp();
         final deadline = start + timeout;
 
         function next() {
             while (Timer.stamp() <= deadline) {
-                var line = buffer.get(false)?.shift();
-                var action = gs.parseAction(line);
+                var line = io.poll();
+				if (line == null) {
+					Sys.sleep(0.001);
+					continue;
+				}
+                var action = ap.parseAction(line);
                 if (action == null ) throw new InvalidActionException('Invalid action "$line"');
-                if (action != null) return action;
-                Sys.sleep(0.001);
+                return action;
             }
             throw new TimeoutException('Turn timeout reached (${timeout}s)');
         }
@@ -116,9 +159,9 @@ final class Player<Ta : EnumValue> {
         var error : String = null;
         try {
             actions = turnProfile.collect(next);
-        } catch (e : TurnException) {
+        } catch (e : PlayerException) {
             error = e.message;
-            var s = if (process.exitCode(false) != null) Crashed
+            var s = if (io.isDisposed()) Crashed
                 else if (Std.isOfType(e, TimeoutException)) TimedOut
                 else Invalid;
             kill(s);

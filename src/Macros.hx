@@ -9,17 +9,21 @@ class Macros {
 		final pos = Context.currentPos();
 		var fields = Context.getBuildFields();
 		var type = Context.getLocalType();
-		
+
 		var actionType : Type = switch (type) {
-			case TInst(_.get().superClass.params => params, _) if (params.length >= 2):
-				var e = params[1];
-				switch (e) {
-					case TEnum(_, _): e;
-					default: Context.error('Ta should be an EnumValue', pos);
+			case TInst(_.get().superClass.params => params, _) if (params.length > 0):
+				var e = null;
+				for (p in params) switch (p) {
+					case TEnum(_, _): e = p;
+					default:
 				}
+				e;
 			default:
 				Context.error('Invalid GameServer implementation : $type', pos);
 		};
+
+		if (actionType == null)
+			return fields;
 
 		var consts = TypeTools.getEnum(actionType).constructs;
 
@@ -36,6 +40,15 @@ class Macros {
 			for (i in 0...params.length) {
 				var t = params[i].t;
 				var index : Expr = macro $v{i + 1};
+				
+				var nullable = false;
+				t = switch (t) { // unnullabilify the type
+					case TAbstract(_.get().name => "Null", [st]):
+						nullable = true; 
+						st;
+					default: t;
+				}
+
 				inline function unsupportedType() Context.error('Unsupported parameter type for $name(${params[i].name}) : ${t.getParameters()[0]}', pos);
 				switch (t) {
 					case TAbstract(at, _):
@@ -45,14 +58,31 @@ class Macros {
 								values.push(macro Std.parseInt(re.matched(${index})));
 							default: unsupportedType();
 						}
-					case TInst(t, _):
-						switch (t.get().name) {
+					case TInst(ti, _):
+						switch (ti.get().name) {
 							case "String":
-								patterns.push("(.+)");
+								if (i != params.length - 1)
+									Context.error('Unexpected parameter $name(${params[i].name}). String param should always be the last', pos);
+								var m = nullable ? "*" : "+";
+								var pattern = '(.$m)';
+								if (nullable)
+									pattern = '?$pattern';
+								patterns.push(pattern);
+								values.push(macro {
+									var s = re.matched(${index});
+									($v{nullable} && s == "") ? null : s;  
+								});
+							default: unsupportedType();
+						}
+					case TType(tt, _):
+						switch (tt.get().name) {
+							case "Word":
+								patterns.push("(\\w+)");
 								values.push(macro re.matched(${index}));
 							default: unsupportedType();
 						}
-					default: unsupportedType();
+					default:
+						unsupportedType();
 				}
 			}
 

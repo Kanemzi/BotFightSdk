@@ -1,6 +1,7 @@
 import Player.InvalidActionException;
 
 using Lambda;
+import GameServer;
 
 typedef ActionCond<Ta : EnumValue> = Ta -> Bool;
 
@@ -15,11 +16,12 @@ abstract ActionCollector<Ta : EnumValue>(TurnActionProfile<Ta>) from TurnActionP
     public function collect(reader : Void -> Ta) : Array<Ta> {
         function validate(a : Ta, ?cond : ActionCond<Ta>) {
             if( cond != null && !cond(a) ) // @todo send an error message explaining the mistake to the player based on the collector structure
-                throw new InvalidActionException('Unexepected action "${GameServer.actionToString(a)}"');
+                throw new InvalidActionException('Unexepected action "${ActionParser.toString(a)}"');
             return a;
         }
         final next = (?cond : ActionCond<Ta>) -> validate(reader(), cond);
         
+        // @todo don't consume Until(end) action, so that it can be used 
         return switch (this) {
             case Fixed(n, cond): [for (_ in 0...n) next(cond)];
             case Until(end, max, cond):

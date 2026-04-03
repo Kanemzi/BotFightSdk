@@ -20,8 +20,19 @@ enum PartyKind {
 }
 
 @:autoBuild(Macros.buildActionParser())
+abstract class ActionParser<Ta : EnumValue> {
+	public abstract function parseAction(action : String) : Ta; // @auto generated
+    
+	public static function toString(action : EnumValue) {
+		var name = action.getName().toUpperCase();
+		var params = Type.enumParameters(action).map(Std.string);
+		return [name].concat(params).join(" ");
+	}
+}
+typedef Word = String;
+
 @:access(GameState)
-abstract class GameServer<Ts : GameState, Ta : EnumValue> {
+abstract class GameServer<Ts : GameState, Ta : EnumValue> extends ActionParser<Ta> {
 	var config(default, null) : ServerConfig;
 	var players : Array<Player<Ta>>;
 	var history : History<Ts, Ta>; // @todo save player and server logs per turn
@@ -38,8 +49,7 @@ abstract class GameServer<Ts : GameState, Ta : EnumValue> {
 	abstract function init() : Ts; // Initializes the game state
 	abstract function update(state : Ts, ) : Void; // Updates the state based on last player actions
 	abstract function serializeStateForPlayer(player : Player<Ta>) : Array<String>;
-	public abstract function parseAction(action : String) : Ta; // @auto generated
-    abstract function getTurnActionProfile(player : Player<Ta>) : TurnActionProfile<Ta>;
+	abstract function getTurnActionProfile(player : Player<Ta>) : TurnActionProfile<Ta>;
 
 	public function new(args : Array<String>, config : ServerConfig) {
 		this.config = config;
@@ -54,7 +64,7 @@ abstract class GameServer<Ts : GameState, Ta : EnumValue> {
 		players.push(new Player(id, botPath));
 	}
 
-	inline function getAlivePlayers() return players.filter(p -> p.status.get() == Alive);
+	inline function getAlivePlayers() return players.filter(p -> p.status == Alive);
 
 	public function run() {
 		if (players.length < config.minPlayers || players.length > config.maxPlayers)
@@ -93,11 +103,5 @@ abstract class GameServer<Ts : GameState, Ta : EnumValue> {
 		
 		player.sendState(state);
 		return player.collectActions(tp, timeout / 1000., this);
-	}
-
-	public static function actionToString(action : EnumValue) {
-		var name = action.getName().toUpperCase();
-		var params = Type.enumParameters(action).map(Std.string);
-		return [name].concat(params).join(" ");
 	}
 }

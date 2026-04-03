@@ -1,11 +1,14 @@
 import GameServer;
 import ActionCollector;
 
+// @todo support 1 word strings. Normal string can only be the last parameter 
+// 		- only support nullable for last string param ?
 enum Action {
 	Wait;
-	Move(x: Int, y: Int);
+	Move(x : Int, y : Int, ?msg : String);
 	Give(id : Int, amount : Int);
-	Say(message : String);
+	Build(type : Word);
+	Say(id : Int, msg : String);
 }
 
 @:structInit
