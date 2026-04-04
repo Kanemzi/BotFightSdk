@@ -12,8 +12,8 @@ class WarServer extends GameServer<WarState, WarAction> {
 	public static inline final HEIGHT = 7;
 	public static inline final START_ENERGY = 10;
 
-	public function new(args : Array<String>) {
-		super(args, {
+	public function new(seed : Int) {
+		super(seed, {
 			version : "0.1",
 			minPlayers : 2,
 			maxPlayers : 2,
@@ -24,7 +24,7 @@ class WarServer extends GameServer<WarState, WarAction> {
 		});
 	}
 
-	function init(?seed : Int) : WarState {
+	function init() : WarState {
         return new WarState(players.length, seed);
 	}
 

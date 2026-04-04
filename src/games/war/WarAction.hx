@@ -1,6 +1,6 @@
 package games.war;
 
-import core.action.ActionParser;
+import core.action.Action;
 
 // @todo macro should support multiple optional non strings params at the end of the line (default radius)
 

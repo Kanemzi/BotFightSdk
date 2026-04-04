@@ -8,7 +8,7 @@ enum UnitKind { Civilian; Military; }
 enum ResourceKind { Wood; Food; }
 
 @:publicFields
-class Vec implements hxbit.NetworkSerializable {
+class Vec implements State {
 	@:s var x : Float;
 	@:s var y : Float;
 
@@ -19,7 +19,7 @@ class Vec implements hxbit.NetworkSerializable {
 }
 
 @:publicFields
-class Building implements hxbit.NetworkSerializable {
+class Building implements State {
 	@:s var id : Int;
     @:s var kind : BuildingKind;
 	@:s var pos : Vec;
@@ -32,7 +32,7 @@ class Building implements hxbit.NetworkSerializable {
 }
 
 @:publicFields
-class Unit implements hxbit.NetworkSerializable {
+class Unit implements State {
 	@:s var kind : UnitKind;
     @:s var pos : Vec;
 	@:s var building : Null<Building>;
@@ -45,7 +45,7 @@ class Unit implements hxbit.NetworkSerializable {
 }
 
 @:publicFields
-class Resource implements hxbit.NetworkSerializable {
+class Resource implements State {
 	@:s var kind : ResourceKind;
 	@:s var pos : Vec;
 	@:s var radius : Float;
@@ -60,7 +60,7 @@ class Resource implements hxbit.NetworkSerializable {
 }
 
 @:publicFields
-class WarPlayer implements hxbit.NetworkSerializable {
+class WarPlayer implements State {
     @:s var buildings : Array<Building>;
 	@:s var units : Array<Unit>;
 

@@ -7,7 +7,7 @@ import haxe.macro.TypeTools;
 
 class Macros {
 	#if macro
-	macro public static function buildActionParser() : Array<Field> {
+	public static function buildActionParser() : Array<Field> {
 		final pos = Context.currentPos();
 		var fields = Context.getBuildFields();
 		var type = Context.getLocalType();

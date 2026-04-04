@@ -1,9 +1,16 @@
 import haxe.Json;
+import hxd.Rand;
 import core.GameServer;
 import core.GameState;
+import core.History;
+import core.Player.PlayerInfo;
+import core.Player.PlayerId;
+import core.action.Action;
+
+import Match;
 
 final class RunnerArgs {
-	var args : Map<String, Array<String>>;
+	var args(default, null) : Map<String, Array<String>>;
 	public inline function new(as : Array<String>) {
 		args = new Map();
 		var last : String = null;
@@ -23,8 +30,14 @@ final class RunnerArgs {
 
 	public inline function has(arg : String) return args.exists(arg);
 	public inline function getParams(arg : String) return args.get(arg);
+	public inline function getParam(arg : String) {
+		final p = getParams(arg);
+		return p != null ? p[0] : null;
+	}
 }
 
+@:access(core.GameServer)
+@:access(Match)
 final class Runner {
 	/*
 		Program launcher : Starts server and bot processes, checks compatibility among them
@@ -32,7 +45,6 @@ final class Runner {
 			
 			- game server started as a local process
 				- Start server as headless or not ?
-			- bots are TCP clients or processes using stdin/out ?
 
 			- Threads to handle multiple matches at the same time (different or same matchups) ?
 			- Possibility to request matches through an API ?
@@ -43,55 +55,62 @@ final class Runner {
 				- Allows wrapping user code in with other boilerplate / compatibility code
 	*/
 
+	var seed : Int;
+	var rnd : hxd.Rand;
+
 	@:generic
-	public function new<S : GameState, A : EnumValue>(cl : Class<GameServer<S, A>>, args : Array<String>) {
-		var gs = Type.createInstance(cl, [args]);
+	public function new<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, args : Array<String>) {
+		final args = new RunnerArgs(args);
+		seed = Std.parseInt(args.getParam("seed")) ?? Std.random(1 << 31 - 1);
 
-		var args = new RunnerArgs(args);
-        for (p in args.getParams("bots")) {
-            gs.addPlayer(p);
-        }
+		final paths = args.getParams("players"); 
 
-		trace(gs);
-        gs.run();
-	}
-/*
-	public static function main() {
-		var args = Sys.args();
-		trace(args);
-		var serverPath = args.shift();
-
-//		var a = new BotGameServer(args);
-//		trace(a);
-
-		var s = @:privateAccess GameServer.create(args);
-		trace(s.getConfig());
-		return;
-
-		var config : ServerConfig = null;
-		try {
-			var p = new sys.io.Process('hl $serverPath --config');
-			var line = p.stdout.readLine();
-			config = cast haxe.Json.parse(line);
-			p.close();
-			trace('Current config : $config');
-		} catch( e ) {
-			trace('Could not read game server config : $e');
+		if (args.has("gen")) {
+			var lobby = new Match<Ts, Ta>();
+			var players = paths.map(lobby.addPlayer);
+			var gs = create(cl, players);
+			final state = gs.init();
+			trace(state);
 			return;
 		}
-	
-		var botCount = args.length;
-		if (botCount < config.minPlayers || botCount > config.maxPlayers) {
-			trace("The amount of bots does not match the game server config");
-			return;
-		}				
 
-		var serverArgs = args.join(" ");
+		final match = getMatchFormat(args);
+		for (p in paths) match.addPlayer(p);
 
-		var p = new sys.io.Process('hl $serverPath $serverArgs --headless');
-		var m = p.stdout.readLine();
-		trace(m);
-		p.close();
+		trace('Starting match on [${match.toString()}] format with ${match.players.length} players (seed=$seed)');
 
-	}*/
+		while (!match.isComplete()) {
+			final games = match.getNextGameBatch();
+			for (candidates in games) {
+				final h = create(cl, candidates).run();
+				match.onGameComplete(h);
+			}
+		}
+
+		//var hist = create(cl, players).run();
+	}
+
+	@:generic
+	function create<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, players : Array<PlayerInfo>) : GameServer<Ts, Ta> {
+		var gs = Type.createInstance(cl, [genSeed()]);
+		for (p in players) gs.addPlayer(p);
+		return gs;
+	}
+
+	inline function genSeed() {
+		return (rnd ??= new hxd.Rand(seed)).random(1 << 31 - 1);
+	}
+
+	static function getMatchFormat<Ts : GameState, Ta : Action>(args : RunnerArgs) : Match<Ts, Ta> {
+		final margs = args.getParams("match");
+		if (margs.length > 0) {
+			final format = margs.shift(); 
+			switch (format) {
+				case "series": return new Series(Std.parseInt(margs[0]));
+				case "bo": return new BestOf(Std.parseInt(margs[0]));
+				default:
+			}
+		} 
+		return new Series(1);
+	}
 }

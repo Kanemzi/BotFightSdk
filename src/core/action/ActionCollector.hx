@@ -2,18 +2,19 @@ package core.action;
 
 import core.Exception.InvalidActionException;
 import core.GameServer;
+import core.action.Action;
 
 using Lambda;
 
-typedef ActionCond<Ta : EnumValue> = Ta -> Bool;
+typedef ActionCond<Ta : Action> = Ta -> Bool;
 
-enum TurnActionProfile<Ta : EnumValue> {
+enum TurnActionProfile<Ta : Action> {
     Fixed(n : Int, ?cond : ActionCond<Ta> );
     Until(end : ActionCond<Ta>, ?max : Int, ?cond : ActionCond<Ta>);
     Sequence(s : Array<TurnActionProfile<Ta>>);
 }
 
-abstract ActionCollector<Ta : EnumValue>(TurnActionProfile<Ta>) from TurnActionProfile<Ta> to TurnActionProfile<Ta> {
+abstract ActionCollector<Ta : Action>(TurnActionProfile<Ta>) from TurnActionProfile<Ta> to TurnActionProfile<Ta> {
     public function new(v) { this = v; }
     public function collect(reader : Void -> Ta) : Array<Ta> {
         function validate(a : Ta, ?cond : ActionCond<Ta>) {

@@ -24,19 +24,19 @@ class ProcessPlayerIO implements PlayerIO {
 	var thread : Thread;
 	var logger : Thread;
 
-	public function new(path : String) {
-		process = new Process('hl $path');
+	public function new(path : String, args : Array<String>) {
+		process = new Process('hl $path ${args.join(" ")}');
 		
 		buffer = new Mutex([]);
 		logs = new Mutex([]);
 
 		thread = Thread.create(reader.bind(process.stdout, buffer));
-        logger = Thread.create(reader.bind(process.stderr, logs));
+		logger = Thread.create(reader.bind(process.stderr, logs));
 	}
 
 	function reader(i : haxe.io.Input, o : Mutex<Array<String>>) {
 		try while (process != null) {
-            final line = i.readLine();
+			final line = i.readLine();
 			o.execute(o -> o.push(line));
 		} catch (_) { } // @todo raise something to the player
 	}
@@ -47,7 +47,7 @@ class ProcessPlayerIO implements PlayerIO {
 
 	public function readLine(timeout : Float) : String {
 		final start = Timer.stamp();
-        final deadline = start + timeout;
+		final deadline = start + timeout;
 		while (Timer.stamp() <= deadline) {
 			final line = poll();
 			if (line != null) return line;
@@ -62,8 +62,8 @@ class ProcessPlayerIO implements PlayerIO {
 
 	public function dispose() {
 		process.kill();
-        process.close();
-        process = null;
+		process.close();
+		process = null;
 	}
 
 	public function isDisposed() return process == null || process.exitCode(false) != null;

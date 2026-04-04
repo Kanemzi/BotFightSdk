@@ -14,7 +14,13 @@
                 "type": "haxe",
                 "args": "active configuration"
             },
-            "args": ["--bots", "ExampleBot.hl", "ExampleBot.hl", "--headless", "--machin", "a", "b"]
+            "args": [
+                "--players", "ExampleBot.hl", "ExampleBot.hl",
+                // "--gen",
+                "--match", "series", "3",
+                // "--seed", "123456",
+                // "--match", "5",
+            ]
         }
     ]
 }
