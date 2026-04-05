@@ -79,6 +79,8 @@ final class Runner {
 
 		trace('Starting match on [${match.toString()}] format with ${match.players.length} players (seed=$seed)');
 
+		// @todo with multithreaded games, wait for 1 game to complete to fetch next.
+		// At this point, is no game is found, just lock the loop again until the next completed game
 		while (!match.isComplete()) {
 			final games = match.getNextGameBatch();
 			for (candidates in games) {

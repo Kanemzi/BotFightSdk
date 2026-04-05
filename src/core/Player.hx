@@ -13,6 +13,7 @@ enum Status {
 	Invalid;
 	Crashed;
 	Terminated;
+	Victory;
 }
 
 typedef PlayerId = Int;
@@ -24,7 +25,6 @@ class PlayerInfo implements hxbit.Serializable {
 	var path : String;
 }
 
-@:access(GameServer)
 final class Player<Ta : Action> {
 	public inline static final MAX_NAME_LENGTH = 15; 
 
@@ -43,13 +43,20 @@ final class Player<Ta : Action> {
 
 	public function isAlive() return switch (status) {
 		case Defeated, TimedOut, Invalid, Crashed, Terminated: false;
-		case Alive: true;
+		case Alive, Victory: true;
 	}
 
-	public function kill(reason : Status) {
+	@:allow(core.GameServer)
+	function kill(reason : Status) {
 		if (!isAlive()) return;
 		status = reason;
 		io.dispose();
+	}
+
+	function victory() {
+		if (!isAlive())
+			throw 'Player $name is not alive and can\'t win the game';
+		status = Victory;
 	}
 
 	public function sendState(state : Array<String>) {
@@ -88,9 +95,9 @@ final class Player<Ta : Action> {
 
 		final time = Timer.stamp() - start;
 		return {
-			id : id,
+			pid : id,
 			actions : actions,
-			time : Std.int(time * 1000),
+			time : Std.int(time),
 			status : status,
 			error : error
 		};

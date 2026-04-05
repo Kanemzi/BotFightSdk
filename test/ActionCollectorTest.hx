@@ -20,7 +20,7 @@ class TestActionParser extends ActionParser<TestAction> {
 
 class ActionCollectorTest
 {
-	static inline final TIMEOUT = 1000.0;
+	static inline final TIMEOUT = 1.0;
 	var parser : TestActionParser;
 
 	@BeforeClass

@@ -12,12 +12,16 @@ typedef ServerConfig = {
 	var minPlayers : Int;
 	var maxPlayers : Int;
 	var maxTurns : Int;
-	var firstTurnTimeout : Int;
-	var turnTimeout : Int;
+	var firstTurnTimeout : Float;
+	var turnTimeout : Float;
 	var turnModel : Class<TurnModel>;
 }
 
-@:access(GameState)
+typedef PlayerActions<Ta : Action> = {
+	var pid : PlayerId;
+	var actions : Array<Ta>;
+}
+
 abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> {
 	var seed(default, null) : Int;
 	var config(default, null) : ServerConfig;
@@ -25,7 +29,7 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 	var history : History<Ts, Ta>; // @todo save player and server logs per turn
 
 	var state(get, never) : Ts;
-	function get_state() return cast history.turns[history.turns.length - 1].state;
+	function get_state() return turn == 0 ? null : cast history.turns[turn - 1].state;
 	
 	var turnModel : TurnModel;
 	var turn(get, never) : Int;
@@ -35,10 +39,11 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 
 	var serializer : hxbit.Serializer;
 
-	abstract function init() : Ts; // Initializes the game state
-	abstract function update(state : Ts) : Void; // Updates the state based on last player actions
-	abstract function serializeStateForPlayer(player : Player<Ta>) : Array<String>;
-	abstract function getTurnActionProfile(player : Player<Ta>) : TurnActionProfile<Ta>;
+	abstract function init() : Ts;
+	abstract function update(state : Ts, actions : Array<PlayerActions<Ta>>) : Void;
+	abstract function serializeStateForPlayer(pid : PlayerId) : Array<String>;
+	abstract function getTurnActionProfile(pid : PlayerId) : TurnActionProfile<Ta>;
+	abstract function getTiebreakerScore() : Int;
 
 	public function new(seed : Int, config : ServerConfig) {
 		this.seed = seed;
@@ -49,15 +54,32 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		serializer = new hxbit.Serializer();
 	}
 
-	public function addPlayer(info : PlayerInfo) {
+	final public function addPlayer(info : PlayerInfo) {
 		if (players.length >= config.maxPlayers) {
 			throw 'Can\'t add player ${info.path}, the game already full';
 		}
 		players.push(new Player(info));
 	}
 
-	inline function getPlayer(id : PlayerId) {
-		return players.find(p -> p.id == id);
+	inline function getPlayer(pid : PlayerId) {
+		return players.find(p -> p.id == pid);
+	}
+
+	final public function defeat(pid : PlayerId) {
+		if (turn == 0)
+			throw 'Can\'t defeat any player, the game hasn\'t started yet';
+
+		var p = getPlayer(pid);
+		if (p?.isAlive())
+			p.kill(Defeated);
+	}
+
+	final public function victory(pids : Array<PlayerId>) {
+		if (turn == 0)
+			throw 'Can\'t make any player win, the game hasn\'t started yet';
+
+		for (p in getAlivePlayers())
+			p.kill(pids.has(p.id) ? Victory : Defeated);
 	}
 
 	inline function getAlivePlayers() return players.filter(p -> p.isAlive());
@@ -72,35 +94,79 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		turnWorkers = new ElasticThreadPool(players.length, wto / 1000.);
 
 		history = new History(config.version, players);
-		history.addTurn([], init());
+		history.addTurn(init(), []);
 
-		while (history.length < config.maxTurns + 1) {
+		while (history.length < config.maxTurns) {
 			var newState : Ts = cast serializer.unserialize(serializer.serialize(state), GameState);
 
+			final alive = getAlivePlayers();
 			final playing = turnModel.getPlayingThisTurn(getAlivePlayers(), newState, turn);
-			final actions = playTurns(playing);
+			final results = playTurns(playing);
 
 			// @todo remove these logs, they should be stored in history for replay
-			trace('--- Turn ${history.turns.length} ---');
-			trace('Played : ${actions.map(a -> '[${getPlayer(a.id).name} : ${a.time}ms]').join(" ")}');
+			trace('--- Turn ${turn} ---');
+			trace('Played : ${results.map(a -> '[${getPlayer(a.pid).name} : ${a.time}ms]').join(" ")}');
 			trace('before : $state');
 
-			update(newState);
-			trace('after : $state');
+
+			inline function result(pid) return results.find(r -> r.pid == pid);
+
+			// As of now, we sort players based on their response time.
+			// Games can decide to ignore this order and process inputs in their own order
+			var actions = getAlivePlayers()
+				.map(p -> {pid : p.id, actions : result(p.id)?.actions ?? []});
+			actions.sort((a, b) -> {
+				final ae = a.actions.empty(), be = b.actions.empty();
+				return if (ae != be) ae ? 1 : -1
+					else if (ae) 0
+					else result(a.pid).time - result(b.pid).time;
+			});
+
+			update(newState, actions);
 			
-			history.addTurn(actions, newState);
+			final defeats = alive.filter(p -> !p.isAlive());
+			final victories = alive.filter(p -> p.status == Victory);
+
+			for (d in defeats) history.outcome(d.id, Defeat(turn));
+			for (v in victories) history.outcome(v.id, Victory(turn));
+
+			history.addTurn(newState, results);
+			if (isGameComplete() || victories.empty())
+				break;
 		}
+
+		// @todo handle player defeats or count scores and the end if multiple players are still alive
+		
 
 		dispose();
 		/*var bytes = serializer.serialize(history);
 		var hist = serializer.unserialize(bytes, History);
 		trace(hist);
 		*/
+
+		history.lock();
 		return history;
 	}
 
-	function playTurns(players : Array<Player<Ta>>) : Array<ActionsResult<Ta>> {
-		if (players.length == 0) return [];
+	function isGameComplete() : Bool {
+		return getAlivePlayers().length <= 1;
+	}
+
+	function tiebreaker() {
+
+	}
+
+	final function playTurns(players : Array<Player<Ta>>) : Array<ActionsResult<Ta>> {
+		if (players.empty()) return [];
+
+		inline function playTurn(player : Player<Ta>) : ActionsResult<Ta> {
+			final tp = getTurnActionProfile(player.id);
+			final timeout = turn <= 1 ? config.firstTurnTimeout : config.turnTimeout;
+			final state = serializeStateForPlayer(player.id);
+			
+			player.sendState(state);
+			return player.collectActions(tp, timeout, this);
+		}
 
 		var results = [];
 		var mutex = new Mutex();
@@ -120,16 +186,7 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		return results;
 	}
 
-	function playTurn(player : Player<Ta>) : ActionsResult<Ta> {
-		final tp = getTurnActionProfile(player);
-		final timeout = turn <= 1 ? config.firstTurnTimeout : config.turnTimeout;
-		final state = serializeStateForPlayer(player);
-		
-		player.sendState(state);
-		return player.collectActions(tp, timeout / 1000., this);
-	}
-
-	function dispose() {
+	final function dispose() {
 		for (p in players) p.kill(Terminated);
 	}
 }

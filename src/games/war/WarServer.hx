@@ -18,8 +18,8 @@ class WarServer extends GameServer<WarState, WarAction> {
 			minPlayers : 2,
 			maxPlayers : 2,
 			maxTurns : 10,
-			firstTurnTimeout : 100000,
-			turnTimeout : 100000,
+			firstTurnTimeout : 1000.0,
+			turnTimeout : 1000.0,
 			turnModel : TurnModel.SimultaneousTurn,
 		});
 	}
@@ -28,14 +28,19 @@ class WarServer extends GameServer<WarState, WarAction> {
         return new WarState(players.length, seed);
 	}
 
-	function update(state : WarState) : Void {
+	function update(state : WarState, actions : Array<PlayerActions<WarAction>>) : Void {
 	}
 
-	function serializeStateForPlayer(player : Player<WarAction>) : Array<String> {
+	function serializeStateForPlayer(pid : PlayerId) : Array<String> {
         return [];
 	}
 
-	public function getTurnActionProfile(player : Player<WarAction>) return Fixed(1);
+	function getTurnActionProfile(pid : PlayerId) return Fixed(1);
+
+	function getTiebreakerScore() : Int {
+		return 0;
+	}
+
 
 	public static function main() {
 		new Runner(WarServer, Sys.args());
