@@ -5,9 +5,9 @@ import core.action.ActionsResult;
 import core.Player.PlayerId;
 
 enum PlayerOutcome {
-	Defeat(turn: Int, ?tiebreak : Int);
-	Victory(turn: Int, ?tiebreak : Int);
-	Draw;
+	Defeat(turn : Int, ?tiebreak : Int);
+	Victory(turn : Int, ?tiebreak : Int);
+	Draw(turn : Int, tiebreak : Int);
 }
 
 @:generic

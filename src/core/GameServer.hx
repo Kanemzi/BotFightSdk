@@ -6,6 +6,7 @@ import core.action.ActionCollector;
 import core.action.ActionsResult;
 import core.Player.PlayerInfo;
 import core.Player.PlayerId;
+import core.History.PlayerOutcome;
 
 typedef ServerConfig = {
 	var version : String;
@@ -43,7 +44,7 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 	abstract function update(state : Ts, actions : Array<PlayerActions<Ta>>) : Void;
 	abstract function serializeStateForPlayer(pid : PlayerId) : Array<String>;
 	abstract function getTurnActionProfile(pid : PlayerId) : TurnActionProfile<Ta>;
-	abstract function getTiebreakerScore() : Int;
+	abstract function getTiebreakerScore(pid : PlayerId) : Int;
 
 	public function new(seed : Int, config : ServerConfig) {
 		this.seed = seed;
@@ -131,29 +132,38 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 			for (v in victories) history.outcome(v.id, Victory(turn));
 
 			history.addTurn(newState, results);
-			if (isGameComplete() || victories.empty())
+			if (!victories.empty())
 				break;
 		}
 
-		// @todo handle player defeats or count scores and the end if multiple players are still alive
-		
-
 		dispose();
-		/*var bytes = serializer.serialize(history);
-		var hist = serializer.unserialize(bytes, History);
-		trace(hist);
-		*/
+
+		final remaining = getAlivePlayers().filter(p -> p.status != Victory);
+		if (!remaining.empty()) {
+			final scores = [for (p in remaining) p.id => getTiebreakerScore(p.id)];
+			var victories = [];
+			var max : Null<Int> = null;
+			for (pid => score in scores) {
+				if (max == null || score >= max) {
+					if (score > max) victories.resize(0); 
+					max = score;
+					victories.push(pid);
+				}
+			}
+
+			for (p in remaining) {
+				final score = scores[p.id];
+				if (victories.has(p.id)) {
+					final out = victories.length > 1 ? Draw(turn, score) : Victory(turn, score);
+					history.outcome(p.id, out);
+				} else {
+					history.outcome(p.id, Defeat(turn, score));
+				}
+			}
+		} 
 
 		history.lock();
 		return history;
-	}
-
-	function isGameComplete() : Bool {
-		return getAlivePlayers().length <= 1;
-	}
-
-	function tiebreaker() {
-
 	}
 
 	final function playTurns(players : Array<Player<Ta>>) : Array<ActionsResult<Ta>> {

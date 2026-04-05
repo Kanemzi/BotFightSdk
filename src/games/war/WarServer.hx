@@ -37,7 +37,7 @@ class WarServer extends GameServer<WarState, WarAction> {
 
 	function getTurnActionProfile(pid : PlayerId) return Fixed(1);
 
-	function getTiebreakerScore() : Int {
+	function getTiebreakerScore(pid : PlayerId) : Int {
 		return 0;
 	}
 
