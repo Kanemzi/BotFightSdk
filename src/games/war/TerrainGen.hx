@@ -24,7 +24,7 @@ class TerrainGen {
         return {c : new Vec(cx, cy), k : k};
     }
 
-    public static inline function iterSym(sym : Sym, x : Float, y : Float, f : (Float, Float) -> Void) {
+    public static inline function iterSym(sym : Sym, x : Float, y : Float, f : (Float, Float) -> Void, ignoreBoth = false) {
         final xs = sym.c.x * 2. - x;
         final ys = sym.c.y * 2. - y;
         f(x, y);
@@ -33,7 +33,7 @@ class TerrainGen {
                 f(xs, ys);
             case Axe(both):
                 f(xs, y);
-                if (both) {
+                if (both && !ignoreBoth) {
                     f(x, ys);
                     f(xs, ys);
                 }

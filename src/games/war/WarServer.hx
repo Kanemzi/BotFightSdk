@@ -25,14 +25,10 @@ class WarServer extends GameServer<WarState, WarAction> {
 	}
 
 	function init() : WarState {
-        return new WarState(players.length, seed);
+        return new WarState(players.map(p -> p.id), seed);
 	}
 
 	function update(state : WarState, actions : Array<PlayerActions<WarAction>>) : Void {
-	}
-
-	function serializeStateForPlayer(pid : PlayerId) : Array<String> {
-        return [];
 	}
 
 	function getTurnActionProfile(pid : PlayerId) return Fixed(1);

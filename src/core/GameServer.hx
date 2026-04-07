@@ -1,5 +1,6 @@
 package core;
 
+import utils.thread.ElasticThreadPool;
 import sys.thread.*;
 import core.action.Action;
 import core.action.ActionCollector;
@@ -42,7 +43,6 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 
 	abstract function init() : Ts;
 	abstract function update(state : Ts, actions : Array<PlayerActions<Ta>>) : Void;
-	abstract function serializeStateForPlayer(pid : PlayerId) : Array<String>;
 	abstract function getTurnActionProfile(pid : PlayerId) : TurnActionProfile<Ta>;
 	abstract function getTiebreakerScore(pid : PlayerId) : Int;
 
@@ -172,9 +172,9 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		inline function playTurn(player : Player<Ta>) : ActionsResult<Ta> {
 			final tp = getTurnActionProfile(player.id);
 			final timeout = turn <= 1 ? config.firstTurnTimeout : config.turnTimeout;
-			final state = serializeStateForPlayer(player.id);
+			final data = state.serializeForPlayer(player.id);
 			
-			player.sendState(state);
+			player.sendState(data);
 			return player.collectActions(tp, timeout, this);
 		}
 

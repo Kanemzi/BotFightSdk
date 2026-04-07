@@ -6,9 +6,11 @@ package core;
 // If I could ensure that, I could only save the first state and player actions
 // @todo think about a "state" authority for every n turns, the other turns are compupted from preview state and player actions
 
+import core.Player;
+
 interface State extends hxbit.Serializable {}
 
 // @todo implements "PartialState" that has function to resolve it to a full state
 abstract class GameState implements State {
-	// abstract function serializeForPlayer<Ta :EnumValue>(player : Player<Ta>) : Array<String>;
+	public abstract function serializeForPlayer(pid : PlayerId) : Array<String>;
 }

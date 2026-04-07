@@ -4,8 +4,8 @@ import massive.munit.util.Timer;
 import massive.munit.Assert;
 import massive.munit.async.AsyncFactory;
 
-import GameServer;
-import ActionCollector;
+import core.GameServer;
+import core.action.ActionCollector;
 
 enum TestAction {
 	Wait;

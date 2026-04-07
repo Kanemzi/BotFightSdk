@@ -1,6 +1,7 @@
 package;
 
-import Player;
+import core.Player;
+import core.PlayerIO;
 
 class TestPlayerIO implements PlayerIO {
 	var buffer : Array<String> = [];
