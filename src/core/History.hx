@@ -67,9 +67,15 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 		hp.outcome = out;
 	}
 
-	public function lock() { completed = true; }
+	public function lock() {
+		completed = true;
+		return this;
+	}
 
 	public function getDefeatTurn(pid : PlayerId) {
 		
 	}
+
+	
+	public inline function getStateUID() return turns[0].state.__uid;
 }

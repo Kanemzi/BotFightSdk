@@ -162,8 +162,7 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 			}
 		} 
 
-		history.lock();
-		return history;
+		return history.lock();
 	}
 
 	final function playTurns(players : Array<Player<Ta>>) : Array<ActionsResult<Ta>> {

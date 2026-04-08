@@ -68,10 +68,8 @@ class WarPlayer implements State {
 
     function new(pid) {
 		this.pid = pid;
-	}
-
-	function addBuilding() {
-
+		buildings = [];
+		units = [];
 	}
 }
 
@@ -84,18 +82,17 @@ class WarState extends GameState {
 	public inline static final WIDTH : Float = 100.; 
 	public inline static final HEIGHT : Float = 60.; 
 
-	@:allow(Building) var buildingId;
+	@:allow(games.war.Building) var buildingId : Int;
 
-	public function new(players : Array<PlayerId>, seed : Int) {
+	public function new(pids : Array<PlayerId>, seed : Int) {
 		this.seed = seed;
 		
 		final rnd = new hxd.Rand(seed);
 		final sym = TerrainGen.randSym(WIDTH / 2., HEIGHT / 2., genRand(rnd));
 		
-		resources = [];
-		players = [for (pid in players) new WarPlayer(pid)];
-		
 		buildingId = 0;
+		resources = [];
+		players = [for (pid in pids) new WarPlayer(pid)];
 
 		generateTerrain(sym, genRand(rnd));
 	}
@@ -142,7 +139,7 @@ class WarState extends GameState {
 		var ps = [];
 		TerrainGen.iterSym(sym, px, py, (x, y) -> ps.push(new Vec(x, y)), true);
 		for (p in players) {
-			p.buildings.push(new Building(House, ps.shift()));
+			p.buildings.push(new Building(House, ps.shift(), this));
 		}
 
 

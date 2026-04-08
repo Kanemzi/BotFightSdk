@@ -6,6 +6,7 @@ import core.TurnModel;
 import core.action.ActionCollector;
 
 import games.war.WarState;
+import games.war.view.WarViewer;
 
 class WarServer extends GameServer<WarState, WarAction> {
 	public static inline final WIDTH = 16;
@@ -37,8 +38,7 @@ class WarServer extends GameServer<WarState, WarAction> {
 		return 0;
 	}
 
-
 	public static function main() {
-		new Runner(WarServer, Sys.args());
+		new Runner(WarServer, WarViewer, Sys.args());
 	}
 }

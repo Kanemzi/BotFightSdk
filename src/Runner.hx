@@ -1,11 +1,13 @@
 import haxe.Json;
 import hxd.Rand;
+import haxe.Exception;
 import core.GameServer;
 import core.GameState;
 import core.History;
 import core.Player.PlayerInfo;
 import core.Player.PlayerId;
 import core.action.Action;
+import view.GameViewer;
 
 import Match;
 
@@ -59,41 +61,67 @@ final class Runner {
 	var rnd : hxd.Rand;
 
 	@:generic
-	public function new<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, args : Array<String>) {
+	public function new<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, viewcl : Class<GameViewer<Ts>>, args : Array<String>) {
 		final args = new RunnerArgs(args);
 		seed = Std.parseInt(args.getParam("seed")) ?? Std.random(1 << 31 - 1);
 
 		final paths = args.getParams("players"); 
 
-		if (args.has("gen")) {
-			var lobby = new Match<Ts, Ta>();
-			var players = paths.map(lobby.addPlayer);
-			var gs = create(cl, players);
-			final state = gs.init();
-			trace(state);
-			return;
-		}
-
-		final match = getMatchFormat(args);
-		for (p in paths) match.addPlayer(p);
-
+		final debugGen = args.has("gen");
+		var match = createMatch(args);
+		for (p in paths)
+			match.addPlayer(p);
 		trace('Starting match on [${match.toString()}] format with ${match.players.length} players (seed=$seed)');
 
-		// @todo with multithreaded games, wait for 1 game to complete to fetch next.
-		// At this point, is no game is found, just lock the loop again until the next completed game
 		while (!match.isComplete()) {
 			final games = match.getNextGameBatch();
 			for (candidates in games) {
-				final h = create(cl, candidates).run();
-				match.onGameComplete(h);
+				var gs = create(cl, candidates);
+				var history = if (debugGen) {
+					var h = new History(gs.config.version, gs.players);
+					h.addTurn(gs.init(), []);
+					for (p in candidates) h.outcome(p.id, Victory(0));
+					h.lock();
+				} else {
+					gs.run();
+				}
+				match.onGameComplete(history);
 			}
 		}
+
+		// Will play the path in priority or the current match if null
+		final path = args.getParam("replay");
+		replay(viewcl, path, match);
 
 		//var hist = create(cl, players).run();
 	}
 
-	@:generic
-	function create<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, players : Array<PlayerInfo>) : GameServer<Ts, Ta> {
+	function replay<Ts : GameState, Ta : Action>(viewcl : Class<GameViewer<Ts>>, ?path : String, ?match : Match<Ts, Ta>) {
+		if (path != null) {
+			if (!sys.FileSystem.exists(path)) {
+				trace('Match file $path does not exist');
+				return;
+			}
+			try { 
+				final bytes = haxe.io.Bytes.ofString(sys.io.File.getContent(path));
+				final ser = new hxbit.Serializer();
+				match = ser.unserialize(bytes, Match);
+				// @todo check if match could be null here, or is it thrown
+			} catch (e : Exception) {
+				trace('Could not read match file $path : ${e.details()}');
+				return;
+			}
+		}
+
+		if (match == null) {
+			trace("Nothing to replay");
+			return;
+		}
+
+		var viewer = Type.createInstance(viewcl, [match]);
+	}
+
+	inline function create<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, players : Array<PlayerInfo>) : GameServer<Ts, Ta> {
 		var gs = Type.createInstance(cl, [genSeed()]);
 		for (p in players) gs.addPlayer(p);
 		return gs;
@@ -103,7 +131,12 @@ final class Runner {
 		return (rnd ??= new hxd.Rand(seed)).random(1 << 31 - 1);
 	}
 
-	static function getMatchFormat<Ts : GameState, Ta : Action>(args : RunnerArgs) : Match<Ts, Ta> {
+	static function createMatch<Ts : GameState, Ta : Action>(args : RunnerArgs) : Match<Ts, Ta> {
+		if (args.has("gen")) {
+			final n = Std.parseInt(args.getParam("gen")) ?? 1;
+			return new Series(n);
+		}
+		
 		final margs = args.getParams("match");
 		if (margs.length > 0) {
 			final format = margs.shift(); 
