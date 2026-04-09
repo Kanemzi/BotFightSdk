@@ -13,19 +13,20 @@ Design :
 - Allows other features like fast GameState gen debugging.
 */
 
-/*
-enum View {
-	Overview;
-	Game;
-}
-*/
-
 abstract class GameViewer<Ts : GameState> extends hxd.App {
-	var match : Match<Ts, EnumValue>;	
-	
+	var match : Match<Ts, EnumValue>;
+	var ui : ViewManager;
+
 	public function new(match : Match<Ts, EnumValue>) {
-		this.match = match;
 		super();
+		hxd.Res.initLocal();
+		this.match = match;
+	}
+
+	override function init() {
+		super.init();
+		ui = new ViewManager(s2d);
+		ui.push(new MatchView());
 	}
 	
 	abstract function getTimelineBuilder() : TimelineBuilder<Ts>;

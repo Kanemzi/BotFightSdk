@@ -103,7 +103,7 @@ final class Runner {
 				return;
 			}
 			try { 
-				final bytes = haxe.io.Bytes.ofString(sys.io.File.getContent(path));
+				final bytes = sys.io.File.getBytes(path);
 				final ser = new hxbit.Serializer();
 				match = ser.unserialize(bytes, Match);
 				// @todo check if match could be null here, or is it thrown

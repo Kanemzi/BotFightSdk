@@ -9,7 +9,10 @@
 --next
 -lib hxbit
 -lib heaps
+-lib domkit
 -lib hlsdl
 -hl WarServer.hl
 -main games.war.WarServer
+
 -D dump=pretty
+-D domkit_heaps
