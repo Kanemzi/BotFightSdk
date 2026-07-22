@@ -1,4 +1,4 @@
-package view;
+package viewer;
 
 class ViewManager extends h2d.Flow {
 	public var s2d(default,null) : h2d.Scene;

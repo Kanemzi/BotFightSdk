@@ -1,6 +1,6 @@
-package view;
+package viewer.view;
 
-import view.widget.Widget;
+import viewer.widget.Widget;
 
 class MatchView extends View {
 	static var SRC = <match-view>

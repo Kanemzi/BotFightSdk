@@ -1,8 +1,8 @@
-package view;
+package viewer;
 
 import core.GameState;
 import core.History;
-import view.VisualEventTimeline.TimelineBuilder;
+import viewer.VisualEventTimeline.TimelineBuilder;
 
 /*
 Design : 
@@ -26,7 +26,7 @@ abstract class GameViewer<Ts : GameState> extends hxd.App {
 	override function init() {
 		super.init();
 		ui = new ViewManager(s2d);
-		ui.push(new MatchView());
+		ui.push(new viewer.view.MatchView());
 	}
 	
 	abstract function getTimelineBuilder() : TimelineBuilder<Ts>;

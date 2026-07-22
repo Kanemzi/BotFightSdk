@@ -5,5 +5,5 @@ This class in
 */
 
 class Scene extends h3d.scene.World {
-    
+	
 }

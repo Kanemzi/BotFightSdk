@@ -72,7 +72,7 @@ class Macros {
 								patterns.push(pattern);
 								values.push(macro {
 									var s = re.matched(${index});
-									($v{nullable} && s == "") ? null : s;  
+									($v{nullable} && s == "") ? null : s;
 								});
 							default: unsupportedType();
 						}

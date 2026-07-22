@@ -9,9 +9,6 @@ import games.war.WarState;
 import games.war.view.WarViewer;
 
 class WarServer extends GameServer<WarState, WarAction> {
-	public static inline final WIDTH = 16;
-	public static inline final HEIGHT = 7;
-	public static inline final START_ENERGY = 10;
 
 	public function new(seed : Int) {
 		super(seed, {
@@ -26,10 +23,10 @@ class WarServer extends GameServer<WarState, WarAction> {
 	}
 
 	function init() : WarState {
-        return new WarState(players.map(p -> p.id), seed);
+		return new WarState(players.map(p -> p.id), seed);
 	}
 
-	function update(state : WarState, actions : Array<PlayerActions<WarAction>>) : Void {
+	function update(state : WarState, actions : PlayersActions<WarAction>) : Void {
 	}
 
 	function getTurnActionProfile(pid : PlayerId) return Fixed(1);

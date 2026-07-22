@@ -7,7 +7,7 @@ import core.History;
 import core.Player.PlayerInfo;
 import core.Player.PlayerId;
 import core.action.Action;
-import view.GameViewer;
+import viewer.GameViewer;
 
 import Match;
 

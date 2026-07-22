@@ -9,9 +9,9 @@ class TestPlayerIO implements PlayerIO {
 
 	public function new(actions : Array<String>, args : Array<String> = null, delay = 0) {
 		if (args?.indexOf("--config") > 0) {
-            buffer = ['BotTest~${Std.random(1000)}'];
-            return;
-        }
+			buffer = ['BotTest~${Std.random(1000)}'];
+			return;
+		}
 		buffer = actions;
 	}
 

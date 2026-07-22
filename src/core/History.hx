@@ -14,7 +14,7 @@ enum PlayerOutcome {
 class HistoryTurn<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 	@:s @:noPrivateAccess var actions : Array<ActionsResult<Ta>>;
 	@:s @:noPrivateAccess var _state : GameState;
-    // @todo if I use the authority system, GameServer.update() function will need to be aware of player state (alive, defeated, ...) 
+	// @todo if I use the authority system, GameServer.update() function will need to be aware of player state (alive, defeated, ...) 
 
 	public function new(state : Ts, actions : Array<ActionsResult<Ta>>) {
 		this.actions = actions;
@@ -36,9 +36,9 @@ class HistoryPlayer implements hxbit.Serializable {
 @:generic
 @:allow(History)
 class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
-	@:s public var version : String;
-	@:s public var players : Map<PlayerId, HistoryPlayer>;
-	@:s public var turns : Array<HistoryTurn<Ts, Ta>>;
+	@:s public var version(default, null) : String;
+	@:s public var players(default, null) : Map<PlayerId, HistoryPlayer>;
+	@:s public var turns(default, null) : Array<HistoryTurn<Ts, Ta>>;
 	
 	public var length(get, never) : Int;
 	function get_length() return turns.length;
@@ -76,6 +76,5 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 		
 	}
 
-	
-	public inline function getStateUID() return turns[0].state.__uid;
+	public inline function getStateUID() return turns[0].state.id;
 }

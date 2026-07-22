@@ -1,6 +1,6 @@
-package view;
+package viewer.view;
 
-import view.widget.Widget;
+import viewer.widget.Widget;
 
 class ReplayView extends View {
 	static var SRC = <replay-view>

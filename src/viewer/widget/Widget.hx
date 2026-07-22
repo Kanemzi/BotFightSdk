@@ -1,7 +1,7 @@
-package view.widget;
+package viewer.widget;
 
-import view.ViewManager;
-import view.View;
+import viewer.ViewManager;
+import viewer.View;
 
 class Widget extends h2d.Flow implements h2d.domkit.Object {
 
@@ -16,9 +16,9 @@ class Widget extends h2d.Flow implements h2d.domkit.Object {
 	inline function get_ui() return view.ui;
 	public function get_view() {
 		var p = parent;
-		while( p != null ) {
+		while (p != null) {
 			var w = Std.downcast(p, View);
-			if( w != null ) return w;
+			if (w != null) return w;
 			p = p.parent;
 		}
 		return null;

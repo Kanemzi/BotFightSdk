@@ -9,36 +9,37 @@ enum UnitKind { Civilian; Military; }
 enum ResourceKind { Wood; Food; }
 
 @:publicFields
-class Vec implements State {
+class Vec extends State {
 	@:s var x : Float;
 	@:s var y : Float;
 
 	public function new(x, y) {
+		super();
 		this.x = x;
 		this.y = y;
 	}
 }
 
 @:publicFields
-class Building implements State {
-	@:s var id : Int;
-    @:s var kind : BuildingKind;
+class Building extends State {
+	@:s var kind : BuildingKind;
 	@:s var pos : Vec;
 
 	function new(kind, pos, gs : WarState) {
-		this.id = gs.buildingId++;
+		super();
 		this.kind = kind;
 		this.pos = pos;
 	}
 }
 
 @:publicFields
-class Unit implements State {
+class Unit extends State {
 	@:s var kind : UnitKind;
-    @:s var pos : Vec;
+	@:s var pos : Vec;
 	@:s var building : Null<Building>;
 
 	function new(kind, pos, building) {
+		super();
 		this.kind = kind;
 		this.pos = pos;
 		this.building = building;
@@ -46,13 +47,14 @@ class Unit implements State {
 }
 
 @:publicFields
-class Resource implements State {
+class Resource extends State {
 	@:s var kind : ResourceKind;
 	@:s var pos : Vec;
 	@:s var radius : Float;
 	@:s var amount : Int;
 
 	function new(kind, pos, radius, amount) {
+		super();
 		this.kind = kind;
 		this.pos = pos;
 		this.radius = radius;
@@ -61,12 +63,13 @@ class Resource implements State {
 }
 
 @:publicFields
-class WarPlayer implements State {
+class WarPlayer extends State {
 	@:s var pid : PlayerId;
-    @:s var buildings : Array<Building>;
+	@:s var buildings : Array<Building>;
 	@:s var units : Array<Unit>;
 
-    function new(pid) {
+	function new(pid) {
+		super();
 		this.pid = pid;
 		buildings = [];
 		units = [];
@@ -82,17 +85,15 @@ class WarState extends GameState {
 	public inline static final WIDTH : Float = 100.; 
 	public inline static final HEIGHT : Float = 60.; 
 
-	@:allow(games.war.Building) var buildingId : Int;
-
 	public function new(pids : Array<PlayerId>, seed : Int) {
+		super();
 		this.seed = seed;
 		
 		final rnd = new hxd.Rand(seed);
 		final sym = TerrainGen.randSym(WIDTH / 2., HEIGHT / 2., genRand(rnd));
-		
-		buildingId = 0;
+
 		resources = [];
-		players = [for (pid in pids) new WarPlayer(pid)];
+		players = pids.map(pid -> new WarPlayer(pid));
 
 		generateTerrain(sym, genRand(rnd));
 	}

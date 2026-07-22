@@ -24,6 +24,22 @@ typedef PlayerActions<Ta : Action> = {
 	var actions : Array<Ta>;
 }
 
+abstract PlayersActions<Ta : Action>(Array<PlayerActions<Ta>>) from Array<PlayerActions<Ta>> to Array<PlayerActions<Ta>> {
+
+	@:op(a()) public function iter(f : (PlayerId, Ta, Int) -> Void) : Void {
+		for (pa in this) 
+			for (i in 0...pa.actions.length)
+				f(pa.pid, pa.actions[i], i);
+	}
+
+	/*@:op(a()) public function filter(f : Ta -> Bool) : Array<PlayerActions<Ta>> {
+		return this.filterMap(pa -> {
+			var as = pa.actions.filter(f);
+			return as.empty() ? null : { pid : pa.pid, actions : as };
+		});
+	}*/
+}
+
 abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> {
 	var seed(default, null) : Int;
 	var config(default, null) : ServerConfig;
@@ -42,7 +58,14 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 	var serializer : hxbit.Serializer;
 
 	abstract function init() : Ts;
-	abstract function update(state : Ts, actions : Array<PlayerActions<Ta>>) : Void;
+
+	/**
+		Called every update. Should mutate state depending on players actions.
+		@todo : should returns logs (errors, warnings, debug) that will be sent back to players
+			or out stream passed in parameters
+		@todo : should provide rnd too ? (based on seed + turn)
+	*/
+	abstract function update(state : Ts, actions : PlayersActions<Ta>) : Void;
 	abstract function getTurnActionProfile(pid : PlayerId) : TurnActionProfile<Ta>;
 	abstract function getTiebreakerScore(pid : PlayerId) : Int;
 

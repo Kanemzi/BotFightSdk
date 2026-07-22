@@ -24,7 +24,7 @@ class IndexedLazyIteratorItem<T> {
 	public function new(it: Iterator<T>) {
 		this.it = it;
 	}
-  
+
 	inline public function hasNext(): Bool { return it.hasNext(); }
 	inline public function next(): IndexedLazyIteratorItem<T> { return inline new IndexedLazyIteratorItem(i++, it.next()); }
 }
@@ -39,7 +39,7 @@ class IndexedLazyIteratorItem<T> {
 		this.it = it;
 		this.f = f;
 	}
-  
+
 	inline public function hasNext(): Bool {
 		while (!hasNextItem && it.hasNext()) {
 			var i = it.next();
@@ -66,12 +66,28 @@ class IndexedLazyIteratorItem<T> {
 		this.it = it;
 		this.f = f;
 	}
-  
+
 	inline public function hasNext(): Bool { return it.hasNext(); }
 	inline public function next(): U { return f(it.next()); }
 }
 
 class UtilsIterators {
+
+	// @todo implement for LazyIterators
+	public static inline function filterMap<T, U>(array: Array<T>, func: T->U) : Array<U> {
+		var res = array.map(func);
+		res.removeAll(e -> e == null);
+		return res;
+	}
+	
+	// @todo remove after LazyIterators integration
+	public static inline function removeAll<T>(array: Array<T>, f: T -> Bool) {
+		var i = array.length;
+		while (i-- > 0) {
+			if (f(array[i]))
+				array.remove(array[i]);
+		}
+	}
 
 	public static inline function toIterator<T>(array: Array<T>) {
 		return new ArrayIterator(array);

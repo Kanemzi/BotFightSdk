@@ -6,7 +6,7 @@ import core.Player.Status;
 @:structInit @:publicFields
 final class ActionsResult<Ta : Action> implements hxbit.Serializable {
 	@:s var pid : PlayerId;
-    @:s var status : Status;
+	@:s var status : Status;
 	@:s var error : Null<String>;
 	
 	var actions : Array<Ta>;

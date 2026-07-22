@@ -1,0 +1,18 @@
+-debug
+-cp src
+--each
+
+-hl ExampleBot.hl
+-main bots.ExampleBot
+
+
+--next
+-lib hxbit
+-lib heaps
+-lib domkit
+-lib hlsdl
+-hl MinesServer.hl
+-main games.mines.MinesServer
+
+-D dump=pretty
+-D domkit_heaps

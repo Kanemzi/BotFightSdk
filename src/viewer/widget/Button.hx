@@ -1,4 +1,4 @@
-package view.widget;
+package viewer.widget;
 
 class Button extends Widget {
 

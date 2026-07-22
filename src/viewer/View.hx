@@ -1,7 +1,7 @@
-package view;
+package viewer;
 
 @:uiNoComponent
-@:allow(view.ViewManager)
+@:allow(viewer.ViewManager)
 class View extends h2d.Flow implements h2d.domkit.Object {
 	
 	public var ui(default, null) : ViewManager;

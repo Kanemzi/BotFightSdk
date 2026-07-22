@@ -8,9 +8,16 @@ package core;
 
 import core.Player;
 
-interface State extends hxbit.Serializable {}
+typedef SUID = Int;
+
+abstract class State implements hxbit.Serializable {
+	@:s public var id(default, null) : SUID;
+	public function new() {
+		id = __uid; // we initialize the stable id of a state as it's first uid
+	}
+}
 
 // @todo implements "PartialState" that has function to resolve it to a full state
-abstract class GameState implements State {
+abstract class GameState extends State {
 	public abstract function serializeForPlayer(pid : PlayerId) : Array<String>;
 }

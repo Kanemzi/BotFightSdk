@@ -1,11 +1,11 @@
 package games.war.view;
 
 import games.war.WarState;
-import view.VisualEventTimeline.TimelineBuilder;
+import viewer.VisualEventTimeline.TimelineBuilder;
 
-import view.MatchView;
+import viewer.view.MatchView;
 
-class WarViewer extends view.GameViewer<WarState> {
-    function getTimelineBuilder() return new TimelineBuilder()
-        /*.addRule(null)*/;
+class WarViewer extends viewer.GameViewer<WarState> {
+	function getTimelineBuilder() return new TimelineBuilder()
+		/*.addRule(null)*/;
 }
