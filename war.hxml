@@ -7,12 +7,6 @@
 
 
 --next
--lib hxbit
--lib heaps
--lib domkit
--lib hlsdl
+server.hxml
 -hl WarServer.hl
 -main games.war.WarServer
-
--D dump=pretty
--D domkit_heaps

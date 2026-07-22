@@ -1,4 +1,4 @@
-package viewer;
+package viewer.replay;
 
 import core.GameState;
 

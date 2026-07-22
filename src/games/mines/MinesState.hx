@@ -58,6 +58,8 @@ class MinesPlayer extends State {
 	}
 }
 
+// @todo try to have multiple owner situation to ensure it crashes
+
 @:publicFields
 class MinesState extends GameState {
 	@:s var seed : Int;

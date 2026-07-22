@@ -12,9 +12,19 @@ typedef SUID = Int;
 
 abstract class State implements hxbit.Serializable {
 	@:s public var id(default, null) : SUID;
+	@:s @:allow(WeakRef) var __alive = true; 
+	public inline function kill() __alive = false;
+	
 	public function new() {
 		id = __uid; // we initialize the stable id of a state as it's first uid
+		// @todo ensure __uid changes, otherwise just id(get, never) 
 	}
+}
+
+class WeakRef<Ts : State> {
+	@:s var ref : Ts;
+	public function new(ref : Ts) this.ref = ref;
+	public function get() return ref?.__alive ? ref : null;
 }
 
 // @todo implements "PartialState" that has function to resolve it to a full state

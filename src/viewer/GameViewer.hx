@@ -36,6 +36,6 @@ abstract class GameViewer<Ts : GameState> extends hxd.App {
 		if (builder == null)
 			throw 'No TimelineBuilder provided to the viewer';
 		final timeline = builder.bake(history);
-		trace(timeline); 
+		trace(timeline);
 	}
 }

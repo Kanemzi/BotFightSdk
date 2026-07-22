@@ -1,0 +1,7 @@
+-lib hxbit
+-lib heaps
+-lib domkit
+-lib hlsdl
+
+-D dump=pretty
+-D domkit_heaps
