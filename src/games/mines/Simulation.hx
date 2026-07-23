@@ -37,9 +37,9 @@ class Simulation {
 		return true;
 	}
 
-	public static inline function isEmpty(st : MinesState, x : Int, y : Int) {
+	public static inline function isEmpty(st : MinesState, x : Int, y : Int, objectsOnly = false) {
 		if (getObjectAt(st, x, y) != null) return false;
-		if (getRobotAt(st, x, y) != null) return false;
+		if (!objectsOnly && getRobotAt(st, x, y) != null) return false;
 		return true;
 	}
 
@@ -89,11 +89,12 @@ class Simulation {
 		return null;
 	}
 
-	public static function getClosestCellAround(x : Int, y : Int, tx : Int, ty : Int) {
+	public static function getClosestCellAround(x : Int, y : Int, tx : Int, ty : Int, ?f : (Int, Int) -> Bool) {
 		var cx = -1;
 		var cy = -1;
 		var min = MinesState.WIDTH * MinesState.HEIGHT + 1;
 		iterCellsAround(x, y, (ax, ay) -> {
+			if (f != null && !f(ax, ay)) return;
 			var d = cellMoveDist(ax, ay, tx, ty);
 			if (d >= min) return;
 			cx = ax; cy = ay;
@@ -161,7 +162,7 @@ class Simulation {
 		function tryDrop(k : ObjectKind) {
 			if (rnd.rand() >= TURN_DROPRATES.get(k)) return;
 			
-			var p = getRandomCell(isEmpty.bind(st), rnd);
+			var p = getRandomCell(isEmpty.bind(st, _, _, false), rnd);
 			if (p == null) return;
 
 			st.objects.push(new Object(k, p.x, p.y));

@@ -190,8 +190,6 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 			// @todo handle all players dead on same turn
 		}
 
-		dispose();
-
 		final remaining = getAlivePlayers().filter(p -> p.status != Victory);
 		if (!remaining.empty()) {
 			final scores = [for (p in remaining) p.id => getTiebreakerScore(p.id)];
@@ -215,6 +213,8 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 				}
 			}
 		}
+
+		dispose();
 
 		return history.lock();
 	}

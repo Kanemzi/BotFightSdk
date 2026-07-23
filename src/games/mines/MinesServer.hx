@@ -29,7 +29,10 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 	}
 
 	function serializeHeaderForPlayer(pid : PlayerId,  initialState : MinesState) : Array<String> {
-		return ['${MinesState.WIDTH} ${MinesState.HEIGHT}'];
+		return [
+			'$pid',
+			'${MinesState.WIDTH} ${MinesState.HEIGHT}'
+		];
 	}
 
 	function update(state : MinesState, actions : PlayersActions<MinesAction>) : Void {
@@ -55,7 +58,17 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 				if (!Sim.inGrid(x, y))
 					return;
 				var r = getRobot(pid, i);
-				if (!r.pos.adjacent(new Vec(x, y)))
+				var t = new Vec(x, y);
+				if (!r.pos.adjacent(t)) { // auto aim
+					var p = Sim.getClosestCellAround(r.pos.x, r.pos.y, x, y, (cx, cy) -> {
+						return state.isEmpty(cx, cy, true);
+					});
+					if (p != null) {
+						t.x = p.x;
+						t.y = p.y;
+					}
+				}
+				if (t == null)
 					return;
 
 				var p = state.getPlayer(pid);
@@ -63,7 +76,7 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 				catch (_)
 					return; // @todo error message
 
-				state.objects.push(new Object(Mine, x, y));
+				state.objects.push(new Object(Mine, t.x, t.y));
 
 			default:
 		});
@@ -75,8 +88,8 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 				var r = getRobot(pid, i);
 				var sp = state.getEmptyCellAround(r.pos.x, r.pos.y);
 				if (sp != null) {
-					try p.consume(Sim.MINE_COST)
-					catch (_)
+					try { p.consume(Sim.ROBOT_COST);
+					} catch (_)
 						return; // @todo error message
 
 					p.robots.push(new Robot(sp.x, sp.y));
