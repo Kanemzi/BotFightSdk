@@ -1,5 +1,4 @@
 import haxe.Json;
-import hxd.Rand;
 import haxe.Exception;
 import core.GameServer;
 import core.GameState;
@@ -46,9 +45,6 @@ final class Runner {
 	/*
 		Program launcher : Starts server and bot processes, checks compatibility among them
 			- Allows starting a specific number of matches, registering stats, etc...
-			
-			- game server started as a local process
-				- Start server as headless or not ?
 
 			- Threads to handle multiple matches at the same time (different or same matchups) ?
 			- Possibility to request matches through an API ?
@@ -59,76 +55,79 @@ final class Runner {
 				- Allows wrapping user code in with other boilerplate / compatibility code
 	*/
 
-	var seed : Int;
+	public static inline function error(e : String) Sys.stderr().writeString('[Error] $e\n');
+
+	var args : RunnerArgs;
 
 	@:generic
-	public function new<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, viewcl : Class<GameViewer<Ts>>, args : Array<String>) {
-		final args = new RunnerArgs(args);
-		seed = Std.parseInt(args.getParam("seed")) ?? Std.random(1 << 31 - 1);
+	public function new<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, viewcl : Class<GameViewer<Ts>>, arg : Array<String>) {
+		this.args = new RunnerArgs(arg);
+		final hasGen = args.has("gen");
+		final hasMatch = args.has("match");
+		final playerPaths = args.getParams("players");
+		function shouldRunMatch() {
+			if (playerPaths == null || playerPaths.length == 0) {
+				// @todo debugGen should not require players (add dummy players)
+				if (hasGen) error('Trying to test generation without any bot program');
+				else if (hasMatch) error('Trying to start a match without any bot program');
+				return false;
+			}
+			return true;
+		}
 
-		final paths = args.getParams("players"); 
+		inline function runMatch() : Match<Ts, Ta> {
+			var match = createMatch(args);
+			for (p in playerPaths)
+				match.addPlayer(p);
+			trace('Starting match on [${match.toString()}] format with ${match.players.length} players (seed=${match.seed})');
 
-		final debugGen = args.has("gen");
-		var match = createMatch(args, seed);
-		for (p in paths)
-			match.addPlayer(p);
-		trace('Starting match on [${match.toString()}] format with ${match.players.length} players (seed=$seed)');
-
-		while (!match.isComplete()) {
-			final games = match.pollGames();
-			for (g in games) {
-				var gs = createGame(cl, g);
-				var history = if (debugGen) {
-					var h = new History(gs.config.version, gs.players, gs.seed);
-					h.addTurn(gs.init(), []);
-					for (p in g.players) h.outcome(p.id, Victory(0));
-					h.lock();
-				} else {
-					gs.run();
+			while (!match.isComplete()) {
+				final games = match.pollGames();
+				for (g in games) {
+					var gs = createGame(cl, g);
+					var history = if (hasGen) {
+						var h = new History(gs.config.version, gs.players, gs.seed);
+						h.addTurn(gs.init(), []);
+						for (p in g.players) h.outcome(p.id, Victory(0));
+						h.lock();
+					} else {
+						gs.run();
+					}
+					match.onGameComplete(history);
 				}
-				match.onGameComplete(history);
+			}
+			return match;
+		}
+
+		var match = if (shouldRunMatch()) {
+			var m = runMatch();
+			if (args.has("out"))
+				saveReplay(args.getParam("out"), m);
+			m;
+		} else null;
+
+		final replayPath = args.getParam("replay");
+		if (replayPath != null) {
+			match = try loadReplay(replayPath) catch (e : Exception) {
+				error(e.details());
+				return;
 			}
 		}
 
-		if (args.has("out"))
-			saveReplay(args.getParam("out"), match);
-
-		// Will play the path in priority or the current match if null
-		// @todo allow replaying without requesting matches
-		final path = args.getParam("replay");
-		replay(viewcl, path, match);
+		final headless = args.has("headless") && replayPath == null;
+		if (!headless)
+			replay(viewcl, match);		
 	}
 
-	function replay<Ts : GameState, Ta : Action>(viewcl : Class<GameViewer<Ts>>, ?path : String, ?match : Match<Ts, Ta>) {
-		if (path != null) {
-			match = try loadReplay(path) catch (e : Exception) {
-				trace(e.details());
-				null;
-			}
-		}
-
-		if (match == null) {
-			trace("Nothing to replay");
-			return;
-		}
-
-		var viewer = Type.createInstance(viewcl, [match]);
-	}
-
-	inline function createGame<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, info : GameInfo) : GameServer<Ts, Ta> {
-		var gs = Type.createInstance(cl, [info.seed]);
-		for (p in info.players) gs.addPlayer(p);
-		return gs;
-	}
-
-	static function createMatch<Ts : GameState, Ta : Action>(args : RunnerArgs, seed : Int) : Match<Ts, Ta> {
+	static function createMatch<Ts : GameState, Ta : Action>(args : RunnerArgs) : Match<Ts, Ta> {
+		final seed = Std.parseInt(args.getParam("seed")) ?? Std.random(1 << 31 - 1);
 		if (args.has("gen")) {
 			final n = Std.parseInt(args.getParam("gen")) ?? 1;
 			return new Series(n, seed);
 		}
 		
 		final margs = args.getParams("match");
-		if (margs.length > 0) {
+		if (margs?.length > 0) {
 			final format = margs.shift(); 
 			switch (format) {
 				case "series": return new Series(Std.parseInt(margs[0]), seed);
@@ -139,12 +138,31 @@ final class Runner {
 		return new Series(1, seed);
 	}
 
+	inline function createGame<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, info : GameInfo) : GameServer<Ts, Ta> {
+		var gs = Type.createInstance(cl, [info.seed]);
+		for (p in info.players) gs.addPlayer(p);
+		return gs;
+	}
+
+	function replay<Ts : GameState, Ta : Action>(viewcl : Class<GameViewer<Ts>>, match : Match<Ts, Ta>) {
+		if (match == null) {
+			error("Nothing to replay");
+			return;
+		}
+
+		var viewer = Type.createInstance(viewcl, [match]);
+	}
+
 	static inline final REPLAY_EXT = "replay"; 
 	static function saveReplay<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>) {
 		final ser = new hxbit.Serializer();
 		final bytes = ser.serialize(match);
 		var path = new haxe.io.Path(out ?? ".");
 		path.ext = REPLAY_EXT;
+		// @todo auto file name should be encoded based on bytes (but we should
+		// exclude __uid from the hash so that it doesn't change with the same seed)
+		// -> Allows checking if the game is deterministic
+		// @todo checkDeterministic (bruteforce many games with different seeds to ensure the outcome is always the same)
 		if (path.file.length == 0)
 			path.file = Md5.encode('${match.seed}');
 

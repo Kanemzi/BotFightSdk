@@ -135,7 +135,6 @@ class Simulation {
 		}
 	}
 
-	// @todo use a seeded random
 	public static function destroyRobotAt(st : MinesState, x : Int, y : Int, rnd : hxd.Rand) {
 		var drops : Resources = [];
 		inline function addDrops(k : ObjectKind) {

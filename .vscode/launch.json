@@ -23,6 +23,7 @@
                 // "--replay", "path/to/file",
                 "--out", "./replays/",
 				//"--out",
+				"--headless"
             ]
         }
     ]
