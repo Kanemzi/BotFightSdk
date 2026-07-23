@@ -18,14 +18,18 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 			minPlayers : 2,
 			maxPlayers : 2,
 			maxTurns : Sim.MAX_TURNS,
-			firstTurnTimeout : 1000.0,
-			turnTimeout : 1000.0,
+			firstTurnTimeout : 0.5,
+			turnTimeout : 0.05,
 			turnModel : TurnModel.SimultaneousTurn,
 		});
 	}
 
 	function init() : MinesState {
 		return new MinesState(players.map(p -> p.id), seed);
+	}
+
+	function serializeHeaderForPlayer(pid : PlayerId,  initialState : MinesState) : Array<String> {
+		return ['${MinesState.WIDTH} ${MinesState.HEIGHT}'];
 	}
 
 	function update(state : MinesState, actions : PlayersActions<MinesAction>) : Void {
@@ -97,7 +101,7 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 		// check mines collisions (objects and robots)
 		state.forEachRobot(r -> {
 			var o = state.getObjectAt(r.pos.x, r.pos.y);
-			if (o.k != Mine)
+			if (o?.k != Mine)
 				return;
 			function destroyAt(x, y) {
 				var o = state.getObjectAt(x, y);
@@ -119,6 +123,16 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 		state.turnDrops(rnd);
 
 		// check loses / wins
+		inline function countRobots(pid : PlayerId) {
+			var c = 0;
+			state.forEachRobot(pid, _ -> c++);
+			return c;
+		}
+
+		for (p in getAlivePlayers()) {
+			if (countRobots(p.id) == 0)
+				defeat(p.id);
+		}
 	}
 
 	function getTurnActionProfile(pid : PlayerId) return Fixed(state.getPlayer(pid).robots.length );

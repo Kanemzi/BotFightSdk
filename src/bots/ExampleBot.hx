@@ -18,11 +18,14 @@ class ExampleBot {
 	}
 
 	static function loop() {
-		var me = stdin.readLine();
-		var o = stdin.readLine();
-		Sys.stderr().writeString('me : $me, o : $o\n');
-		Sys.sleep(1.0/*Std.random(500) / 1000.*/);
-		var action = Std.random(100) < 50 ? "WAIT" : "MOVE 2 1";
-		stdout.writeString('$action\n');
+		//var me = stdin.readLine();
+		//var o = stdin.readLine();
+		//Sys.stderr().writeString('me : $me, o : $o\n');
+		Sys.sleep(0.1/*Std.random(500) / 1000.*/);
+		//var action = Std.random(100) < 50 ? "WAIT" : "MOVE 2 1";
+		Sys.stdout().writeString('WAIT\n');
+		//Sys.stdout().flush();
+		//Sys.stdout().writeString('WAIT\n');
+		//Sys.stdout().writeString('WAIT\n');
 	}
 }

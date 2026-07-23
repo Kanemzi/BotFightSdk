@@ -5,3 +5,5 @@
 
 -D dump=pretty
 -D domkit_heaps
+-D analyzer-optimize
+-D hxbit_host_mt

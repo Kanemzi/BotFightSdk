@@ -16,9 +16,9 @@
             },
             "args": [
                 "--players", "ExampleBot.hl", "ExampleBot.hl",
-                "--gen",
-                // "--match", "series", "3",
-                // "--seed", "123456",
+                // "--gen",
+                "--match", "series", "1",
+                "--seed", "123456",
                 // "--match", "5",
                 // "--replay", "path/to/file",
                 // "--out", "path/to/folder/",

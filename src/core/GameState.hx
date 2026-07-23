@@ -12,12 +12,11 @@ typedef SUID = Int;
 
 abstract class State implements hxbit.Serializable {
 	@:s public var id(default, null) : SUID;
-	@:s @:allow(WeakRef) var __alive = true; 
+	@:allow(core.WeakRef) @:noPrivateAccess @:s var __alive(default, null) = true; 
 	public inline function kill() __alive = false;
 	
 	public function new() {
 		id = __uid; // we initialize the stable id of a state as it's first uid
-		// @todo ensure __uid changes, otherwise just id(get, never) 
 	}
 }
 

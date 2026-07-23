@@ -50,7 +50,7 @@ final class Player<Ta : Action> {
 	function kill(reason : Status) {
 		if (!isAlive()) return;
 		status = reason;
-		io.dispose();
+		//io.dispose();
 	}
 
 	function victory() {
@@ -68,17 +68,15 @@ final class Player<Ta : Action> {
 		final deadline = start + timeout;
 
 		function next() {
-			while (Timer.stamp() <= deadline) {
-				var line = io.poll();
-				if (line == null) {
-					Sys.sleep(0.001);
-					continue;
-				}
+			try {
+				var to = deadline - Timer.stamp();
+				var line = io.readLine(to);
 				var action = ap.parseAction(line);
 				if (action == null ) throw new InvalidActionException('Invalid action "$line"');
 				return action;
+			} catch (e : TimeoutException) {
+				throw new TimeoutException('Turn timeout reached (${timeout}s)');
 			}
-			throw new TimeoutException('Turn timeout reached (${timeout}s)');
 		}
 
 		var actions : Array<Ta> = null;

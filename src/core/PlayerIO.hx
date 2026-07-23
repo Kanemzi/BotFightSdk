@@ -31,17 +31,19 @@ class ProcessPlayerIO implements PlayerIO {
 		logs = new Mutex([]);
 
 		thread = Thread.create(reader.bind(process.stdout, buffer));
+		thread.name = '${path}_data';
 		logger = Thread.create(reader.bind(process.stderr, logs));
+		logger.name = '${path}_log';
 	}
 
 	function reader(i : haxe.io.Input, o : Mutex<Array<String>>) {
 		try while (process != null) {
-			final line = i.readLine();
+			final line = i.safeReadLine();
 			o.execute(o -> o.push(line));
 		} catch (_) { } // @todo raise something to the player
 	}
 
-	public function poll(t : InputKind = Data) : Null<String> {
+	public function poll(t : InputKind = Data) : Null<String> { 
 		return (t == Logs ? logs : buffer).map(b -> b.shift(), false);
 	}
 

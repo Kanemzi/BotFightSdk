@@ -74,7 +74,7 @@ final class Runner {
 		trace('Starting match on [${match.toString()}] format with ${match.players.length} players (seed=$seed)');
 
 		while (!match.isComplete()) {
-			final games = match.getNextGameBatch();
+			final games = match.pollGames();
 			for (candidates in games) {
 				var gs = create(cl, candidates);
 				var history = if (debugGen) {
@@ -103,6 +103,7 @@ final class Runner {
 				return;
 			}
 			try { 
+				// using "save/load" instead to keep versioning 
 				final bytes = sys.io.File.getBytes(path);
 				final ser = new hxbit.Serializer();
 				match = ser.unserialize(bytes, Match);

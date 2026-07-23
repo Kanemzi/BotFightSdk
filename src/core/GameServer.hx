@@ -68,6 +68,7 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 	abstract function update(state : Ts, actions : PlayersActions<Ta>) : Void;
 	abstract function getTurnActionProfile(pid : PlayerId) : TurnActionProfile<Ta>;
 	abstract function getTiebreakerScore(pid : PlayerId) : Int;
+	abstract function serializeHeaderForPlayer(pid : PlayerId,  initialState : Ts) : Array<String>;
 
 	public function new(seed : Int, config : ServerConfig) {
 		this.seed = seed;
@@ -76,6 +77,7 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		// @todo check bot count using config
 		players = [];
 		serializer = new hxbit.Serializer();
+		serializer.remapIds = true;
 	}
 
 	final public function addPlayer(info : PlayerInfo) {
@@ -96,6 +98,11 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		var p = getPlayer(pid);
 		if (p?.isAlive())
 			p.kill(Defeated);
+
+		// @todo this behaviour might be defined in game parameters
+		var alive = getAlivePlayers();
+		if (alive.length == 1)
+			victory(alive.map(p -> p.id));
 	}
 
 	final public function victory(pids : Array<PlayerId>) {
@@ -107,6 +114,18 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 	}
 
 	inline function getAlivePlayers() return players.filter(p -> p.isAlive());
+
+	inline function cloneState(st : Ts) : Ts {
+		// @todo will be required to support versioning and patching replay files on newer versions
+		// serializer.beginSave();
+		// serializer.addKnownRef(st);
+		// var bytes = serializer.endSave();
+		// serializer.beginLoad(bytes);
+		// var cloned : Ts = cast serializer.getKnownRef(GameState);
+		// serializer.endLoad();
+
+		return cast serializer.unserialize(serializer.serialize(st), GameState);
+	}
 
 	final public function run() : History<Ts, Ta> {
 		if (players.length < config.minPlayers || players.length > config.maxPlayers)
@@ -120,8 +139,13 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		history = new History(config.version, players);
 		history.addTurn(init(), []);
 
+		for (p in players) {
+			final header = serializeHeaderForPlayer(p.id, state);
+			p.sendState(header);
+		}
+
 		while (history.length < config.maxTurns) {
-			var newState : Ts = cast serializer.unserialize(serializer.serialize(state), GameState);
+			var newState = cloneState(state);
 
 			final alive = getAlivePlayers();
 			final playing = turnModel.getPlayingThisTurn(getAlivePlayers(), newState, turn);
@@ -183,7 +207,7 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 					history.outcome(p.id, Defeat(turn, score));
 				}
 			}
-		} 
+		}
 
 		return history.lock();
 	}

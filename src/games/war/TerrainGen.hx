@@ -38,5 +38,5 @@ class TerrainGen {
 					f(xs, ys);
 				}
 		}
-	} 
+	}
 }

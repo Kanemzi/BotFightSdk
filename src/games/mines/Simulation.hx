@@ -19,6 +19,7 @@ class Simulation {
 		Scrap => 1.0 / 3.0,
 		Microship => 1.0 / (MAX_TURNS / 20),
 	];
+	public static final INIT_DROP_TURNS = 20;
 
 	public static inline function shuffle<T>(a : Array<T>, ?rnd : hxd.Rand) {
 		var len = a.length;
@@ -101,15 +102,9 @@ class Simulation {
 		return cx == -1 ? null : {x : cx, y : cy};
 	}
 
-	public static function forEachRobot(st : MinesState, f : Robot -> Void) {
-		for (p in st.players)
-			for (r in p.robots.copy())
-				f(r);
-	}
-
 	public static function getRobotAt(st : MinesState, x : Int, y : Int) : Robot {
 		var at = null;
-		forEachRobot(st, r -> if (at == null) {
+		st.forEachRobot(r -> if (at == null) {
 			if (r.pos.x != x || r.pos.y != y ) return;
 			at = r;
 		});
