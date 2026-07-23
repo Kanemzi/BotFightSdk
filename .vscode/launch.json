@@ -7,7 +7,7 @@
         {
             "name": "GameServer",
             "request": "launch",
-            "port": 4770,
+            "port": 4771,
             "type": "hl",
             "cwd": "${workspaceFolder}",
             "preLaunchTask": {
@@ -17,11 +17,12 @@
             "args": [
                 "--players", "ExampleBot.hl", "ExampleBot.hl",
                 // "--gen",
-                "--match", "series", "1",
-                "--seed", "123456",
+                "--match", "series", "3",
+                "--seed", "123415116",
                 // "--match", "5",
                 // "--replay", "path/to/file",
-                // "--out", "path/to/folder/",
+                "--out", "./replays/",
+				//"--out",
             ]
         }
     ]

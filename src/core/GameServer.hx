@@ -10,7 +10,7 @@ import core.Player.PlayerId;
 import core.History.PlayerOutcome;
 
 typedef ServerConfig = {
-	var version : String;
+	var version : Int;
 	var minPlayers : Int;
 	var maxPlayers : Int;
 	var maxTurns : Int;
@@ -136,12 +136,12 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		final wto = Math.max(config.firstTurnTimeout, config.turnTimeout) * 2;
 		turnWorkers = new ElasticThreadPool(players.length, wto / 1000.);
 
-		history = new History(config.version, players);
+		history = new History(config.version, players, seed);
 		history.addTurn(init(), []);
 
 		for (p in players) {
 			final header = serializeHeaderForPlayer(p.id, state);
-			p.sendState(header);
+			p.sendLines(header);
 		}
 
 		while (history.length < config.maxTurns) {
@@ -156,8 +156,14 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 			trace('Played : ${results.map(a -> '[${getPlayer(a.pid).name} : ${a.time}ms]').join(" ")}');
 			trace('before : $state');
 
-
 			inline function result(pid) return results.find(r -> r.pid == pid);
+
+			for (r in results) {
+				var logs = result(r.pid)?.logs;
+				if (logs == null || logs.empty()) continue;
+				trace('----- Player ${getPlayer(r.pid).name} logs for turn $turn -----');
+				for (l in logs) trace(l);
+			}
 
 			// As of now, we sort players based on their response time.
 			// Games can decide to ignore this order and process inputs in their own order
@@ -167,7 +173,7 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 				final ae = a.actions.empty(), be = b.actions.empty();
 				return if (ae != be) ae ? 1 : -1
 					else if (ae) 0
-					else result(a.pid).time - result(b.pid).time;
+					else result(a.pid).time > result(b.pid).time ? 1 : -1;
 			});
 
 			update(newState, actions);
@@ -181,6 +187,7 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 			history.addTurn(newState, results);
 			if (!victories.empty())
 				break;
+			// @todo handle all players dead on same turn
 		}
 
 		dispose();
@@ -219,8 +226,7 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 			final tp = getTurnActionProfile(player.id);
 			final timeout = turn <= 1 ? config.firstTurnTimeout : config.turnTimeout;
 			final data = state.serializeForPlayer(player.id);
-			
-			player.sendState(data);
+			player.sendLines(data);
 			return player.collectActions(tp, timeout, this);
 		}
 

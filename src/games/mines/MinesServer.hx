@@ -14,12 +14,12 @@ using games.mines.Simulation;
 class MinesServer extends GameServer<MinesState, MinesAction> {
 	public function new(seed : Int) {
 		super(seed, {
-			version : "0.1",
+			version : 1,
 			minPlayers : 2,
 			maxPlayers : 2,
 			maxTurns : Sim.MAX_TURNS,
-			firstTurnTimeout : 0.5,
-			turnTimeout : 0.05,
+			firstTurnTimeout : 1.0,
+			turnTimeout : 0.5,
 			turnModel : TurnModel.SimultaneousTurn,
 		});
 	}

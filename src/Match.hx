@@ -14,15 +14,19 @@ class GameSlot implements hxbit.Serializable {
 
 }
 
-typedef GameCandidates = Array<PlayerInfo>;
+typedef GameInfo = { seed : Int, players : Array<PlayerInfo> }
 
 abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 	@:s var players : Array<PlayerInfo> = [];
 	@:s var games : Array<History<Ts, Ta>> = [];
+	@:s var seed : Int;
 
 	var started = false;
+	var rnd : hxd.Rand;
 
-	public function new() {}
+	public function new(seed : Int) {
+		this.seed = seed;
+	}
 
 	final public function addPlayer(path : String) : PlayerInfo {
 		if (started) throw 'Can\'t add player $path after match start';
@@ -52,9 +56,12 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 		return info;
 	}
 
-	final public function pollGames() : Array<GameCandidates> {
+	inline function genSeed() { return rnd?.random(1 << 31 - 1) ?? 0; }
+
+	final public function pollGames() : Array<GameInfo> {
 		if (!started) {
 			started = true;
+			rnd = new hxd.Rand(seed);
 			init();
 		}
 		return getNextGameBatch();
@@ -65,8 +72,8 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 	}
 
 	function init() {};
-	function getNextGame() : GameCandidates { throw 'getNextGame() not implemented for match mode ${Type.getClassName(Type.getClass(this))}'; };
-	function getNextGameBatch() : Array<GameCandidates> {
+	function getNextGame() : GameInfo { throw 'getNextGame() not implemented for match mode ${Type.getClassName(Type.getClass(this))}'; };
+	function getNextGameBatch() : Array<GameInfo> {
 		// Try to batch the maximum amount of games to play them simultaneously
 		// Some formats will need to wait the preview games results before providing more games to play
 		var batch = [];
@@ -84,28 +91,18 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 
 class Series<Ts : GameState, Ta : Action> extends Match<Ts, Ta> {
 	var count : Int;
-	public function new(count : Int) {
-		super();
+	public function new(count : Int, seed : Int) {
+		super(seed);
 		this.count = count;
 	}
 
-	override function getNextGameBatch() : Array<GameCandidates> {
-		return [for (_ in 0...count) players.copy() ];
+	override function getNextGameBatch() : Array<GameInfo> {
+		return [for (_ in 0...count) {
+			seed : genSeed(),
+			players : players.copy()
+		}];
 	}
 
 	function isComplete() return games.length == count;
 	function toString() { return 'Series of $count'; }
-}
-
-class BestOf<Ts : GameState, Ta : Action> extends Match<Ts, Ta> {
-	var count : Int;
-	public function new(count : Int) {
-		super();
-		this.count = count;
-	}
-
-	override function getNextGame() return null;
-	function isComplete() return true;
-	function toString() { return 'Best of $count'; }
-	// @todo implement
 }

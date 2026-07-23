@@ -59,8 +59,15 @@ final class Player<Ta : Action> {
 		status = Victory;
 	}
 
-	public function sendState(state : Array<String>) {
-		io.writeString('$state\n');
+	public function sendLines(lines : Array<String>) {
+		for (l in lines) io.writeLine(l);
+	}
+
+	function collectLogs() {
+		var l = null;
+		var logs = [];
+		while ((l = io.poll(Logs)) != null) logs.push(l);
+		return logs;
 	}
 
 	public function collectActions<Ts : GameState>(turnProfile : ActionCollector<Ta>, timeout : Float, ap : ActionParser<Ta>) : ActionsResult<Ta> {
@@ -95,9 +102,10 @@ final class Player<Ta : Action> {
 		return {
 			pid : id,
 			actions : actions,
-			time : Std.int(time),
+			time : time,
 			status : status,
-			error : error
+			error : error,
+			logs : collectLogs(),
 		};
 	}
 

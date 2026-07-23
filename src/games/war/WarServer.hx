@@ -12,7 +12,7 @@ class WarServer extends GameServer<WarState, WarAction> {
 
 	public function new(seed : Int) {
 		super(seed, {
-			version : "0.1",
+			version : 1,
 			minPlayers : 2,
 			maxPlayers : 2,
 			maxTurns : 10,

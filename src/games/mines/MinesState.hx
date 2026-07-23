@@ -122,14 +122,14 @@ class MinesState extends GameState {
 		for (r in me.robots)
 			l.push('${r.pos.x} ${r.pos.y}');
 
-		var enemies = [];
-		forEachRobot(r -> if( getOwner(r).pid != pid) enemies.push(r));
-		l.push('ENEMIES ${enemies.length}');
-		for (r in enemies)
-			l.push('${r.pos.x} ${r.pos.y}');
+		var foes = [];
+		forEachRobot(r -> if (getOwner(r).pid != pid) foes.push(r));
+		l.push('FOES ${foes.length}');
+		for (f in foes)
+			l.push('${f.pos.x} ${f.pos.y}');
 
 		var mines = objects.filter(o -> o.k == Mine);
-		l.push('MINES ${mines.length}');
+		l.push('MINE ${mines.length}');
 		for (o in mines)
 			l.push('${o.pos.x} ${o.pos.y}');
 
@@ -139,7 +139,7 @@ class MinesState extends GameState {
 			l.push('${o.pos.x} ${o.pos.y}');
 
 		var microship = objects.filter(o -> o.k == Microship);
-		l.push('MINES ${microship.length}');
+		l.push('MICROSHIP ${microship.length}');
 		for (o in microship)
 			l.push('${o.pos.x} ${o.pos.y}');
 

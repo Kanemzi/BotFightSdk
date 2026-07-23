@@ -33,10 +33,16 @@ class HistoryPlayer implements hxbit.Serializable {
 	}
 }
 
+@:publicFields @:structInit
+class HistoryHeader implements hxbit.Serializable {
+	@:s var version : Int;
+	@:s var seed : Int;
+}
+
 @:generic
 @:allow(History)
 class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
-	@:s public var version(default, null) : String;
+	@:s public var header(default, null) : HistoryHeader;
 	@:s public var players(default, null) : Map<PlayerId, HistoryPlayer>;
 	@:s public var turns(default, null) : Array<HistoryTurn<Ts, Ta>>;
 	
@@ -45,8 +51,11 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 	
 	@:noPrivateAccess var completed : Bool = true;
 
-	public function new(v : String, players : Array<Player<Ta>>) {
-		version = v;
+	public function new(v : Int, players : Array<Player<Ta>>, seed : Int) {
+		header = {
+			version : v,
+			seed : seed,
+		}
 		this.players = [for (p in players) p.id => new HistoryPlayer()];
 		turns = [];
 		completed = false;

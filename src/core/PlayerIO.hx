@@ -11,7 +11,7 @@ enum InputKind { Data; Logs; }
 interface PlayerIO {
 	function poll(t : InputKind = Data) : Null<String>;
 	function readLine(timeout : Float) : String;
-	function writeString(s : String) : Void;
+	function writeLine(s : String) : Void;
 	function dispose() : Void;
 	function isDisposed() : Bool;
 }
@@ -30,15 +30,18 @@ class ProcessPlayerIO implements PlayerIO {
 		buffer = new Mutex([]);
 		logs = new Mutex([]);
 
-		thread = Thread.create(reader.bind(process.stdout, buffer));
+		thread = Thread.create(reader.bind(process.stdout, buffer, null));
 		thread.name = '${path}_data';
-		logger = Thread.create(reader.bind(process.stderr, logs));
+		logger = Thread.create(reader.bind(process.stderr, logs, Sys.stderr()));
 		logger.name = '${path}_log';
+
+		// @todo find a way to detect when process crashes to display callstack
 	}
 
-	function reader(i : haxe.io.Input, o : Mutex<Array<String>>) {
+	function reader(i : haxe.io.Input, o : Mutex<Array<String>>, ?forward : haxe.io.Output) {
 		try while (process != null) {
 			final line = i.safeReadLine();
+			forward?.writeString('[forward] $line\n');
 			o.execute(o -> o.push(line));
 		} catch (_) { } // @todo raise something to the player
 	}
@@ -58,7 +61,7 @@ class ProcessPlayerIO implements PlayerIO {
 		throw new TimeoutException('Timeout reached (${timeout}s)');
 	}
 
-	public function writeString(s : String) {
+	public function writeLine(s : String) {
 		process?.stdin.writeString('$s\n');
 	}
 

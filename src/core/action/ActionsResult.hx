@@ -8,9 +8,10 @@ final class ActionsResult<Ta : Action> implements hxbit.Serializable {
 	@:s var pid : PlayerId;
 	@:s var status : Status;
 	@:s var error : Null<String>;
+	@:s var logs : Array<String>;
+	@:s var time : Float;
 	
 	var actions : Array<Ta>;
-	var time : Int;
 
 	public function customSerialize(ctx : hxbit.Serializer) @:privateAccess {
 		ctx.addInt(actions?.length);

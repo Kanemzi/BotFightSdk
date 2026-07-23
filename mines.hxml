@@ -3,7 +3,7 @@
 --each
 
 -hl ExampleBot.hl
--main bots.ExampleBot
+-main bots.mines.MinesExampleBot
 
 
 --next

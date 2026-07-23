@@ -87,7 +87,7 @@ public class StateRegistry {
 					rec(s);
 				case TEnum(e):
 					var ps = Type.enumParameters(v);
-					for( _ => p in ps ) rec(p);
+					for (_ => p in ps) rec(p);
 				default:
 			}
 		}
