@@ -5,15 +5,15 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "GameServer",
+            "name": "Mines",
             "request": "launch",
             "port": 4770,
             "type": "hl",
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceRoot}",
             "preLaunchTask": {
-                "type": "haxe",
-                "args": "active configuration"
-            },
+				"type": "hxml",
+				"file": "mines.hxml"
+			},
             "args": [
                 "--players", "ExampleBot.hl", "ExampleBot.hl",
                 // "--gen",

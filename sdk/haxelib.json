@@ -1,0 +1,15 @@
+{
+    "name": "botfight-sdk",
+    "url": "",
+    "license": "MIT",
+    "tags": ["game", "engine", "bot"],
+    "description": "Bot fight game development SDK",
+    "version": "0.1.0",
+    "contributors": ["Kanemzi"],
+	"dependencies": {
+		"hxbit": "",
+		"heaps": "",
+		"domkit": "",
+		"hlsdl": ""
+	}
+}

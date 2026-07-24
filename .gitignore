@@ -1,7 +1,5 @@
 dump/
 build/
-report/
 replays/
 *.hl
 *.replay
-.todo

@@ -1,0 +1,8 @@
+-cp .
+-main botfight.test.TestMain
+-lib munit
+-lib hxbit
+-lib hamcrest
+
+-hl build/hl_test.hl
+-D dump=pretty
