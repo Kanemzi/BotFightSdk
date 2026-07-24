@@ -1,0 +1,13 @@
+-debug
+-cp src
+--each
+
+-hl ExampleBot.hl
+-main bots.ExampleBot
+
+
+--next
+
+../../server.hxml
+-hl WarServer.hl
+-main war.WarServer

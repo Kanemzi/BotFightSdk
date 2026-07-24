@@ -1,0 +1,13 @@
+-debug
+--each
+
+-cp games/mines/bots
+-hl ExampleBot.hl
+-main MinesExampleBot
+
+--next
+
+-cp games/mines/
+-lib botfight-sdk
+-hl MinesServer.hl
+-main server.MinesServer
