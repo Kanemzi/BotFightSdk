@@ -3,14 +3,13 @@ package botfight.viewer.view;
 import botfight.core.GameState;
 import botfight.core.History;
 import botfight.core.action.Action;
-import botfight.viewer.widget.Button;
 
 class ReplayView<Ts : GameState> extends View {
 	static var SRC = <replay-view>
 		<flow class="head">
-			<text text={'Game - ${game.header.seed}'}/>
+			<text text={'Game - ${game.header.seed}'} />
 			<button id="leave-btn">
-				<text text={'X'}/>
+				<text text={'X'} />
 			</button>
 		</flow>
 	</replay-view>

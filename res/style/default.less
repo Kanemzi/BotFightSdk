@@ -1,6 +1,8 @@
+@head-height : 50;
+
 .head {
 	fill-width: true;
-	height: 50;
+	height: @head-height;
 	content-align: middle middle;
 
 	background: darken(gray, 30%);
@@ -26,20 +28,34 @@ match-view {
 	}
 }
 
-replay-view {
+replay-view, timeline-debug-view {
 	layout : vertical;
-	
-	background: darken(green, 20%);
 
 	> .head {
 		layout: stack;
 		> #leave-btn {
 			align: right;
-			height: 30;
-			width: 30;
-			margin: 10;
+			height: @head-height - 20;
+			width: @head-height - 20;
+			margin: (@head-height - 20) / 2;
 		}
 	}
+}
+replay-view { background: darken(green, 20%); }
+timeline-debug-view {
+	timeline-debug {
+		fill-width: true;
+		fill-height: true;
+		margin: 50;
+		margin-bottom: @head-height * 2;
+	}
+	background: darken(purple, 20%);
+}
+
+timeline-debug {
+	background: darken(gray, 42%);
+	content-align: middle middle;
+	overflow: hidden;
 }
 
 button {

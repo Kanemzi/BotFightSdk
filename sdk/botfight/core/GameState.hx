@@ -20,9 +20,9 @@ abstract class State implements hxbit.Serializable {
 	}
 }
 
-class WeakRef<Ts : State> {
-	@:s var ref : Ts;
-	public function new(ref : Ts) this.ref = ref;
+class WeakRef<T : State> {
+	@:s var ref : T;
+	public function new(ref : T) this.ref = ref;
 	public function get() return ref?.__alive ? ref : null;
 }
 

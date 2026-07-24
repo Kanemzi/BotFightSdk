@@ -59,10 +59,16 @@ final class Runner {
 
 	public static inline function error(e : String) Sys.stderr().writeString('[Error] $e\n');
 
+	public static var serializer : hxbit.Serializer;
+
 	var args : RunnerArgs;
 
 	@:generic
 	public function new<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, viewcl : Class<GameViewer<Ts>>, arg : Array<String>) {
+		
+		serializer = new hxbit.Serializer();
+		serializer.remapIds = true;
+
 		this.args = new RunnerArgs(arg);
 		final hasGen = args.has("gen");
 		final hasMatch = args.has("match");
@@ -155,8 +161,7 @@ final class Runner {
 
 	static inline final REPLAY_EXT = "replay"; 
 	static function saveReplay<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>) {
-		final ser = new hxbit.Serializer();
-		final bytes = ser.serialize(match);
+		final bytes = serializer.serialize(match);
 		var path = new haxe.io.Path(out ?? ".");
 		path.ext = REPLAY_EXT;
 		// @todo auto file name should be encoded based on bytes (but we should
@@ -180,14 +185,17 @@ final class Runner {
 	}
 
 	static function loadReplay<Ts : GameState, Ta : Action>(path : String) : Match<Ts, Ta> {
+		var p = new haxe.io.Path(path);
+		p.ext = REPLAY_EXT;
+		path = p.toString();
+		
 		if (!sys.FileSystem.exists(path))
 			throw ('Replay file $path does not exist');
 		
 		try { 
 			// @todo using "save/load" instead to keep versioning 
 			final bytes = sys.io.File.getBytes(path);
-			final ser = new hxbit.Serializer();
-			return ser.unserialize(bytes, Match);
+			return serializer.unserialize(bytes, Match);
 		} catch (e : Exception) {
 			throw 'Could not read match file $path : ${e.details()}';
 		}

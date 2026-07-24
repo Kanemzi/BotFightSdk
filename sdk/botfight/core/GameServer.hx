@@ -55,7 +55,7 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 
 	var turnWorkers : ElasticThreadPool;
 
-	var serializer : hxbit.Serializer;
+	
 
 	abstract function init() : Ts;
 
@@ -76,8 +76,6 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 
 		// @todo check bot count using config
 		players = [];
-		serializer = new hxbit.Serializer();
-		serializer.remapIds = true;
 	}
 
 	final public function addPlayer(info : PlayerInfo) {
@@ -124,7 +122,8 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		// var cloned : Ts = cast serializer.getKnownRef(GameState);
 		// serializer.endLoad();
 
-		return cast serializer.unserialize(serializer.serialize(st), GameState);
+		var ser = botfight.Runner.serializer;
+		return cast ser.unserialize(ser.serialize(st), GameState);
 	}
 
 	final public function run() : History<Ts, Ta> {

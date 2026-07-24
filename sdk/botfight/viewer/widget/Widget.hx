@@ -16,7 +16,7 @@ class Widget extends h2d.Flow implements h2d.domkit.Object {
 	}
 
 	function initInteractive() {
-		if( enableInteractive ) return;
+		if (enableInteractive) return;
 		enableInteractive = true;
 
 		interactive.enableRightButton = true;

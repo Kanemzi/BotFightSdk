@@ -15,13 +15,13 @@
 				"file": "mines.hxml"
 			},
             "args": [
-                "--players", "ExampleBot.hl", "ExampleBot.hl",
+                //"--players", "ExampleBot.hl", "ExampleBot.hl",
                 // "--gen",
-                "--match", "series", "3",
-                "--seed", "123415116",
+                //"--match", "series", "3",
+                //"--seed", "123415116",
                 // "--match", "5",
-                // "--replay", "path/to/file",
-                "--out", "./replays/",
+                "--replay", "./replays/test-timeline",
+                //"--out", "./replays/test-timeline",
 				//"--out",
 				//"--headless"
             ]

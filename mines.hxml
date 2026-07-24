@@ -1,4 +1,5 @@
 -debug
+--dce no
 --each
 
 -cp games/mines/bots

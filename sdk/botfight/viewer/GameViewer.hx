@@ -30,7 +30,7 @@ abstract class GameViewer<Ts : GameState> extends hxd.App {
 	override function init() {
 		super.init();
 		ui = new ViewManager(s2d);
-		ui.push(new botfight.viewer.view.MatchView(match));
+		ui.push(new botfight.viewer.view.MatchView(match, getTimelineBuilder()));
 	}
 	
 	abstract function getTimelineBuilder() : TimelineBuilder<Ts>;

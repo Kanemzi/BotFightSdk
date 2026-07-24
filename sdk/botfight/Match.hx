@@ -11,10 +11,6 @@ import botfight.core.History;
 class InvalidMatch extends Exception {}
 class InvalidPlayer extends Exception {}
 
-class GameSlot implements hxbit.Serializable {
-
-}
-
 typedef GameInfo = { seed : Int, players : Array<PlayerInfo> }
 
 abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable {

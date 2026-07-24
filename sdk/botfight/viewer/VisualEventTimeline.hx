@@ -5,6 +5,9 @@ import botfight.core.GameState.State;
 import botfight.core.GameState.SUID;
 import botfight.core.action.Action;
 import botfight.core.History;
+import botfight.viewer.VisualEvent.EventId;
+import botfight.viewer.VisualEvent.StateVisualEvent;
+import botfight.viewer.replay.StateRegistry;
 
 /*
 	When loading a replay. Everything happening during the game 
@@ -16,98 +19,17 @@ import botfight.core.History;
 	They are in charge of spawning/removing and updating their visual elements in the scene
 */
 
-typedef EventId = Int;
+typedef StateExtractor<Ts : GameState, T : State> = Ts -> Array<T>;
 
-@:allow(botfight.viewer.TimelineRule)
-@:allow(botfight.viewer.TimelineBuilder)
-class VisualEvent<Ts : State> {
-	public var id(default, null) : EventId = -1; // event ids will be given by the TimelineBuilder
-	public var start(default, null) : Float = -1;
-	public var end(default, null) : Float = -1;
-	public var suid(default, null) : Null<SUID>;
+class VisualEventTimeline {
+	var eventMap : Map<EventId, VisualEvent>;
+	var sortedEvents : Array<VisualEvent>;
 
- 	function new(?suid : SUID) {
-		this.suid = suid;
-	}
-
-	public function resolveRef(turn : Int) :Ts {
-		return null; // @todo implement
-	}
-}
-
-class VisualEventTimeline<Ts : GameState> {
-	var eventMap : Map<EventId, VisualEvent<Ts>>;
-	var sortedEvents : Array<VisualEvent<Ts>>;
-
-	public function new(events : Array<VisualEvent<Ts>>) {
+	public function new(events : Array<VisualEvent>) {
 		eventMap = [for (ev in events) ev.id => ev];
 		sortedEvents = [for (_ => v in events) v];
-		sortedEvents.sort((a, b) -> a.start > b.start ? 1 : -1);
+		sortedEvents.sort((a, b) -> a.begin > b.begin ? 1 : -1);
 	}
-}
-
-abstract class TimelineRule<Ts : GameState> {
-	var opened : Map<String, VisualEvent<Ts>>;
-	var history : History<Ts, Action>;
-
-	public function bake(history : History<Ts, Action>) : Array<VisualEvent<Ts>>{
-		this.history = history;
-		var events = [];
-		opened = [];
-
-		iter(history, (t, p, n) -> {
-			for (ev in eval(t, p, n)) {
-				events.push(ev);
-			}
-		});
-
-		var end = history.length;
-		for (ev in opened) {
-			ev.end = end;
-			events.push(ev);
-		}
-		return events;
-	}
-
-	final function iter(history : History<Ts, Action>, f : (t : Int, prev : Ts, next : Ts) -> Void) : Void {
-		if (history.length == 0 )
-			return;
-
-		var prev : Ts = null;
-		for (i in 0...history.length + 1) { // last iteration will set next to null
-			var next = history.turns[i]?.state;
-			f(i, prev, next);
-			prev = next;
-		}
-	}
-
-	/**
-		Évaluates a transition between two states and instantiate / close visual events.
-		First call of eval, [prev] is null.
-		Last call of eval, [next] is null.
-	*/
-	public function eval(turn : Int, prev : Ts, next : Ts) : Array<VisualEvent<Ts>> {
-		return [];
-	}
-
-	final function openEvent(key : String, start : Float, ev : VisualEvent<Ts>) {
-		if (opened.exists(key))
-			throw 'Key "$key" was already used to open an event, previous event would be overriden';
-		ev.start = start;
-		opened.set(key, ev);
-	}
-
-	final function closeEvent(key : String, end : Float) : VisualEvent<Ts> {
-		if (!opened.exists(key))
-			throw 'Event of key "$key" is not open';
-
-		var ev = opened.get(key);
-		opened.remove(key);
-		ev.end = hxd.Math.max(ev.end, end);
-		return ev;
-	}
-
-	static inline function makeKey(ts : State, kind : String) return '$kind${ts.id}';
 }
 
 class TimelineBuilder<Ts : GameState> {
@@ -120,15 +42,109 @@ class TimelineBuilder<Ts : GameState> {
 		return this;
 	}
 
-	@:allow(botfight.viewer.GameViewer)
-	function bake(history : History<Ts, Action>) : VisualEventTimeline<Ts> {
+	public function bake(history : History<Ts, Action>) : VisualEventTimeline {
+		var ctx = new StateRegistry(history);
 		var events = [];
 		if (rules != null) {
 			for (r in rules) for (e in r.bake(history)) {
 				e.id = events.length;
+				var ve = Std.downcast(e, StateVisualEvent);
+				if (ve != null)
+					ve.ctx = ctx.get(ve.id); 
 				events.push(e);
 			}
 		}
+
 		return new VisualEventTimeline(events);
+	}
+}
+
+abstract class TimelineRule<Ts : GameState> {
+	var opened : Map<String, VisualEvent>;
+
+	public function bake(history : History<Ts, Action>) : Array<VisualEvent>{
+		var events = [];
+		opened = [];
+
+		iter(history, (t, p, n) -> {
+			for (ev in bakeTurn(t, p, n))
+				events.push(ev);
+		});
+
+		var end = history.length;
+		for (ev in opened) {
+			ev.end = end;
+			events.push(ev);
+		}
+		return events;
+	}
+
+	final function iter(history : History<Ts, Action>, f : (t : Int, from : Ts, to : Ts) -> Void) : Void {
+		if (history.length == 0)
+			return;
+
+		var from : Ts = null;
+		for (i in 0...history.length + 1) {
+			var to = history.turns[i]?.state;
+			f(i - 1, from, to);
+			from = to;
+		}
+	}
+
+	/**
+		Évaluates a transition between two states and instantiate / close visual events.
+		First call of eval, [from] is null.
+		Last call of eval, [to] is null.
+	*/
+	public function bakeTurn(turn : Int, from : Ts, to : Ts) : Array<VisualEvent> {
+		return [];
+	}
+
+	final function openEvent(key : String, begin : Float, ev : VisualEvent) {
+		if (opened.exists(key))
+			throw 'Key "$key" was already used to open an event, previous event would be overriden';
+		ev.begin = begin;
+		opened.set(key, ev);
+	}
+
+	final function closeEvent(key : String, end : Float) : VisualEvent {
+		if (!opened.exists(key))
+			throw 'Event of key "$key" is not open';
+
+		var ev = opened.get(key);
+		opened.remove(key);
+		ev.end = hxd.Math.max(ev.end, end);
+		return ev;
+	}
+}
+
+/**
+	Helper rule that allows generating VisualEvents that represent the lifetime of specific states
+*/
+class LifetimeRule<Ts : GameState, T : State> extends TimelineRule<Ts> {
+	var extract : StateExtractor<Ts, T>;
+	var factory : T -> StateVisualEvent<T>;
+
+	public function new(ext : StateExtractor<Ts, T>, ?f : T -> StateVisualEvent<T> ) {
+		extract = gs -> gs == null ? [] : ext(gs);
+		factory = f;
+	}
+
+	override function bakeTurn(turn : Int, from : Ts, to : Ts) : Array<VisualEvent> {
+		final from : Array<T> = extract(from);
+		final to  : Array<T> = extract(to);
+		var events = [];
+
+		for (t in to) 
+			if (!from.exists(f -> f.id == t.id)) {
+				var ev = factory != null ? factory(t) : new StateVisualEvent(t);
+				openEvent('${t.id}', turn, ev);
+			}
+
+		for (f in from)
+			if (!to.exists(t -> t.id == f.id))
+				events.push(closeEvent('${f.id}', turn));
+
+		return events;
 	}
 }

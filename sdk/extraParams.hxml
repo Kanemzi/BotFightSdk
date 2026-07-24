@@ -9,7 +9,5 @@
 -D hxbit_host_mt
 -D resourcesPath=res
 
-# --macro domkit.Macros.registerComponentsPath("viewer.$")
-# --macro domkit.Macros.registerComponentsPath("viewer.view.$")
-# --macro domkit.Macros.registerComponentsPath("viewer.widget.$")
-# --macro domkit.Macros.registerComponentsPath("viewer.replay.$")
+--macro domkit.Macros.registerComponentsPath("botfight.viewer.view.$")
+--macro domkit.Macros.registerComponentsPath("botfight.viewer.widget.$")
