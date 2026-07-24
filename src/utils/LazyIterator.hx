@@ -114,7 +114,7 @@ class UtilsIterators {
 	}
 
 	inline public static function empty<T>(iter: Iterator<T>) {
-		return iter.hasNext();
+		return !iter.hasNext();
 	}
 
 	inline public static function find<T>(iter: Iterator<T>, f : T -> Bool ) {
@@ -145,7 +145,7 @@ class UtilsIterators {
 
 	inline public static function indexOf<T>(iter: Iterator<T>, item : T) : Int {
 		var it = iter.enumerate().filter(e -> e.v == item);
-		if (it.hasNext()) return -1;
+		if (!it.hasNext()) return -1;
 		return it.next().i;
 	}
 }

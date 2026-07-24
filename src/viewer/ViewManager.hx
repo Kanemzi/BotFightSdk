@@ -42,23 +42,22 @@ class ViewManager extends h2d.Flow {
 		refreshViews();
 	}
 
-	public function pop() {
+	function _pop() {
 		var last = stack.pop();
 		if (last == null) return;
 		last.onClose();
 		style.removeObject(last);
 		last.remove();
+	}
 
+	public function pop() {
+		_pop();
 		current?.onResume();
 		refreshViews();
 	}
 
 	public function replace(view : View) {
-		while (!stack.empty()) {
-			var last = stack.pop();
-			last.onClose();
-			last.remove();
-		}
+		while (!stack.empty()) _pop();
 		push(view);
 		refreshViews();
 	}

@@ -122,7 +122,7 @@ class MinesExampleBot {
 
 		function getRandomMove(bot : Robot) : Vec {
 			var pos = { x : Std.random(100) < 50 ? -1 : 1, y : 0 }
-			if (Std.random(100) < 100 ) {
+			if (Std.random(100) < 50 ) {
 				var tmp = pos.x;
 				pos.x = pos.y;
 				pos.y = tmp;

@@ -118,7 +118,7 @@ final class Runner {
 	}
 
 	static function createMatch<Ts : GameState, Ta : Action>(args : RunnerArgs) : Match<Ts, Ta> {
-		final seed = Std.parseInt(args.getParam("seed")) ?? Std.random(1 << 31 - 1);
+		final seed = Std.parseInt(args.getParam("seed")) ?? Std.random(Const.INT_MAX);
 		if (args.has("gen")) {
 			final n = Std.parseInt(args.getParam("gen")) ?? 1;
 			return new Series(n, seed);

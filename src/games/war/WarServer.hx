@@ -16,8 +16,8 @@ class WarServer extends GameServer<WarState, WarAction> {
 			minPlayers : 2,
 			maxPlayers : 2,
 			maxTurns : 10,
-			firstTurnTimeout : 1000.0,
-			turnTimeout : 1000.0,
+			firstTurnTimeout : 1.0,
+			turnTimeout : 0.5,
 			turnModel : TurnModel.SimultaneousTurn,
 		});
 	}

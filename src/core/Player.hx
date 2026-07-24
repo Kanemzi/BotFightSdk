@@ -91,7 +91,8 @@ final class Player<Ta : Action> {
 		var s = null;
 		try {
 			actions = turnProfile.collect(next);
-		} catch (e : Exception) {
+		} catch (e : std.haxe.Exception) {
+			// @todo Exception might not be core.Exception. Therefore it might not be bot's fault
 			error = e.message;
 			s = if (io.isDisposed()) Crashed
 				else if (Std.isOfType(e, TimeoutException)) TimedOut

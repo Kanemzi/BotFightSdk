@@ -7,7 +7,7 @@
         {
             "name": "GameServer",
             "request": "launch",
-            "port": 4771,
+            "port": 4770,
             "type": "hl",
             "cwd": "${workspaceFolder}",
             "preLaunchTask": {

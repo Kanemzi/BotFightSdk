@@ -25,7 +25,7 @@ class ProcessPlayerIO implements PlayerIO {
 	var logger : Thread;
 
 	public function new(path : String, args : Array<String>) {
-		process = new Process('hl $path ${args.join(" ")}');
+		process = new Process('hl', [path].concat(args));
 		
 		buffer = new Mutex([]);
 		logs = new Mutex([]);
@@ -71,6 +71,7 @@ class ProcessPlayerIO implements PlayerIO {
 		process.stderr.close();
 		process.stdin.close();
 		process.stdout.close();
+		process.kill();
 		process.close();
 		process = null;
 	}

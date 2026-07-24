@@ -56,7 +56,7 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 		return info;
 	}
 
-	inline function genSeed() { return rnd?.random(1 << 31 - 1) ?? 0; }
+	inline function genSeed() { return rnd?.random(Const.INT_MAX) ?? 0; }
 
 	final public function pollGames() : Array<GameInfo> {
 		if (!started) {
