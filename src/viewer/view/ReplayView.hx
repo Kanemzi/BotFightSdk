@@ -1,11 +1,28 @@
 package viewer.view;
 
-import viewer.widget.Widget;
+import core.GameState;
+import core.History;
+import core.action.Action;
+import viewer.widget.Button;
 
-class ReplayView extends View {
+class ReplayView<Ts : GameState> extends View {
 	static var SRC = <replay-view>
-		<widget class="truc"></widget>
+		<flow class="head">
+			<text text={'Game - ${game.header.seed}'}/>
+			<button id="leave-btn">
+				<text text={'X'}/>
+			</button>
+		</flow>
 	</replay-view>
+
+	public function new(game : History<Ts, Action>) {
+		super();
+		initComponent();
+
+		// @todo create timeline widget
+
+		leaveBtn.onClick = _ -> ui.pop();
+	}
 }
 
 /**

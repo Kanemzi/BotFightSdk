@@ -66,7 +66,11 @@ class ProcessPlayerIO implements PlayerIO {
 	}
 
 	public function dispose() {
-		process.kill();
+		if (process == null)
+			return;
+		process.stderr.close();
+		process.stdin.close();
+		process.stdout.close();
 		process.close();
 		process = null;
 	}

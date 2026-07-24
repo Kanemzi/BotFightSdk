@@ -25,7 +25,6 @@ class ViewManager extends h2d.Flow {
 	function initStyle() {
 		style = new h2d.domkit.Style();
 		style.useSmartCache = true;
-		//style.addObject(this);
 		style.loadComponents("style");
 		#if hl
 		if (hl.Api.hasDebugger())
@@ -70,6 +69,7 @@ class ViewManager extends h2d.Flow {
 	}
 
 	public function update(dt : Float) {
+		style.sync(dt);
 		current?.update(dt);
 	}
 }

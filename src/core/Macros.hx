@@ -121,7 +121,7 @@ class Macros {
 		};
 
 
-		// @todo just generate a cast on null instead to avoid creating a usedless field
+		// @todo just generate a cast on null instead to avoid creating a useless field
 		fields.push({
 			name : "__action",
 			access: [AStatic, AInline, AFinal],

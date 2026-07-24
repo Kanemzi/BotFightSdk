@@ -7,3 +7,8 @@
 -D domkit_heaps
 -D analyzer-optimize
 -D hxbit_host_mt
+
+# --macro domkit.Macros.registerComponentsPath("viewer.$")
+# --macro domkit.Macros.registerComponentsPath("viewer.view.$")
+# --macro domkit.Macros.registerComponentsPath("viewer.widget.$")
+# --macro domkit.Macros.registerComponentsPath("viewer.replay.$")

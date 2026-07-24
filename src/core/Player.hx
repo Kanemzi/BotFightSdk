@@ -50,7 +50,7 @@ final class Player<Ta : Action> {
 	function kill(reason : Status) {
 		if (!isAlive()) return;
 		status = reason;
-		//io.dispose();
+		io.dispose();
 	}
 
 	function victory() {
@@ -88,14 +88,14 @@ final class Player<Ta : Action> {
 
 		var actions : Array<Ta> = null;
 		var error : String = null;
+		var s = null;
 		try {
 			actions = turnProfile.collect(next);
 		} catch (e : Exception) {
 			error = e.message;
-			var s = if (io.isDisposed()) Crashed
+			s = if (io.isDisposed()) Crashed
 				else if (Std.isOfType(e, TimeoutException)) TimedOut
 				else Invalid;
-			kill(s);
 		}
 
 		final time = Timer.stamp() - start;
@@ -103,7 +103,7 @@ final class Player<Ta : Action> {
 			pid : id,
 			actions : actions,
 			time : time,
-			status : status,
+			status : s ?? status,
 			error : error,
 			logs : collectLogs(),
 		};

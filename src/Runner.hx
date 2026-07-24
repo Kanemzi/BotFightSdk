@@ -65,15 +65,13 @@ final class Runner {
 		final hasGen = args.has("gen");
 		final hasMatch = args.has("match");
 		final playerPaths = args.getParams("players");
-		function shouldRunMatch() {
-			if (playerPaths == null || playerPaths.length == 0) {
-				// @todo debugGen should not require players (add dummy players)
-				if (hasGen) error('Trying to test generation without any bot program');
-				else if (hasMatch) error('Trying to start a match without any bot program');
-				return false;
-			}
-			return true;
-		}
+		
+		final shouldRunMatch = if (playerPaths == null || playerPaths.length == 0) {
+			// @todo debugGen should not require players (add dummy players)
+			if (hasGen) error('Trying to test generation without any bot program');
+			else if (hasMatch) error('Trying to start a match without any bot program');
+			false;
+		} else true;
 
 		inline function runMatch() : Match<Ts, Ta> {
 			var match = createMatch(args);
@@ -99,7 +97,7 @@ final class Runner {
 			return match;
 		}
 
-		var match = if (shouldRunMatch()) {
+		var match = if (shouldRunMatch) {
 			var m = runMatch();
 			if (args.has("out"))
 				saveReplay(args.getParam("out"), m);

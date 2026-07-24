@@ -81,9 +81,5 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 		return this;
 	}
 
-	public function getDefeatTurn(pid : PlayerId) {
-		// @todo implement
-	}
-
 	public inline function getStateUID() return turns[0].state.id;
 }

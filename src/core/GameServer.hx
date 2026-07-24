@@ -150,7 +150,11 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 			final alive = getAlivePlayers();
 			final playing = turnModel.getPlayingThisTurn(getAlivePlayers(), newState, turn);
 			final results = playTurns(playing);
-
+			for (r in results) { // @todo check necessary
+				if (r.error != null)
+					getPlayer(r.pid)?.kill(r.status);
+			}
+			
 			// @todo remove these logs, they should be stored in history for replay
 			trace('--- Turn ${turn} ---');
 			trace('Played : ${results.map(a -> '[${getPlayer(a.pid).name} : ${a.time}ms]').join(" ")}');

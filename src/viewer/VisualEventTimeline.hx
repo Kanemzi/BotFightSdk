@@ -3,6 +3,7 @@ package viewer;
 import core.GameState;
 import core.GameState.State;
 import core.GameState.SUID;
+import core.action.Action;
 import core.History;
 
 /*
@@ -17,13 +18,21 @@ import core.History;
 
 typedef EventId = Int;
 
-@:publicFields @:structInit
+@:allow(viewer.TimelineRule)
+@:allow(viewer.TimelineBuilder)
 class VisualEvent<Ts : State> {
-	var id : EventId;
-	var start : Int;
-	var end : Int;
-	var suid : SUID;
-	var data : Dynamic;
+	public var id(default, null) : EventId = -1; // event ids will be given by the TimelineBuilder
+	public var start(default, null) : Float = -1;
+	public var end(default, null) : Float = -1;
+	public var suid(default, null) : Null<SUID>;
+
+ 	function new(?suid : SUID) {
+		this.suid = suid;
+	}
+
+	public function resolveRef(turn : Int) :Ts {
+		return null; // @todo implement
+	}
 }
 
 class VisualEventTimeline<Ts : GameState> {
@@ -33,15 +42,15 @@ class VisualEventTimeline<Ts : GameState> {
 	public function new(events : Array<VisualEvent<Ts>>) {
 		eventMap = [for (ev in events) ev.id => ev];
 		sortedEvents = [for (_ => v in events) v];
-		sortedEvents.sort((a, b) -> a.start - b.start);
+		sortedEvents.sort((a, b) -> a.start > b.start ? 1 : -1);
 	}
 }
 
 abstract class TimelineRule<Ts : GameState> {
 	var opened : Map<String, VisualEvent<Ts>>;
-	var history : History<Ts, EnumValue>;
+	var history : History<Ts, Action>;
 
-	public function bake(history : History<Ts, EnumValue>) : Array<VisualEvent<Ts>>{
+	public function bake(history : History<Ts, Action>) : Array<VisualEvent<Ts>>{
 		this.history = history;
 		var events = [];
 		opened = [];
@@ -60,7 +69,7 @@ abstract class TimelineRule<Ts : GameState> {
 		return events;
 	}
 
-	final function iter(history : History<Ts, EnumValue>, f : (t : Int, prev : Ts, next : Ts) -> Void) : Void {
+	final function iter(history : History<Ts, Action>, f : (t : Int, prev : Ts, next : Ts) -> Void) : Void {
 		if (history.length == 0 )
 			return;
 
@@ -81,29 +90,21 @@ abstract class TimelineRule<Ts : GameState> {
 		return [];
 	}
 
-	final function openEvent(key : String, start : Int, ?suid : SUID, ?data : Dynamic) {
+	final function openEvent(key : String, start : Float, ev : VisualEvent<Ts>) {
 		if (opened.exists(key))
 			throw 'Key "$key" was already used to open an event, previous event would be overriden';
-		opened.set(key, makeEvent(start, start, suid, data));
+		ev.start = start;
+		opened.set(key, ev);
 	}
 
-	final function closeEvent(key : String, end : Int) {
+	final function closeEvent(key : String, end : Float) : VisualEvent<Ts> {
 		if (!opened.exists(key))
 			throw 'Event of key "$key" is not open';
 
 		var ev = opened.get(key);
 		opened.remove(key);
-		ev.end = hxd.Math.imax(ev.end, end);
+		ev.end = hxd.Math.max(ev.end, end);
 		return ev;
-	}
-
-	// @todo a visual event might start before turn 0, in that case, we should spawn it on first turn then advance it to correct time in its life
-	final function makeEvent(start : Int, end : Int, ?suid : SUID, ?data : Dynamic) : VisualEvent<Ts> return {
-		id : -1, // event ids will be given by the TimelineBuilder
-		start : start,
-		end : end,
-		suid : suid ?? history.getStateUID(), // bind event to GameState by default
-		data : data,
 	}
 
 	static inline function makeKey(ts : State, kind : String) return '$kind${ts.id}';
@@ -120,7 +121,7 @@ class TimelineBuilder<Ts : GameState> {
 	}
 
 	@:allow(viewer.GameViewer)
-	function bake(history : History<Ts, EnumValue>) : VisualEventTimeline<Ts> {
+	function bake(history : History<Ts, Action>) : VisualEventTimeline<Ts> {
 		var events = [];
 		if (rules != null) {
 			for (r in rules) for (e in r.bake(history)) {

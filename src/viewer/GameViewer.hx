@@ -2,6 +2,7 @@ package viewer;
 
 import core.GameState;
 import core.History;
+import core.action.Action;
 import viewer.VisualEventTimeline.TimelineBuilder;
 
 /*
@@ -14,28 +15,35 @@ Design :
 */
 
 abstract class GameViewer<Ts : GameState> extends hxd.App {
-	var match : Match<Ts, EnumValue>;
+	var match : Match<Ts, Action>;
 	var ui : ViewManager;
 
-	public function new(match : Match<Ts, EnumValue>) {
+	public function new(match : Match<Ts, Action>) {
 		super();
+		
 		hxd.Res.initLocal();
+		hxd.res.Resource.LIVE_UPDATE = #if hl hl.Api.hasDebugger() #else false #end;
+
 		this.match = match;
 	}
 
 	override function init() {
 		super.init();
 		ui = new ViewManager(s2d);
-		ui.push(new viewer.view.MatchView());
+		ui.push(new viewer.view.MatchView(match));
 	}
 	
 	abstract function getTimelineBuilder() : TimelineBuilder<Ts>;
 
-	function playGame(history : History<Ts, EnumValue>) {
+	function playGame(history : History<Ts, Action>) {
 		final builder = getTimelineBuilder();
 		if (builder == null)
 			throw 'No TimelineBuilder provided to the viewer';
 		final timeline = builder.bake(history);
 		trace(timeline);
+	}
+
+	override function update(dt : Float) {
+		ui.update(dt);
 	}
 }

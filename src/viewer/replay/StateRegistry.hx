@@ -3,6 +3,7 @@ package viewer.replay;
 import core.History;
 import core.GameState.SUID;
 import core.GameState.State;
+import core.action.Action;
 
 /**
 	Replays consists of duplicated GameStates for each turn, thus we can't directly
@@ -16,10 +17,10 @@ import core.GameState.State;
 	registry. That is then passed to the EventView
 */
 public class StateRegistry {
-	var history : History<GameState, EnumValue>;
+	var history : History<GameState, Action>;
 	var entries : Map<SUID, RegistryEntry>;
 	
-	public function new(history : History<GameState, EnumValue>) {
+	public function new(history : History<GameState, Action>) {
 		this.history = history;
 		entries = new Map();
 		for (i in 0...history.length) {

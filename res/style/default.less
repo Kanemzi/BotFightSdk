@@ -1,10 +1,60 @@
-match-view {
-	background: darken(blue, 30%);
+.head {
+	fill-width: true;
+	height: 50;
+	content-align: middle middle;
+
+	background: darken(gray, 30%);
+
 }
 
-.truc {
-	align: middle middle;
-	width: 50;
-	height: 50;
-	background: darken(red, 30%);
+match-view {
+	layout: vertical;
+	content-align: middle;
+	
+	background: darken(blue, 40%);
+	
+	.game-list {
+		layout: vertical;
+		padding: 10;
+		spacing: 10;
+
+		background: darken(blue, 30%);
+		
+		.game {
+			align: middle middle;
+		}
+	}
+}
+
+replay-view {
+	layout : vertical;
+	
+	background: darken(green, 20%);
+
+	> .head {
+		layout: stack;
+		> #leave-btn {
+			align: right;
+			height: 30;
+			width: 30;
+			margin: 10;
+		}
+	}
+}
+
+button {
+	width: 150;
+	height: 40;
+
+	content-align: middle middle;
+	
+	background :black;
+	cursor: button;
+	
+	&:hover {
+		background: red;//lighten(black, 20%);
+	}
+	&:active {
+		background: yellow;
+	}
 }
