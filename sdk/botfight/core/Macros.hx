@@ -125,6 +125,7 @@ class Macros {
 		fields.push({
 			name : "__action",
 			access: [AStatic, AInline, AFinal],
+			meta: [{name : ":keep", pos : pos}],
 			kind: FVar(macro : hxbit.Serializable.SerializableEnum<$comp>, macro null),
 
 			pos: pos,

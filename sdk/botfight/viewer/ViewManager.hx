@@ -11,7 +11,9 @@ class ViewManager extends h2d.Flow {
 	public function new(s2d : h2d.Scene) {
 		super();
 		stack = [];
-		
+
+		// @todo ViewManager should have a generic and global way of handling tooltips
+
 		this.s2d = s2d;
 		dom = domkit.Properties.create("flow", this);
 		dom.addClass("root");

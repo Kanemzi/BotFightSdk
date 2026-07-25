@@ -24,4 +24,6 @@ class MinesViewer extends botfight.viewer.GameViewer<MinesState> {
 			gs -> gs.objects,
 			o -> new ObjectLifetimeEvent(o)
 		));
+	
+	function getScene() return new MinesGameScene();
 }

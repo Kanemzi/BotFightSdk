@@ -30,6 +30,10 @@ class VisualEventTimeline {
 		sortedEvents = [for (_ => v in events) v];
 		sortedEvents.sort((a, b) -> a.begin > b.begin ? 1 : -1);
 	}
+
+	public function activeEventsAt(t : Float) : Array<VisualEvent> {
+		return sortedEvents.filter(ev -> ev.begin <= t && t <= ev.end);
+	}
 }
 
 class TimelineBuilder<Ts : GameState> {
@@ -50,7 +54,7 @@ class TimelineBuilder<Ts : GameState> {
 				e.id = events.length;
 				var ve = Std.downcast(e, StateVisualEvent);
 				if (ve != null)
-					ve.ctx = ctx.get(ve.id); 
+					ve.ctx = ctx.get(ve.suid); 
 				events.push(e);
 			}
 		}
@@ -138,7 +142,7 @@ class LifetimeRule<Ts : GameState, T : State> extends TimelineRule<Ts> {
 		for (t in to) 
 			if (!from.exists(f -> f.id == t.id)) {
 				var ev = factory != null ? factory(t) : new StateVisualEvent(t);
-				openEvent('${t.id}', turn, ev);
+				openEvent('${t.id}', turn + 1, ev);
 			}
 
 		for (f in from)

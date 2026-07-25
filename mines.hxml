@@ -1,5 +1,4 @@
 -debug
---dce no
 --each
 
 -cp games/mines/bots
@@ -8,6 +7,8 @@
 
 --next
 
+# -D hl_profile
+-D dump=pretty
 -cp games/mines/
 -lib botfight-sdk
 -hl MinesServer.hl

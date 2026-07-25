@@ -41,7 +41,14 @@ replay-view, timeline-debug-view {
 		}
 	}
 }
-replay-view { background: darken(green, 20%); }
+replay-view {
+	game-viewport {
+		background: black;
+		fill-width: true;
+		fill-height: true;
+	}
+}
+
 timeline-debug-view {
 	timeline-debug {
 		fill-width: true;

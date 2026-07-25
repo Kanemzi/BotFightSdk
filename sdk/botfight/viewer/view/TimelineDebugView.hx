@@ -5,6 +5,7 @@ import botfight.core.History;
 import botfight.core.action.Action;
 import botfight.viewer.widget.Widget;
 import botfight.viewer.VisualEventTimeline;
+import botfight.viewer.VisualEvent;
 import botfight.viewer.VisualEvent.StateVisualEvent;
 
 class EventDisplay {
@@ -19,6 +20,8 @@ class EventDisplay {
     }
 }
 
+// @todo clean
+
 class TimelineDebug extends Widget {
 	static var SRC = <timeline-debug>
 	</timeline-debug>
@@ -27,13 +30,30 @@ class TimelineDebug extends Widget {
 	static inline var PX_PER_TURN = 6.;
 	static inline var MIN_WIDTH = 4.;
 
+	static inline var ZOOM_MIN = 0.4;
+	static inline var ZOOM_MAX = 6.;
+	static inline var ZOOM_STEP = 1.5;
+
 	var canvas : h2d.Object;
+	var zoom : Float = 1.;
+	var dragOriginX : Float;
+	var dragOriginY : Float;
+	var tooltip : h2d.Text;
 
 	public function new(timeline : VisualEventTimeline, ?parent) {
 		super(parent);
 		initComponent();
 		canvas = new h2d.Object(this);
 		getProperties(canvas).isAbsolute = true;
+
+		interactive.onWheel = onZoom;
+
+		tooltip = new h2d.Text(hxd.res.DefaultFont.get(), this);
+		getProperties(tooltip).isAbsolute = true;
+		tooltip.textColor = 0xffffff;
+		tooltip.dropShadow = { dx : 1, dy : 1, color : 0x000000, alpha : 1 };
+		tooltip.visible = false;
+
 		drawTimeline(timeline);
 	}
 
@@ -52,9 +72,59 @@ class TimelineDebug extends Widget {
 
 			var g = new h2d.Graphics(canvas);
 			g.beginFill(EventDisplay.color(ev));
-			g.drawRect(begin * PX_PER_TURN, row * ROW_HEIGHT, w, ROW_HEIGHT - 2);
+			g.drawRect(begin * PX_PER_TURN, row * ROW_HEIGHT, w, ROW_HEIGHT / 2);
 			g.endFill();
+
+			var itv = new h2d.Interactive(w, ROW_HEIGHT / 2, g);
+			itv.x = begin * PX_PER_TURN;
+			itv.y = row * ROW_HEIGHT;
+			itv.propagateEvents = true; // let push/move fall through to the underlying drag/zoom interactive
+			itv.onOver = e -> showTooltip(ev, itv, e);
+			itv.onMove = e -> showTooltip(ev, itv, e);
+			itv.onOut = e -> hideTooltip();
 		}
+	}
+
+	function showTooltip(ev : VisualEvent, itv : h2d.Interactive, e : hxd.Event) {
+		var label = EventDisplay.name(ev);
+		var suid = Std.downcast(ev, StateVisualEvent);
+		if (suid != null) label += ' #${suid.suid}';
+		tooltip.text = label;
+
+		var p = itv.localToGlobal(new h2d.col.Point(e.relX, e.relY));
+		this.globalToLocal(p);
+		tooltip.x = p.x + 8;
+		tooltip.y = p.y - 14;
+		tooltip.visible = true;
+	}
+
+	function hideTooltip() {
+		tooltip.visible = false;
+	}
+
+	function onZoom(e : hxd.Event) {
+		var factor = e.wheelDelta < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
+		var newZoom = hxd.Math.clamp(zoom * factor, ZOOM_MIN, ZOOM_MAX);
+		if (newZoom == zoom) return;
+
+		// keep the point under the cursor fixed while zooming
+		var localX = (e.relX - canvas.x) / zoom;
+		var localY = (e.relY - canvas.y) / zoom;
+
+		zoom = newZoom;
+		canvas.setScale(zoom);
+		canvas.x = e.relX - localX * zoom;
+		canvas.y = e.relY - localY * zoom;
+	}
+
+	override function onPush() {
+		dragOriginX = canvas.x;
+		dragOriginY = canvas.y;
+	}
+
+	override function onDrag(x : Float, y : Float, dx : Float, dy : Float) {
+		canvas.x = dragOriginX + dx;
+		canvas.y = dragOriginY + dy;
 	}
 }
 
@@ -62,9 +132,7 @@ class TimelineDebugView<Ts : GameState> extends View {
 	static var SRC = <timeline-debug-view>
 		<flow class="head">
 			<text text={'Timeline viewer'} />
-			<button id="leave-btn">
-				<text text={'X'} />
-			</button>
+			<button id="leave-btn" text="X" />
 		</flow>
 		<timeline-debug(timeline) />
 	</timeline-debug-view>

@@ -3,3 +3,9 @@ build/
 replays/
 *.hl
 *.replay
+*.dump
+
+profile.json
+
+games/demo
+demo.hxml

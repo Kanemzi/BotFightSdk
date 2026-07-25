@@ -2,20 +2,23 @@ package botfight.viewer.view;
 
 import botfight.core.GameState;
 import botfight.core.History;
+import botfight.core.History.HistoryHeader;
 import botfight.core.action.Action;
+import botfight.viewer.replay.GameScene;
 
 class ReplayView<Ts : GameState> extends View {
 	static var SRC = <replay-view>
 		<flow class="head">
-			<text text={'Game - ${game.header.seed}'} />
-			<button id="leave-btn">
-				<text text={'X'} />
-			</button>
+			<text text={'Game - ${info.seed}'} />
+			<button id="leave-btn" text="X" />
 		</flow>
+		<game-viewport(timeline, view) id="viewport"/>
 	</replay-view>
 
-	public function new(game : History<Ts, Action>) {
+	public function new(info : HistoryHeader, timeline : VisualEventTimeline, gscFactory : Void -> GameScene) {
 		super();
+
+		var view = gscFactory();
 		initComponent();
 
 		// @todo create timeline widget

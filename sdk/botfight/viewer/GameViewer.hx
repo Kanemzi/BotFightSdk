@@ -4,6 +4,7 @@ import botfight.core.GameState;
 import botfight.core.History;
 import botfight.core.action.Action;
 import botfight.viewer.VisualEventTimeline.TimelineBuilder;
+import botfight.viewer.replay.GameScene;
 
 /*
 Design : 
@@ -30,10 +31,11 @@ abstract class GameViewer<Ts : GameState> extends hxd.App {
 	override function init() {
 		super.init();
 		ui = new ViewManager(s2d);
-		ui.push(new botfight.viewer.view.MatchView(match, getTimelineBuilder()));
+		ui.push(new botfight.viewer.view.MatchView(match, getTimelineBuilder(), getScene));
 	}
 	
 	abstract function getTimelineBuilder() : TimelineBuilder<Ts>;
+	abstract function getScene() : GameScene;
 
 	function playGame(history : History<Ts, Action>) {
 		final builder = getTimelineBuilder();
