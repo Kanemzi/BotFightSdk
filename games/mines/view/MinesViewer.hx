@@ -4,6 +4,7 @@ import server.MinesState;
 import server.MinesState.Robot;
 import server.MinesState.Object;
 
+import botfight.core.Player.PlayerId;
 import botfight.viewer.VisualEventTimeline.TimelineBuilder;
 import botfight.viewer.VisualEventTimeline.LifetimeRule;
 import botfight.viewer.VisualEvent;
@@ -22,7 +23,7 @@ class RobotLifetimeEvent extends StateVisualEvent<Robot> {
 class ObjectLifetimeEvent extends StateVisualEvent<Object> {}
 
 class MinesViewer extends botfight.viewer.GameViewer<MinesState> {
-	function robotsTimelineRule(pid : Int) {
+	function robotsTimelineRule(pid : PlayerId) {
 		return new LifetimeRule<MinesState, Robot>(
 			gs -> gs.players[pid].robots,
 			r -> new RobotLifetimeEvent(r, pid)

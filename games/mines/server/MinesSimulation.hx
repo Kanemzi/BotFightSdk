@@ -5,41 +5,27 @@ import botfight.core.Player;
 import botfight.core.TurnModel;
 import botfight.core.action.ActionCollector;
 
+import botfight.core.GameSimulation;
+import botfight.core.GameSimulation.PlayersActions;
 import server.MinesState;
 import view.MinesViewer;
 import server.Simulation in Sim;
 
 using server.Simulation;
 
-class MinesServer extends GameServer<MinesState, MinesAction> {
-	function getConfig() : ServerConfig return {
-		version : 1,
-		minPlayers : 2,
-		maxPlayers : 2,
-		maxTurns : Sim.MAX_TURNS,
-		firstTurnTimeout : 1.0,
-		turnTimeout : 0.5,
-		turnModel : TurnModel.SimultaneousTurn,
+class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
+
+	function init(players : Array<PlayerId>, rnd : hxd.Rand) : MinesState {
+		return new MinesState(players, rnd);
 	}
 
-	function serializeHeaderForPlayer(pid : PlayerId,  initialState : MinesState) : Array<String> {
-		return [
-			'$pid',
-			'${MinesState.WIDTH} ${MinesState.HEIGHT}'
-		];
-	}
-
-	function init(rnd : hxd.Rand) : MinesState {
-		return new MinesState(players.map(p -> p.id), rnd);
-	}
-
-	function update(state : MinesState, actions : PlayersActions<MinesAction>, rnd : hxd.Rand) : Void {
+	function update(state : MinesState, ctx : SimulationContext<MinesAction>) : Void {
 		inline function getRobot(pid : PlayerId, i : Int) {
 			return state.getPlayer(pid).robots[i];
 		}
 
 		// robot move actions
-		actions((pid, a, i) -> switch (a) {
+		ctx.actions((pid, a, i) -> switch (a) {
 			case Move(x, y):
 				var r = getRobot(pid, i);
 				var t = Sim.getClosestCellAround(r.pos.x, r.pos.y, x, y);
@@ -51,7 +37,7 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 		});
 
 		// mine drop actions
-		actions((pid, a, i) -> switch (a) {
+		ctx.actions((pid, a, i) -> switch (a) {
 			case Mine(x, y):
 				if (!Sim.inGrid(x, y))
 					return;
@@ -80,7 +66,7 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 		});
 
 		// spawn robot actions
-		actions((pid, a, i) -> switch (a) {
+		ctx.actions((pid, a, i) -> switch (a) {
 			case Spawn:
 				var p = state.getPlayer(pid);
 				var r = getRobot(pid, i);
@@ -122,7 +108,7 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 				if (r != null) {
 					var p = state.getOwner(r);
 					p.robots.remove(r);
-					state.destroyRobotAt(r.pos.x, r.pos.y, rnd);
+					state.destroyRobotAt(r.pos.x, r.pos.y, ctx.rnd);
 				}
 			}
 			destroyAt(r.pos.x, r.pos.y);
@@ -130,7 +116,7 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 		});
 
 		// spawn objects on the ground
-		state.turnDrops(rnd);
+		state.turnDrops(ctx.rnd);
 
 		// check loses / wins
 		inline function countRobots(pid : PlayerId) {
@@ -139,19 +125,70 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 			return c;
 		}
 
-		for (p in getAlivePlayers()) {
-			if (countRobots(p.id) == 0)
-				defeat(p.id);
+		for (p in ctx.getAlivePlayers()) {
+			if (countRobots(p) == 0)
+				ctx.defeat(p);
 		}
 	}
 
-	function getTurnActionProfile(pid : PlayerId) return Fixed(state.getPlayer(pid).robots.length );
-	function getTiebreakerScore(pid : PlayerId) {
+	function getTurnActionProfile(state : MinesState, pid : PlayerId) return Fixed(state.getPlayer(pid).robots.length );
+	
+	function getTiebreakerScore(state : MinesState, pid : PlayerId) {
 		var p = state.getPlayer(pid);
 		return p.resources.get(Scrap) + p.resources.get(Microship) * Sim.MICROSHIP_SCORE_RATIO;
 	}
 
+	function serializeHeaderForPlayer(pid : PlayerId,  initialState : MinesState) : Array<String> {
+		return [
+			'$pid',
+			'${MinesState.WIDTH} ${MinesState.HEIGHT}'
+		];
+	}
+
+	function serializeForPlayer(state : MinesState, pid : PlayerId) : Array<String> {
+		var l = [];
+		
+		var me = state.getPlayer(pid);
+		l.push('${me.resources.get(Scrap)}');
+		l.push('${me.resources.get(Microship)}');
+		l.push('ME ${me.robots.length}');
+		for (r in me.robots)
+			l.push('${r.pos.x} ${r.pos.y}');
+
+		var foes = [];
+		state.forEachRobot(r -> if (state.getOwner(r).pid != pid) foes.push(r));
+		l.push('FOES ${foes.length}');
+		for (f in foes)
+			l.push('${f.pos.x} ${f.pos.y}');
+
+		var mines = state.objects.filter(o -> o.k == Mine);
+		l.push('MINE ${mines.length}');
+		for (o in mines)
+			l.push('${o.pos.x} ${o.pos.y}');
+
+		var scrap = state.objects.filter(o -> o.k == Scrap);
+		l.push('SCRAP ${scrap.length}');
+		for (o in scrap)
+			l.push('${o.pos.x} ${o.pos.y}');
+
+		var microship = state.objects.filter(o -> o.k == Microship);
+		l.push('MICROSHIP ${microship.length}');
+		for (o in microship)
+			l.push('${o.pos.x} ${o.pos.y}');
+
+		return l;
+	}
+
 	public static function main() {
-		new botfight.Runner(MinesServer, MinesViewer, Sys.args());
+		new botfight.Runner(MinesSimulation, MinesViewer, Sys.args(), {
+			version : 1,
+			minPlayers : 2,
+			maxPlayers : 2,
+			maxTurns : Sim.MAX_TURNS,
+			firstTurnTimeout : 1.0,
+			turnTimeout : 0.5,
+			turnModel : TurnModel.SimultaneousTurn,
+			defaultStorageMode : Delta,
+		});
 	}
 }

@@ -103,38 +103,4 @@ class MinesState extends GameState {
 				f(r);
 		}
 	}
-
-	public function serializeForPlayer(pid : PlayerId) : Array<String> {
-		var l = [];
-		
-		var me = getPlayer(pid);
-		l.push('${me.resources.get(Scrap)}');
-		l.push('${me.resources.get(Microship)}');
-		l.push('ME ${me.robots.length}');
-		for (r in me.robots)
-			l.push('${r.pos.x} ${r.pos.y}');
-
-		var foes = [];
-		forEachRobot(r -> if (getOwner(r).pid != pid) foes.push(r));
-		l.push('FOES ${foes.length}');
-		for (f in foes)
-			l.push('${f.pos.x} ${f.pos.y}');
-
-		var mines = objects.filter(o -> o.k == Mine);
-		l.push('MINE ${mines.length}');
-		for (o in mines)
-			l.push('${o.pos.x} ${o.pos.y}');
-
-		var scrap = objects.filter(o -> o.k == Scrap);
-		l.push('SCRAP ${scrap.length}');
-		for (o in scrap)
-			l.push('${o.pos.x} ${o.pos.y}');
-
-		var microship = objects.filter(o -> o.k == Microship);
-		l.push('MICROSHIP ${microship.length}');
-		for (o in microship)
-			l.push('${o.pos.x} ${o.pos.y}');
-
-		return l;
-	}
 }

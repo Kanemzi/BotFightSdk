@@ -3,12 +3,12 @@ package botfight.core;
 import botfight.utils.thread.ElasticThreadPool;
 import sys.thread.*;
 import botfight.core.action.Action;
-import botfight.core.action.ActionCollector;
 import botfight.core.action.ActionsResult;
 import botfight.core.Player.PlayerInfo;
 import botfight.core.Player.PlayerId;
 import botfight.core.History.PlayerOutcome;
 import botfight.core.Storage;
+import botfight.core.GameSimulation.SimulationContext;
 
 typedef ServerConfig = {
 	var version : Int;
@@ -18,72 +18,33 @@ typedef ServerConfig = {
 	var firstTurnTimeout : Float;
 	var turnTimeout : Float;
 	var turnModel : Class<TurnModel>;
+	var ?defaultStorageMode : Storage.StorageMode;
 }
 
-typedef PlayerActions<Ta : Action> = {
-	var pid : PlayerId;
-	var actions : Array<Ta>;
-}
-
-abstract PlayersActions<Ta : Action>(Array<PlayerActions<Ta>>) from Array<PlayerActions<Ta>> to Array<PlayerActions<Ta>> {
-
-	@:op(a()) public function iter(f : (PlayerId, Ta, Int) -> Void) : Void {
-		for (pa in this) 
-			for (i in 0...pa.actions.length)
-				f(pa.pid, pa.actions[i], i);
-	}
-
-	/*@:op(a()) public function filter(f : Ta -> Bool) : Array<PlayerActions<Ta>> {
-		return this.filterMap(pa -> {
-			var as = pa.actions.filter(f);
-			return as.empty() ? null : { pid : pa.pid, actions : as };
-		});
-	}*/
-}
-
-abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> {
-	var seed(default, null) : Int;
+final class GameServer<Ts : GameState, Ta : Action> {
 	var config(default, null) : ServerConfig;
+	var seed(default, null) : Int;
 	var players : Array<Player<Ta>>;
 	var history : History<Ts, Ta>; // @todo save player and server logs per turn
 
 	var state(get, never) : Ts;
 	function get_state() return turn == 0 ? null : cast history.turns[turn - 1].state;
 	
+	var simuClass : Class<GameSimulation<Ts, Ta>>;
 	var turnModel : TurnModel;
 	var turn(get, never) : Int;
 	function get_turn() return history.turns.length;
 
 	var turnWorkers : ElasticThreadPool;
 
-	/**
-		Called before the first turn. Should return the initialized game state.
-		Use [rnd] only to ensure the game will be deterministic with the game seed.
-	*/
-	abstract function init(rnd : hxd.Rand) : Ts;
-
-	/**
-		Called every update. Should mutate state depending on players actions.
-
-		Use [rnd] only to ensure the game will be deterministic with the game seed.
-
-		@todo : should returns logs (errors, warnings, debug) that will be sent back to players
-			or out stream passed in parameters
-	*/
-	abstract function update(state : Ts, actions : PlayersActions<Ta>, rnd : hxd.Rand) : Void;
-	abstract function getTurnActionProfile(pid : PlayerId) : TurnActionProfile<Ta>;
-	abstract function getTiebreakerScore(pid : PlayerId) : Int;
-	abstract function serializeHeaderForPlayer(pid : PlayerId,  initialState : Ts) : Array<String>;
-
-	final function new(seed : Int) {
+	function new(simuClass : Class<GameSimulation<Ts, Ta>>, config : ServerConfig, seed : Int) {
+		this.config = config;
 		this.seed = seed;
-		config = getConfig();
+		this.simuClass = simuClass;
 
 		// @todo check bot count using config
 		players = [];
 	}
-
-	abstract function getConfig() : ServerConfig;
 
 	final public function addPlayer(info : PlayerInfo) {
 		if (players.length >= config.maxPlayers) {
@@ -96,31 +57,7 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		return players.find(p -> p.id == pid);
 	}
 
-	final public function defeat(pid : PlayerId) {
-		if (turn == 0)
-			throw 'Can\'t defeat any player, the game hasn\'t started yet';
-
-		var p = getPlayer(pid);
-		if (p?.isAlive())
-			p.kill(Defeated);
-
-		// @todo this behaviour might be defined in game parameters
-		var alive = getAlivePlayers();
-		if (alive.length == 1)
-			victory(alive.map(p -> p.id));
-	}
-
-	final public function victory(pids : Array<PlayerId>) {
-		if (turn == 0)
-			throw 'Can\'t make any player win, the game hasn\'t started yet';
-
-		for (p in getAlivePlayers())
-			p.kill(pids.has(p.id) ? Victory : Defeated);
-	}
-
-	inline function getAlivePlayers() return players.filter(p -> p.isAlive());
-
-	inline function cloneState(st : Ts) : Ts {
+	public static inline function cloneState<Ts : GameState>(st : Ts) : Ts {
 		// @todo will be required to support versioning and patching replay files on newer versions
 		// serializer.beginSave();
 		// serializer.addKnownRef(st);
@@ -137,74 +74,60 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		if (players.length < config.minPlayers || players.length > config.maxPlayers)
 			throw "Trying to run a game with an invalid amount of players";
 
-		turnModel = Type.createInstance(config.turnModel, []);
-		
 		final wto = Math.max(config.firstTurnTimeout, config.turnTimeout) * 2;
 		turnWorkers = new ElasticThreadPool(players.length, wto / 1000.);
+		
+		turnModel = Type.createInstance(config.turnModel, []);
 
-		var rnd = new hxd.Rand(seed);
 		history = new History(config.version, players, seed);
-		history.addTurn(init(rnd), []);
+
+		var sim = Type.createInstance(simuClass, []);
+		var initState = sim.init(history.getAlivePlayers(), new hxd.Rand(seed));
+
+		history.addTurn(initState, []);
 
 		for (p in players) {
-			final header = serializeHeaderForPlayer(p.id, state);
+			final header = sim.serializeHeaderForPlayer(p.id, state);
 			p.sendLines(header);
 		}
-
+			
 		while (history.length < config.maxTurns) {
 			var newState = cloneState(state);
+			var alive = history.getAlivePlayers();
 
-			final alive = getAlivePlayers();
-			final playing = turnModel.getPlayingThisTurn(getAlivePlayers(), newState, turn);
-			final results = playTurns(playing);
-			for (r in results) { // @todo check necessary
-				if (r.error != null)
-					getPlayer(r.pid)?.kill(r.status);
-			}
-			
-			// @todo remove these logs, they should be stored in history for replay
-			trace('--- Turn ${turn} ---');
-			trace('Played : ${results.map(a -> '[${getPlayer(a.pid).name} : ${a.time}ms]').join(" ")}');
-			trace('before : $state');
+			final playing = turnModel.getPlayingThisTurn(alive, newState, turn);
+			final results = playTurns(playing, sim);
+			alive.keep(i -> results.find(r -> r.pid == i).status == Alive);
 
-			inline function result(pid) return results.find(r -> r.pid == pid);
+			final actions = ActionsResult.toPlayersActions(results);
+			final turnSeed = seed + turn + 1;
+			var ctx = new SimulationContext(actions, alive.copy(), turnSeed);
+			sim.update(newState, ctx);
 
-			for (r in results) {
-				var logs = result(r.pid)?.logs;
-				if (logs == null || logs.empty()) continue;
-				trace('----- Player ${getPlayer(r.pid).name} logs for turn $turn -----');
-				for (l in logs) trace(l);
+			// so Players might defeat themselves on timeout ?
+
+			for (p in ctx.defeats) {
+				getPlayer(p)?.kill(Defeated);
+				history.outcome(p, Defeat(turn));
 			}
 
-			// As of now, we sort players based on their response time.
-			// Games can decide to ignore this order and process inputs in their own order
-			var actions = getAlivePlayers()
-				.map(p -> {pid : p.id, actions : result(p.id)?.actions ?? []});
-			actions.sort((a, b) -> {
-				final ae = a.actions.empty(), be = b.actions.empty();
-				return if (ae != be) ae ? 1 : -1
-					else if (ae) 0
-					else result(a.pid).time > result(b.pid).time ? 1 : -1;
-			});
+			for (p in ctx.victories) {
+				getPlayer(p)?.kill(Victory);
+				history.outcome(p, Victory(turn));
+			}
 
-			rnd.init(seed + turn + 1);
-			update(newState, actions, rnd);
-			
-			final defeats = alive.filter(p -> !p.isAlive());
-			final victories = alive.filter(p -> p.status == Victory);
-
-			for (d in defeats) history.outcome(d.id, Defeat(turn));
-			for (v in victories) history.outcome(v.id, Victory(turn));
+			// @todo the status should be updated in the results (defeat / victory) ?
 
 			history.addTurn(newState, results);
-			if (!victories.empty())
+
+			if (!ctx.victories.empty())
 				break;
 			// @todo handle all players dead on same turn
 		}
 
-		final remaining = getAlivePlayers().filter(p -> p.status != Victory);
-		if (!remaining.empty()) {
-			final scores = [for (p in remaining) p.id => getTiebreakerScore(p.id)];
+		final remain = history.getAlivePlayers(); // victories not counted as alive
+		if (!remain.empty()) {
+			final scores = [for (p in remain) p => sim.getTiebreakerScore(state, p)];
 			var victories = [];
 			var max : Null<Int> = null;
 			for (pid => score in scores) {
@@ -215,13 +138,13 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 				}
 			}
 
-			for (p in remaining) {
-				final score = scores[p.id];
-				if (victories.has(p.id)) {
+			for (p in remain) {
+				final score = scores[p];
+				if (victories.has(p)) {
 					final out = victories.length > 1 ? Draw(turn, score) : Victory(turn, score);
-					history.outcome(p.id, out);
+					history.outcome(p, out);
 				} else {
-					history.outcome(p.id, Defeat(turn, score));
+					history.outcome(p, Defeat(turn, score));
 				}
 			}
 		}
@@ -231,15 +154,16 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		return history.lock();
 	}
 
-	final function playTurns(players : Array<Player<Ta>>) : Array<ActionsResult<Ta>> {
-		if (players.empty()) return [];
+	final function playTurns(pids : Array<PlayerId>, sim : GameSimulation<Ts, Ta>) : Array<ActionsResult<Ta>> {
+		if (pids.empty()) return [];
+		var players = pids.map(getPlayer);
 
 		inline function playTurn(player : Player<Ta>) : ActionsResult<Ta> {
-			final tp = getTurnActionProfile(player.id);
+			final tp = sim.getTurnActionProfile(state, player.id);
 			final timeout = turn <= 1 ? config.firstTurnTimeout : config.turnTimeout;
-			final data = state.serializeForPlayer(player.id);
+			final data = sim.serializeForPlayer(state, player.id);
 			player.sendLines(data);
-			return player.collectActions(tp, timeout, this);
+			return player.collectActions(tp, timeout, sim);
 		}
 
 		var results = [];

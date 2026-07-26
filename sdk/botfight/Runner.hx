@@ -3,6 +3,8 @@ package botfight;
 import haxe.Json;
 import haxe.Exception;
 import botfight.core.GameServer;
+import botfight.core.GameServer.ServerConfig;
+import botfight.core.GameSimulation;
 import botfight.core.GameState;
 import botfight.core.History;
 import botfight.core.Player.PlayerInfo;
@@ -58,11 +60,16 @@ final class Runner {
 
 	public static inline function error(e : String) Sys.stderr().writeString('[Error] $e\n');
 
-	var args : RunnerArgs;
-
+	//var args : RunnerArgs;
+	
 	@:generic
-	public function new<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, viewcl : Class<GameViewer<Ts>>, arg : Array<String>) {
-		this.args = new RunnerArgs(arg);
+	public function new<Ts : GameState, Ta : Action>(
+		simcl : Class<GameSimulation<Ts, Ta>>,
+		viewcl : Class<GameViewer<Ts>>,
+		arg : Array<String>,
+		config : ServerConfig
+	) {
+		final args = new RunnerArgs(arg);
 		final hasGen = args.has("gen");
 		final hasMatch = args.has("match");
 		final playerPaths = args.getParams("players");
@@ -83,12 +90,13 @@ final class Runner {
 			while (!match.isComplete()) {
 				final games = match.pollGames();
 				for (g in games) {
-					var gs = createGame(cl, g);
+					var gs = createGame(simcl, config, g);
 					var history = if (hasGen) {
-						var h = new History(gs.config.version, gs.players, gs.seed);
-						h.addTurn(gs.init(new hxd.Rand(gs.seed)), []);
-						for (p in g.players) h.outcome(p.id, Victory(0));
-						h.lock();
+						throw 'Debug gen not supported yet';
+						//var h = new History(gs.config.version, gs.players, gs.seed);
+						//h.addTurn(gs.init(new hxd.Rand(gs.seed)), []);
+						//for (p in g.players) h.outcome(p.id, Victory(0));
+						//h.lock();
 					} else {
 						gs.run();
 					}
@@ -101,7 +109,7 @@ final class Runner {
 		var match = if (shouldRunMatch) {
 			var m = runMatch();
 			if (args.has("out"))
-				Storage.saveMatch(args.getParam("out"), m);
+				Storage.saveMatch(args.getParam("out"), m, config.defaultStorageMode);
 			m;
 		} else null;
 
@@ -115,7 +123,7 @@ final class Runner {
 
 		final headless = args.has("headless") && replayPath == null;
 		if (!headless)
-			replay(viewcl, match);		
+			replay(simcl, viewcl, match);		
 	}
 
 	static function createMatch<Ts : GameState, Ta : Action>(args : RunnerArgs) : Match<Ts, Ta> {
@@ -137,18 +145,19 @@ final class Runner {
 		return new Series(1, seed);
 	}
 
-	inline function createGame<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, info : GameInfo) : GameServer<Ts, Ta> {
-		var gs = Type.createInstance(cl, [info.seed]);
+	inline function createGame<Ts : GameState, Ta : Action>(cl : Class<GameSimulation<Ts, Ta>>, config : ServerConfig, info : GameInfo) : GameServer<Ts, Ta> {
+		var gs = new GameServer(cl, config, info.seed);
 		for (p in info.players) gs.addPlayer(p);
 		return gs;
 	}
 
-	function replay<Ts : GameState, Ta : Action>(viewcl : Class<GameViewer<Ts>>, match : Match<Ts, Ta>) {
+	function replay<Ts : GameState, Ta : Action>(simcl : Class<GameSimulation<Ts, Ta>>, viewcl : Class<GameViewer<Ts>>, match : Match<Ts, Ta>) {
 		if (match == null) {
 			error("Nothing to replay");
 			return;
 		}
-
+		
+		for (g in match.games) g.recover(simcl);
 		var viewer = Type.createInstance(viewcl, [match]);
 	}
 }

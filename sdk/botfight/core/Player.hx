@@ -7,13 +7,13 @@ import botfight.core.action.Action;
 import botfight.core.action.*;
 
 enum Status { 
-	Alive;
-	Defeated;
-	TimedOut;
-	Invalid;
-	Crashed;
-	Terminated;
-	Victory;
+	Alive; // Currently active in the game
+	Defeated; // Has lost the game
+	TimedOut; // Has not responded in time for a turn
+	Crashed; // The process has crashed
+	Invalid; // An exception occured while collecting actions (unknown cause) 
+	Terminated; // Was disposed properly at the end of the game
+	Victory; // Has won the game
 }
 
 typedef PlayerId = Int;
@@ -42,8 +42,8 @@ final class Player<Ta : Action> {
 	}
 
 	public function isAlive() return switch (status) {
-		case Defeated, TimedOut, Invalid, Crashed, Terminated: false;
-		case Alive, Victory: true;
+		case Alive: true;
+		case Defeated, TimedOut, Invalid, Crashed, Terminated, Victory: false;
 	}
 
 	@:allow(botfight.core.GameServer)
@@ -51,12 +51,6 @@ final class Player<Ta : Action> {
 		if (!isAlive()) return;
 		status = reason;
 		io.dispose();
-	}
-
-	function victory() {
-		if (!isAlive())
-			throw 'Player $name is not alive and can\'t win the game';
-		status = Victory;
 	}
 
 	public function sendLines(lines : Array<String>) {
@@ -102,9 +96,9 @@ final class Player<Ta : Action> {
 		final time = Timer.stamp() - start;
 		return {
 			pid : id,
-			actions : actions,
+			actions : actions ?? [],
 			time : time,
-			status : s ?? status,
+			status : s ?? status, // @todo improve this flow
 			error : error,
 			logs : collectLogs(),
 		};

@@ -44,6 +44,10 @@ abstract class State implements hxbit.Serializable {
 
 	public function optimizeDelta(prev : GameState) {
 		if (prev == null) return;
+		// @todo call this as the game is simulated to avoid a long pass at the end flow is:
+		//	new = cloneState(prev)
+		//  update(new)
+		//  new.optimizeDelta(prev)
 		// @todo pass a default set for the case GameState is exactly the same
 		function iter(s : State, ps : State, path: String, set : Null<Dynamic -> Void>) {
 			if (ps == null) // state appeared in this transition
@@ -218,7 +222,5 @@ class WeakRef<T : State> {
 	public function get() return ref?.__alive ? ref : null;
 }
 
-// @todo implements "PartialState" that has function to resolve it to a full state
 abstract class GameState extends State {
-	public abstract function serializeForPlayer(pid : PlayerId) : Array<String>;
 }

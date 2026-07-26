@@ -2,6 +2,7 @@ package botfight.core.action;
 
 import botfight.core.Player.PlayerId;
 import botfight.core.Player.Status;
+import botfight.core.GameSimulation;
 
 @:structInit @:publicFields
 final class ActionsResult<Ta : Action> implements hxbit.Serializable {
@@ -21,5 +22,17 @@ final class ActionsResult<Ta : Action> implements hxbit.Serializable {
 	public function customUnserialize(ctx : hxbit.Serializer) @:privateAccess {
 		var len = ctx.getInt();
 		actions = [for (_ in 0...len) ctx.getDynamic()];
+	}
+
+	public static function toPlayersActions<Ta : Action>(results : Array<ActionsResult<Ta>>) : PlayersActions<Ta> {
+		final result = i -> results.find(r -> r.pid == i);
+		var actions = results.map(r -> { pid : r.pid, actions : r.actions });
+		actions.sort((a, b) -> {
+			final ae = a.actions.empty(), be = b.actions.empty();
+			return if (ae != be) ae ? 1 : -1
+				else if (ae) 0
+				else result(a.pid).time > result(b.pid).time ? 1 : -1;
+		});
+		return actions;
 	}
 }

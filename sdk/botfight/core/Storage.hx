@@ -22,8 +22,8 @@ class Storage {
 
 	static inline final REPLAY_EXT = "replay"; 
 	@:access(botfight.Match)
-	public static function saveMatch<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>) {
-		for(g in match.games) g.optimize(Delta);
+	public static function saveMatch<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>, ?mode : StorageMode) {
+		for(g in match.games) g.optimize(mode);
 
 		final bytes = serializer.serialize(match);
 		var path = new haxe.io.Path(out ?? ".");
@@ -48,6 +48,7 @@ class Storage {
 		sys.io.File.saveBytes(path.toString(), bytes);
 	}
 
+	@:access(botfight.Match)
 	public static function loadMatch<Ts : GameState, Ta : Action>(path : String) : Match<Ts, Ta> {
 		var p = new haxe.io.Path(path);
 		p.ext = REPLAY_EXT;
