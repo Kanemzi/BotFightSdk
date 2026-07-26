@@ -112,7 +112,10 @@ class ReplayView<Ts : GameState> extends View {
 		initComponent();
 
 		controlBar.onSeek = t -> viewport.seek(t);
-		leaveBtn.onClick = _ -> ui.pop();
+		leaveBtn.onClick = _ -> {
+			@:privateAccess hxd.Window.getInstance()?.mouseMode = Absolute;
+			ui.pop();
+		}
 	}
 
 	override function update(dt : Float) {

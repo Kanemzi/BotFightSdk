@@ -80,6 +80,11 @@ class UtilsIterators {
 		return res;
 	}
 	
+	public static inline function castArray<T : {}, S : T>(array: Array<T>, cl : Class<S>) : Array<S> {
+		var c : Array<S> = array.filterMap(Std.downcast.bind(_, cl));
+		return c.length == array.length ? c : null;
+	}
+
 	// @todo remove after LazyIterators integration
 	public static inline function keep<T>(array: Array<T>, f: T -> Bool) {
 		var i = array.length;

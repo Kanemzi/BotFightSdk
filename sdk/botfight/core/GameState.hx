@@ -110,18 +110,33 @@ abstract class State implements hxbit.Serializable {
 			case TClass(Array):
 				var aarr : Array<Dynamic> = Std.downcast(a, Array);
 				var barr : Array<Dynamic> = Std.downcast(b, Array);
-				if (comp && aarr.length != barr.length)
-					return false;
-				else {
-					var eq = true;
-					for (i in 0...aarr.length) {
-						var ai = aarr[i];
-						var bi = barr != null ? barr[i] : null;
-						final set = v -> aarr[i] = v;
-						if (!walk(ai, bi, '$path[$i]', set, f)) eq = false;
+				var eq = comp && aarr.length == barr.length;
+
+				// If the array contains states, their index might have change but we can still remap them using their id as a reference instead of the index
+				var byUid : Map<SUID, State> = null;
+				if (barr != null) {
+					for (i in 0...barr.length) {
+						var s = Std.downcast(barr[i], State);
+						if (s == null) continue; 
+						(byUid ??= new Map()).set(s.id, s);
 					}
-					return eq;
 				}
+
+				for (i in 0...aarr.length) {
+					var ai = aarr[i];
+					var bi = barr == null ? null : {
+						var as = Std.downcast(ai, State);
+						(as == null ? null : byUid?.get(as.id)) ?? barr[i];
+					}
+					if (comp && bi == null && ai != null) { // arrays are probably not the same size, just consider them not equal
+						eq = false;
+						continue;
+					}
+					final set = v -> aarr[i] = v;
+					if (!walk(ai, bi, '$path[$i]', set, f)) eq = false;
+				}
+				
+				return eq;
 
 			case TClass(haxe.ds.StringMap | haxe.ds.IntMap | haxe.ds.Int64Map | haxe.ds.ObjectMap | haxe.ds.EnumValueMap):
 				// @todo ensure map iteration is deterministic on hl
@@ -180,13 +195,13 @@ abstract class State implements hxbit.Serializable {
 		f : (State, Null<State>, String, Null<Dynamic -> Void>) -> Bool
 	) : Bool {
 		final afs = getFields(a);
-		final bfs = getFields(b);
+		final bfs = b != null ? getFields(b) : null;
 		if (b != null && bfs.exists(f -> !afs.has(f)))
 			return false;
 		else {
 			var eq = true;
 			for (field in afs) {
-				if (!bfs.has(field)) eq = false;
+				if (!bfs?.has(field)) eq = false;
 				var va = Reflect.field(a, field);
 				var vb = b != null ? Reflect.field(b, field) : null;
 				final set = v -> Reflect.setField(a, field, v);

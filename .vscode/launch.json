@@ -21,7 +21,7 @@
                 "--seed", "123456",
                 // "--match", "5",
                 //"--replay", "./replays/test-claude-bot",
-                "--out", "./replays/test-storage-full",
+                "--out", "./replays/test-storage-better-delta",
 				//"--out",
 				//"--headless"
             ]
