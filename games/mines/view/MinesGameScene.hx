@@ -21,7 +21,7 @@ class MinesGameScene extends GameScene {
 
 	var visuals : Map<EventId, Visual>;
 
-	override function init(events : Array<VisualEvent>) {
+	override function init(events : ReadOnlyArray<VisualEvent>) {
 		visuals = new Map();
 
 		fitCameraTopDown();
@@ -173,7 +173,7 @@ class MinesGameScene extends GameScene {
 		visuals.remove(ev.id);
 	}
 
-	override function update(t : Float, events : Array<VisualEvent>) {
+	override function update(t : Float, events : ReadOnlyArray<VisualEvent>) {
 		final t0 = hxd.Math.floor(t);
 		final t1 = hxd.Math.ceil(t);
 		final k = t - t0;

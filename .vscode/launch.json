@@ -25,6 +25,28 @@
 				//"--out",
 				//"--headless"
             ]
+        },
+		{
+            "name": "War",
+            "request": "launch",
+            "port": 4771,
+            "type": "hl",
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": {
+				"type": "haxe",
+				"args": "active configuration"
+			},
+            "args": [
+                "--players", "ExampleBot.hl", "ExampleBot.hl",
+                // "--gen",
+                "--match", "series", "3",
+                "--seed", "123456",
+                // "--match", "5",
+                //"--replay", "./replays/test-storage-deterministic",
+                "--out", "./replays/war/",
+				//"--out",
+				//"--headless"
+            ]
         }
     ]
 }

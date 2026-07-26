@@ -1,13 +1,14 @@
 -debug
--cp src
 --each
 
+-cp games/war/bots
 -hl ExampleBot.hl
--main bots.ExampleBot
-
+-main ExampleBot
 
 --next
 
-../../server.hxml
+-D dump=pretty
+-cp games/war/
+-lib botfight-sdk
 -hl WarServer.hl
--main war.WarServer
+-main server.WarSimulation

@@ -87,13 +87,13 @@ final class GameServer<Ts : GameState, Ta : Action> {
 		history.addTurn(initState, []);
 
 		for (p in players) {
-			final header = sim.serializeHeaderForPlayer(p.id, state);
+			final header = sim.serializeHeaderForPlayer(state, p.id);
 			p.sendLines(header);
 		}
 			
 		while (history.length < config.maxTurns) {
 			var newState = cloneState(state);
-			var alive = history.getAlivePlayers();
+			var alive = history.getAlivePlayers().copy();
 
 			final playing = turnModel.getPlayingThisTurn(alive, newState, turn);
 			final results = playTurns(playing, sim);
@@ -154,7 +154,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 		return history.lock();
 	}
 
-	final function playTurns(pids : Array<PlayerId>, sim : GameSimulation<Ts, Ta>) : Array<ActionsResult<Ta>> {
+	final function playTurns(pids : ReadOnlyArray<PlayerId>, sim : GameSimulation<Ts, Ta>) : Array<ActionsResult<Ta>> {
 		if (pids.empty()) return [];
 		var players = pids.map(getPlayer);
 

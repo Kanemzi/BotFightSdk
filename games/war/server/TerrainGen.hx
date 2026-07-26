@@ -1,8 +1,8 @@
-package war;
+package server;
 
 import hxd.Rand;
 import haxe.EnumFlags;
-import war.WarState.Vec;
+import server.WarState.Vec;
 
 enum SymKind {
 	Point;

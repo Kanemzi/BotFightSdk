@@ -16,11 +16,11 @@ abstract class GameScene {
 
 	public function new() {}
 
-	function init(events : Array<VisualEvent>) : Void {}
+	function init(events : ReadOnlyArray<VisualEvent>) : Void {}
 
 	function onEventBegin(ev : VisualEvent) : Void {}
 	function onEventEnd(ev : VisualEvent) : Void {}
-	function update(t : Float, events : Array<VisualEvent>) : Void {}
+	function update(t : Float, events : ReadOnlyArray<VisualEvent>) : Void {}
 
 	function onResize() : Void {}
 	function onDispose() : Void {}
@@ -36,7 +36,7 @@ final class GameViewport extends Widget {
 	final timeline : VisualEventTimeline;
 	final gameScene : GameScene;
 	var time : Float = 0.;
-	var activeEvents : Array<VisualEvent> = [];
+	var activeEvents : ReadOnlyArray<VisualEvent> = [];
 
 	function new(timeline : VisualEventTimeline, gameScene : GameScene, ?parent) {
 		super(parent);

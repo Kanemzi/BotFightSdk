@@ -1,12 +1,11 @@
 package server;
 
-import botfight.core.GameServer;
-import botfight.core.Player;
+import botfight.core.Player.PlayerId;
+import botfight.core.GameSimulation;
+import botfight.core.GameSimulation.PlayersActions;
 import botfight.core.TurnModel;
 import botfight.core.action.ActionCollector;
 
-import botfight.core.GameSimulation;
-import botfight.core.GameSimulation.PlayersActions;
 import server.MinesState;
 import view.MinesViewer;
 import server.Simulation in Sim;
@@ -15,7 +14,7 @@ using server.Simulation;
 
 class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 
-	function init(players : Array<PlayerId>, rnd : hxd.Rand) : MinesState {
+	function init(players : ReadOnlyArray<PlayerId>, rnd : hxd.Rand) : MinesState {
 		return new MinesState(players, rnd);
 	}
 
@@ -138,7 +137,7 @@ class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 		return p.resources.get(Scrap) + p.resources.get(Microship) * Sim.MICROSHIP_SCORE_RATIO;
 	}
 
-	function serializeHeaderForPlayer(pid : PlayerId,  initialState : MinesState) : Array<String> {
+	function serializeHeaderForPlayer(initialState : MinesState, pid : PlayerId) : Array<String> {
 		return [
 			'$pid',
 			'${MinesState.WIDTH} ${MinesState.HEIGHT}'

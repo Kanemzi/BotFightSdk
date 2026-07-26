@@ -1,5 +1,3 @@
-package bots;
-
 class ExampleBot {
 
 	public static inline function getName() return "Michel~" + Std.random(10000);

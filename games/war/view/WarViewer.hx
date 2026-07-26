@@ -1,6 +1,6 @@
-package war.view;
+package view;
 
-import war.WarState;
+import server.WarState;
 import botfight.viewer.VisualEventTimeline.TimelineBuilder;
 
 import botfight.viewer.view.MatchView;
@@ -8,4 +8,6 @@ import botfight.viewer.view.MatchView;
 class WarViewer extends botfight.viewer.GameViewer<WarState> {
 	function getTimelineBuilder() return new TimelineBuilder()
 		/*.addRule(null)*/;
+
+	function getScene() return new WarGameScene();
 }

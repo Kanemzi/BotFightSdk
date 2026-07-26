@@ -72,9 +72,8 @@ class MinesState extends GameState {
 	public inline static final WIDTH : Int = 16;
 	public inline static final HEIGHT : Int = 16;
 
-	public function new(pids : Array<PlayerId>, rnd : hxd.Rand) {
+	public function new(pids : ReadOnlyArray<PlayerId>, rnd : hxd.Rand) {
 		super();
-
 		players = pids.map(pid -> new MinesPlayer(pid));
 		objects = [];
 

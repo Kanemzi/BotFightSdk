@@ -1,4 +1,4 @@
-package war;
+package server;
 
 import botfight.core.action.Action;
 
@@ -18,12 +18,12 @@ import botfight.core.action.Action;
 enum WarAction {
 	/* All */
 	Say(bid : Int, unit : Int, msg : String); // Displays a [msg] from [bid] (or closest [unit] to the current targetPoint if [unit] == 1)
-	Move(bid : Int, x : Int, y : Int, radius : Int); // Units on [bid] will go and stay stationary in a [radius] around [x, y]
+	Move(bid : Int, x : Float, y : Float, radius : Float); // Units on [bid] will go and stay stationary in a [radius] around [x, y]
 	Spawn(bid : Int); // Spawn a new unit in [bid]. Cost will depend on the building type
 
 	/* Economy*/
-	Gather(bid : Int, x : Int, y : Int, radius : Int); // Units of [bid] will gather freely in a [radius] around [x, y]
-	Build(bid : Int, x : Int, y : Int, type : Word); // Units of [bid] will start to build a building of [type(HOUSE|TOWER)] at [x, y]
+	Gather(bid : Int, x : Float, y : Float, radius : Float); // Units of [bid] will gather freely in a [radius] around [x, y]
+	Build(bid : Int, x : Float, y : Float, type : Word); // Units of [bid] will start to build a building of [type(HOUSE|TOWER)] at [x, y]
 
 	/* Military */
 	Attack(bid : Int, tid : Int); // Units of [bid] will attack building [tid]

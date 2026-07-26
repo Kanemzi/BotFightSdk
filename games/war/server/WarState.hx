@@ -1,8 +1,8 @@
-package war;
+package server;
 
 import botfight.core.GameState;
 import botfight.core.Player.PlayerId;
-import war.TerrainGen;
+import server.TerrainGen;
 
 enum BuildingKind { House; Tower; }
 enum UnitKind { Civilian; Military; }
@@ -77,33 +77,20 @@ class WarPlayer extends State {
 }
 
 class WarState extends GameState {
-	@:s public var seed : Int;
 	@:s public var players : Array<WarPlayer>;
 	@:s public var resources : Array<Resource>;
-
 
 	public inline static final WIDTH : Float = 100.; 
 	public inline static final HEIGHT : Float = 60.; 
 
-	public function new(pids : Array<PlayerId>, seed : Int) {
+	public function new(pids : ReadOnlyArray<PlayerId>, rnd : hxd.Rand) {
 		super();
-		this.seed = seed;
-		
-		final rnd = new hxd.Rand(seed);
-		final sym = TerrainGen.randSym(WIDTH / 2., HEIGHT / 2., genRand(rnd));
+		final sym = TerrainGen.randSym(WIDTH / 2., HEIGHT / 2., rnd);
 
 		resources = [];
 		players = pids.map(pid -> new WarPlayer(pid));
 
-		generateTerrain(sym, genRand(rnd));
-	}
-
-	public function serializeForPlayer(pid : PlayerId) : Array<String> {
-		return [];
-	}
-
-	inline function genRand(rnd : hxd.Rand) {
-		return new hxd.Rand(rnd.random(1 << 16));
+		generateTerrain(sym, rnd);
 	}
 
 	function generateTerrain(sym : Sym, rnd : hxd.Rand) {

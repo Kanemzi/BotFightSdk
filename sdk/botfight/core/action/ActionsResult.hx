@@ -24,7 +24,7 @@ final class ActionsResult<Ta : Action> implements hxbit.Serializable {
 		actions = [for (_ in 0...len) ctx.getDynamic()];
 	}
 
-	public static function toPlayersActions<Ta : Action>(results : Array<ActionsResult<Ta>>) : PlayersActions<Ta> {
+	public static function toPlayersActions<Ta : Action>(results : ReadOnlyArray<ActionsResult<Ta>>) : PlayersActions<Ta> {
 		final result = i -> results.find(r -> r.pid == i);
 		var actions = results.map(r -> { pid : r.pid, actions : r.actions });
 		actions.sort((a, b) -> {

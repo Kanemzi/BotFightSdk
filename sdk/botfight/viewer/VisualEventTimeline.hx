@@ -27,15 +27,19 @@ class VisualEventTimeline {
 	var eventMap : Map<EventId, VisualEvent>;
 	var sortedEvents : Array<VisualEvent>;
 
-	function new(events : Array<VisualEvent>, duration : Float) {
+	function new(events : ReadOnlyArray<VisualEvent>, duration : Float) {
 		this.duration = duration;
 		eventMap = [for (ev in events) ev.id => ev];
-		sortedEvents = [for (_ => v in events) v];
+		sortedEvents = [for (ev in events) ev];
 		sortedEvents.sort((a, b) -> a.begin > b.begin ? 1 : -1);
 	}
 
-	public function activeEventsAt(t : Float) : Array<VisualEvent> {
-		return sortedEvents.filter(ev -> ev.begin <= t && t <= ev.end);
+	var _activeEventsCache : Array<VisualEvent> = null;
+	public function activeEventsAt(t : Float) : ReadOnlyArray<VisualEvent> {
+		(_activeEventsCache ??= []).resize(0);
+		for (ev in sortedEvents)
+			if (ev.begin <= t && t <= ev.end) _activeEventsCache.push(ev);
+		return _activeEventsCache;
 	}
 }
 

@@ -32,11 +32,11 @@ final class SimulationContext<Ta : Action> {
 	public var actions(default, null) : PlayersActions<Ta>;
 	public var rnd(default, null) : hxd.Rand;
 
-	var wasAlive : Array<PlayerId>;
+	var wasAlive : ReadOnlyArray<PlayerId>;
 	var victories : Array<PlayerId> = [];
 	var defeats : Array<PlayerId> = [];
 
-	function new(actions : PlayersActions<Ta>, alive : Array<PlayerId>, seed : Int) {
+	function new(actions : PlayersActions<Ta>, alive : ReadOnlyArray<PlayerId>, seed : Int) {
 		this.actions = actions;
 		this.rnd = new hxd.Rand(seed);
 		this.wasAlive = alive;
@@ -72,7 +72,7 @@ abstract class GameSimulation<Ts : GameState, Ta : Action> extends ActionParser<
 		Called before the first turn. Should return the initial game state.
 		Use [rnd] only to ensure the game will be deterministic with the game seed.
 	*/
-	abstract function init(players : Array<PlayerId>, rnd : hxd.Rand) : Ts;
+	abstract function init(players : ReadOnlyArray<PlayerId>, rnd : hxd.Rand) : Ts;
 
 	/**
 		Called every update. Should mutate state depending on players actions.
@@ -95,7 +95,7 @@ abstract class GameSimulation<Ts : GameState, Ta : Action> extends ActionParser<
 	/**
 		Should generate the information that is sent to the players at the start of the game.
 	*/
-	abstract function serializeHeaderForPlayer(pid : PlayerId,  initialState : Ts) : Array<String>;
+	abstract function serializeHeaderForPlayer(initialState : Ts, pid : PlayerId) : Array<String>;
 	
 	/**
 		Should generate the information that is sent each turn to the players, depending

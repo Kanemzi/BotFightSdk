@@ -55,7 +55,7 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 	
 	@:noPrivateAccess var completed : Bool = true;
 
-	public function new(v : Int, players : Array<Player<Ta>>, seed : Int) {
+	public function new(v : Int, players : ReadOnlyArray<Player<Ta>>, seed : Int) {
 		header = {
 			version : v,
 			seed : seed,
@@ -107,7 +107,8 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 		header.format = format;
 	}
 
-	public function getAlivePlayers(?turn : Int) : Array<PlayerId> {
+	// @todo avoid reallocation
+	public function getAlivePlayers(?turn : Int) : ReadOnlyArray<PlayerId> {
 		return [for (i => p in players) {
 			final alive = switch (p.outcome) {
 				case null : true;

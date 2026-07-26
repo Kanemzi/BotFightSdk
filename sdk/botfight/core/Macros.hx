@@ -59,6 +59,9 @@ class Macros {
 							case "Int": 
 								patterns.push("(-?\\d+)");
 								values.push(macro Std.parseInt(re.matched(${index})));
+							case "Float":
+								patterns.push("(-?\\d*\\.?\\d+)");
+								values.push(macro Std.parseFloat(re.matched(${index})));
 							default: unsupportedType();
 						}
 					case TInst(ti, _):
