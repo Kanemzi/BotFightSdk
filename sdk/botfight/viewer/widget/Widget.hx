@@ -9,6 +9,13 @@ class Widget extends h2d.Flow implements h2d.domkit.Object {
 	var ui(get,never) : ViewManager;
 	var view(get, never) : View;
 
+	public dynamic function onClick(right : Bool) {}
+	public dynamic function onPush() {}
+	public dynamic function onRelease() {}
+	public dynamic function onOver() {}
+	public dynamic function onOut() {}
+	public dynamic function onDrag(x : Float, y : Float, dx : Float, dy : Float) {}
+
 	public function new(?parent) {
 		super(parent);
 		initComponent();
@@ -64,18 +71,6 @@ class Widget extends h2d.Flow implements h2d.domkit.Object {
 			onOut();
 		}
 	}
-
-	public dynamic function onClick(right : Bool) { }
-
-	public dynamic function onPush() { }
-
-	public dynamic function onRelease() { }
-
-	public dynamic function onOver() { }
-
-	public dynamic function onOut() { }
-
-	public dynamic function onDrag(x : Float, y : Float, dx : Float, dy : Float) {}
 
 	function set_enable(b) {
 		if (dom != null) {

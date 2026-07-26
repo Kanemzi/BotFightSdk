@@ -12,20 +12,14 @@ import server.Simulation in Sim;
 using server.Simulation;
 
 class MinesServer extends GameServer<MinesState, MinesAction> {
-	public function new(seed : Int) {
-		super(seed, {
-			version : 1,
-			minPlayers : 2,
-			maxPlayers : 2,
-			maxTurns : Sim.MAX_TURNS,
-			firstTurnTimeout : 1.0,
-			turnTimeout : 0.5,
-			turnModel : TurnModel.SimultaneousTurn,
-		});
-	}
-
-	function init() : MinesState {
-		return new MinesState(players.map(p -> p.id), seed);
+	function getConfig() : ServerConfig return {
+		version : 1,
+		minPlayers : 2,
+		maxPlayers : 2,
+		maxTurns : Sim.MAX_TURNS,
+		firstTurnTimeout : 1.0,
+		turnTimeout : 0.5,
+		turnModel : TurnModel.SimultaneousTurn,
 	}
 
 	function serializeHeaderForPlayer(pid : PlayerId,  initialState : MinesState) : Array<String> {
@@ -35,7 +29,11 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 		];
 	}
 
-	function update(state : MinesState, actions : PlayersActions<MinesAction>) : Void {
+	function init(rnd : hxd.Rand) : MinesState {
+		return new MinesState(players.map(p -> p.id), rnd);
+	}
+
+	function update(state : MinesState, actions : PlayersActions<MinesAction>, rnd : hxd.Rand) : Void {
 		inline function getRobot(pid : PlayerId, i : Int) {
 			return state.getPlayer(pid).robots[i];
 		}
@@ -124,7 +122,7 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 				if (r != null) {
 					var p = state.getOwner(r);
 					p.robots.remove(r);
-					state.destroyRobotAt(r.pos.x, r.pos.y, state.genRand(r.id));
+					state.destroyRobotAt(r.pos.x, r.pos.y, rnd);
 				}
 			}
 			destroyAt(r.pos.x, r.pos.y);
@@ -132,7 +130,6 @@ class MinesServer extends GameServer<MinesState, MinesAction> {
 		});
 
 		// spawn objects on the ground
-		var rnd = state.genRand(turn);
 		state.turnDrops(rnd);
 
 		// check loses / wins

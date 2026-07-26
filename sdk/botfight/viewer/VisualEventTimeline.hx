@@ -21,11 +21,14 @@ import botfight.viewer.replay.StateRegistry;
 
 typedef StateExtractor<Ts : GameState, T : State> = Ts -> Array<T>;
 
+@:allow(botfight.viewer.TimelineBuilder)
 class VisualEventTimeline {
+	public var duration(default, null) : Float;
 	var eventMap : Map<EventId, VisualEvent>;
 	var sortedEvents : Array<VisualEvent>;
 
-	public function new(events : Array<VisualEvent>) {
+	function new(events : Array<VisualEvent>, duration : Float) {
+		this.duration = duration;
 		eventMap = [for (ev in events) ev.id => ev];
 		sortedEvents = [for (_ => v in events) v];
 		sortedEvents.sort((a, b) -> a.begin > b.begin ? 1 : -1);
@@ -59,7 +62,7 @@ class TimelineBuilder<Ts : GameState> {
 			}
 		}
 
-		return new VisualEventTimeline(events);
+		return new VisualEventTimeline(events, history.length);
 	}
 }
 

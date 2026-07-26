@@ -6,7 +6,6 @@
 	content-align: middle middle;
 
 	background: darken(gray, 30%);
-
 }
 
 match-view {
@@ -22,15 +21,13 @@ match-view {
 
 		background: darken(blue, 30%);
 		
-		.game {
+		.game-btn {
 			align: middle middle;
 		}
 	}
 }
 
 replay-view, timeline-debug-view {
-	layout : vertical;
-
 	> .head {
 		layout: stack;
 		> #leave-btn {
@@ -42,27 +39,74 @@ replay-view, timeline-debug-view {
 	}
 }
 replay-view {
+	layout: stack;
 	game-viewport {
-		background: black;
-		fill-width: true;
 		fill-height: true;
+		margin-top: 60;
+		margin-bottom: 70;
+	}
+}
+
+control-bar {
+	valign: bottom;
+	background: red;
+	@controlbar-height : 50;
+	fill-width: true;
+	height: @controlbar-height;
+	layout: stack;
+	content-align: middle middle;
+
+	padding: 10;
+	spacing: 10;
+
+	background: darken(gray, 30%);
+
+	> .controls {
+		spacing: 5;
+		height: 50;
+		content-valign: middle;
+		align: left;
+		button {
+			width: 60;
+		}
+		> #turn {
+			margin-left: 10;
+		}
+	}
+	
+
+	.track {
+		background: darken(green, 20%);
+		fill-width: true;
+		margin-left: 260;
+		height: @controlbar-height - 20;
+
+		.fill {
+			fill-height: true;
+			background: darken(green, 0%);
+		}
+		
+		.handle {
+			width: 10;
+			height: @controlbar-height - 10;
+			background: yellow;
+		}
 	}
 }
 
 timeline-debug-view {
+	layout: vertical;
 	timeline-debug {
 		fill-width: true;
 		fill-height: true;
 		margin: 50;
 		margin-bottom: @head-height * 2;
+		content-align: middle middle;
+
+		background: darken(gray, 42%);
+		overflow: hidden;
 	}
 	background: darken(purple, 20%);
-}
-
-timeline-debug {
-	background: darken(gray, 42%);
-	content-align: middle middle;
-	overflow: hidden;
 }
 
 button {

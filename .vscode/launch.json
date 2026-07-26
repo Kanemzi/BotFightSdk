@@ -7,21 +7,21 @@
         {
             "name": "Mines",
             "request": "launch",
-            "port": 4770,
+            "port": 4771,
             "type": "hl",
             "cwd": "${workspaceRoot}",
             "preLaunchTask": {
-				"type": "hxml",
-				"file": "mines.hxml"
+				"type": "haxe",
+				"args": "active configuration"
 			},
             "args": [
-                //"--players", "ExampleBot.hl", "ExampleBot.hl",
+                //"--players", "ExampleBot.hl", "ClaudeBot.hl",
                 // "--gen",
-                //"--match", "series", "3",
+                //"--match", "series", "5",
                 //"--seed", "123415116",
                 // "--match", "5",
-                "--replay", "./replays/test-timeline",
-                //"--out", "./replays/test-timeline",
+                "--replay", "./replays/test-claude-bot",
+                //"--out", "./replays/test-claude-bot",
 				//"--out",
 				//"--headless"
             ]

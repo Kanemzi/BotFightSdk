@@ -93,7 +93,7 @@ final class Runner {
 					var gs = createGame(cl, g);
 					var history = if (hasGen) {
 						var h = new History(gs.config.version, gs.players, gs.seed);
-						h.addTurn(gs.init(), []);
+						h.addTurn(gs.init(new hxd.Rand(gs.seed)), []);
 						for (p in g.players) h.outcome(p.id, Victory(0));
 						h.lock();
 					} else {

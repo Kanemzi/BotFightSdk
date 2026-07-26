@@ -55,28 +55,34 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 
 	var turnWorkers : ElasticThreadPool;
 
-	
-
-	abstract function init() : Ts;
+	/**
+		Called before the first turn. Should return the initialized game state.
+		Use [rnd] only to ensure the game will be deterministic with the game seed.
+	*/
+	abstract function init(rnd : hxd.Rand) : Ts;
 
 	/**
 		Called every update. Should mutate state depending on players actions.
+
+		Use [rnd] only to ensure the game will be deterministic with the game seed.
+
 		@todo : should returns logs (errors, warnings, debug) that will be sent back to players
 			or out stream passed in parameters
-		@todo : should provide rnd too ? (based on seed + turn)
 	*/
-	abstract function update(state : Ts, actions : PlayersActions<Ta>) : Void;
+	abstract function update(state : Ts, actions : PlayersActions<Ta>, rnd : hxd.Rand) : Void;
 	abstract function getTurnActionProfile(pid : PlayerId) : TurnActionProfile<Ta>;
 	abstract function getTiebreakerScore(pid : PlayerId) : Int;
 	abstract function serializeHeaderForPlayer(pid : PlayerId,  initialState : Ts) : Array<String>;
 
-	public function new(seed : Int, config : ServerConfig) {
+	final function new(seed : Int) {
 		this.seed = seed;
-		this.config = config;
+		config = getConfig();
 
 		// @todo check bot count using config
 		players = [];
 	}
+
+	abstract function getConfig() : ServerConfig;
 
 	final public function addPlayer(info : PlayerInfo) {
 		if (players.length >= config.maxPlayers) {
@@ -135,8 +141,9 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		final wto = Math.max(config.firstTurnTimeout, config.turnTimeout) * 2;
 		turnWorkers = new ElasticThreadPool(players.length, wto / 1000.);
 
+		var rnd = new hxd.Rand(seed);
 		history = new History(config.version, players, seed);
-		history.addTurn(init(), []);
+		history.addTurn(init(rnd), []);
 
 		for (p in players) {
 			final header = serializeHeaderForPlayer(p.id, state);
@@ -179,7 +186,8 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 					else result(a.pid).time > result(b.pid).time ? 1 : -1;
 			});
 
-			update(newState, actions);
+			rnd.init(seed + turn + 1);
+			update(newState, actions, rnd);
 			
 			final defeats = alive.filter(p -> !p.isAlive());
 			final victories = alive.filter(p -> p.status == Victory);

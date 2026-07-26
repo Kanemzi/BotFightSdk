@@ -43,7 +43,7 @@ class ProcessPlayerIO implements PlayerIO {
 			final line = i.safeReadLine();
 			forward?.writeString('[forward] $line\n');
 			o.execute(o -> o.push(line));
-		} catch (_) { } // @todo raise something to the player
+		} catch (_) {} // @todo raise something to the player
 	}
 
 	public function poll(t : InputKind = Data) : Null<String> { 

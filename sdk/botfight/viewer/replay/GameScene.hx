@@ -36,7 +36,7 @@ final class GameViewport extends Widget {
 	final timeline : VisualEventTimeline;
 	final gameScene : GameScene;
 	var time : Float = 0.;
-	var activeEvents : Array<VisualEvent>;
+	var activeEvents : Array<VisualEvent> = [];
 
 	function new(timeline : VisualEventTimeline, gameScene : GameScene, ?parent) {
 		super(parent);
@@ -51,9 +51,9 @@ final class GameViewport extends Widget {
 		gameScene.s2d = viewport.s2d;
 		gameScene.s3d = viewport.s3d;
 
-		fpsGraph = new FpsGraph(viewport.s2d);		
+		fpsGraph = new FpsGraph(viewport.s2d);
 
-		var _onAfterReflow = viewport.onAfterReflow;
+		final _onAfterReflow = viewport.onAfterReflow;
 		viewport.onAfterReflow = () -> {
 			_onAfterReflow();
 			gameScene.onResize();
@@ -62,8 +62,8 @@ final class GameViewport extends Widget {
 		gameScene.init(@:privateAccess timeline.sortedEvents.copy());
 	}
 
-	inline function advance(dt : Float) : Void { snap(time + dt); }
-	final function snap(t : Float) : Void {
+	inline function advance(dt : Float) : Void { seek(time + dt); }
+	final function seek(t : Float) : Void {
 		time = t;
 		// @todo optimize allocations since this might be called 60 times per frame
 		final events = timeline.activeEventsAt(t);

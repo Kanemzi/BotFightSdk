@@ -76,15 +76,15 @@ class UtilsIterators {
 	// @todo implement for LazyIterators
 	public static inline function filterMap<T, U>(array: Array<T>, func: T->U) : Array<U> {
 		var res = array.map(func);
-		res.removeAll(e -> e == null);
+		res.keep(e -> e != null);
 		return res;
 	}
 	
 	// @todo remove after LazyIterators integration
-	public static inline function removeAll<T>(array: Array<T>, f: T -> Bool) {
+	public static inline function keep<T>(array: Array<T>, f: T -> Bool) {
 		var i = array.length;
 		while (i-- > 0) {
-			if (f(array[i]))
+			if (!f(array[i]))
 				array.remove(array[i]);
 		}
 	}

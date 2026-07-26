@@ -19,7 +19,6 @@ import botfight.core.action.Action;
 
 	// @todo some ids seem to be broken (seem to be vectors)
 	// @todo could be pack and optimize this memory ? check object size ?
-	// @todo does not seem to find robots on Mines
 */
 class StateRegistry {
 	var entries : Map<SUID, RegistryEntry>;
@@ -63,37 +62,7 @@ class StateRegistry {
 			}
 			e.refs[turn - e.firstTurn] = st;
 		}
-		final gsName = Type.getClassName(Type.getClass(gs));
-		registerRec(gs, gsName, addRef);
-	}
-
-	function registerRec(o : Dynamic, path : String, add : (State, String) -> Void ) {
-		var st = Std.downcast(o, State);
-		if (st != null) add(st, path);
-
-		for (fname in Reflect.fields(o) ) {
-			var v = Reflect.field(o, fname);
-			var t = Type.typeof(v);
-			inline function rec(v) registerRec(v, path + '.$fname', add);
-
-			switch (t) {
-				case TObject:
-					rec(v);
-				case TClass(Array): // @todo ensure @:s Arrays can cast to array implicitly
-					var a = Std.downcast(v, Array);
-					for (e in a) rec(e);
-				case TClass(haxe.ds.StringMap | haxe.ds.IntMap | haxe.ds.Int64Map | haxe.ds.ObjectMap | haxe.ds.EnumValueMap):
-					var m : haxe.Constraints.IMap<Dynamic, Dynamic> = cast v;
-					for (v in m.iterator()) rec(v);
-					//throw 'Cannot use serialized Maps in the GameState (found on path $path)'; // @todo maybe show a warning instead.
-				case TClass(Std.downcast(v, hxbit.Serializable.AnySerializable) => s) if (s != null):
-					rec(s);
-				case TEnum(e):
-					var ps : Array<Dynamic> = Type.enumParameters(cast v);
-					for (_ => p in ps) rec(p);
-				default:
-			}
-		}
+		gs.iterStates(addRef);
 	}
 
 	public inline function get(id : SUID) return entries.get(id);

@@ -66,21 +66,17 @@ class MinesPlayer extends State {
 
 @:publicFields
 class MinesState extends GameState {
-	@:s var seed : Int;
 	@:s var players : Array<MinesPlayer>;
 	@:s var objects : Array<Object>;
 
 	public inline static final WIDTH : Int = 16;
 	public inline static final HEIGHT : Int = 16;
 
-	public function new(pids : Array<PlayerId>, seed : Int) {
+	public function new(pids : Array<PlayerId>, rnd : hxd.Rand) {
 		super();
-		this.seed = seed;
 
 		players = pids.map(pid -> new MinesPlayer(pid));
 		objects = [];
-
-		var rnd = genRand();
 
 		var p = players[0];
 		var px = 1 + rnd.random(hxd.Math.round(WIDTH / 3) - 1);
@@ -106,10 +102,6 @@ class MinesState extends GameState {
 			for (r in p.robots.copy())
 				f(r);
 		}
-	}
-
-	public inline function genRand(seed = 0) {
-		return new hxd.Rand(this.seed + seed);
 	}
 
 	public function serializeForPlayer(pid : PlayerId) : Array<String> {

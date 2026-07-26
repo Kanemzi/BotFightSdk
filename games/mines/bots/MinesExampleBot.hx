@@ -98,6 +98,8 @@ class MinesExampleBot {
 		
 		final actionCount = state.me.robots.length;
 		var spawned = false;
+		var scrapLeft = state.inv.scrap;
+		var microshipLeft = state.inv.microship;
 
 		var targets = state.scraps.concat(state.microships).map(o -> o.pos);
 		var foes = state.foes.robots.map(f -> f.pos);
@@ -152,18 +154,21 @@ class MinesExampleBot {
 				|| (PID > 0 && state.me.robots.length < 4);
 
 			if (canSpawn) {
-				if (!spawned && state.inv.scrap >= 5 && state.inv.microship >= 1) {
+				if (!spawned && scrapLeft >= 5 && microshipLeft >= 1) {
 					stdout.writeString('SPAWN\n');
 					spawned = true;
+					scrapLeft -= 5;
+					microshipLeft -= 1;
 					continue;
 				}
 			}
 
 			// Chance to place mine near enemies
-			if (state.inv.scrap > 4 * 5 && Std.random(100) < 20) {
+			if (scrapLeft > 4 * 5 && Std.random(100) < 20) {
 				var c = closest(bot.pos, foes);
 				if (c != null && dist(bot.pos, c) <= 3) {
 					stdout.writeString('MINE ${c.x} ${c.y}\n');
+					scrapLeft -= 4;
 				}
 			}
 
