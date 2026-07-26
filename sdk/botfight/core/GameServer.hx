@@ -8,6 +8,7 @@ import botfight.core.action.ActionsResult;
 import botfight.core.Player.PlayerInfo;
 import botfight.core.Player.PlayerId;
 import botfight.core.History.PlayerOutcome;
+import botfight.core.Storage;
 
 typedef ServerConfig = {
 	var version : Int;
@@ -128,7 +129,7 @@ abstract class GameServer<Ts : GameState, Ta : Action> extends ActionParser<Ta> 
 		// var cloned : Ts = cast serializer.getKnownRef(GameState);
 		// serializer.endLoad();
 
-		var ser = botfight.Runner.serializer;
+		var ser = Storage.serializer;
 		return cast ser.unserialize(ser.serialize(st), GameState);
 	}
 

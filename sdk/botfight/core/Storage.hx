@@ -1,0 +1,67 @@
+package botfight.core;
+
+import haxe.crypto.Base64;
+import haxe.crypto.Md5;
+import botfight.core.action.Action;
+import botfight.core.GameState;
+
+enum StorageMode {
+	Full; // Safest but heavy. Each turn is deep copied.
+	Delta; // A bit less safe. For each State that is unchanged in the next GameState, the same ref will be used instead of a deep copy.
+	Deterministic; // Light but risky, the game must be fully deterministic. Only the initial GameState is saved, and the player actions. The whole history is simulated again.
+}
+
+class Storage {
+	public static var serializer(get, default) : hxbit.Serializer;
+	static function get_serializer() {
+		if (serializer != null) return serializer;
+		serializer = new hxbit.Serializer();
+		serializer.remapIds = true;
+		return serializer;
+	}
+
+	static inline final REPLAY_EXT = "replay"; 
+	@:access(botfight.Match)
+	public static function saveMatch<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>) {
+		for(g in match.games) g.optimize(Delta);
+
+		final bytes = serializer.serialize(match);
+		var path = new haxe.io.Path(out ?? ".");
+		path.ext = REPLAY_EXT;
+		// @todo auto file name should be encoded based on bytes (but we should
+		// exclude __uid from the hash so that it doesn't change with the same seed)
+		// -> Allows checking if the game is deterministic
+		// @todo checkDeterministic (bruteforce many games with different seeds to ensure the outcome is always the same)
+		if (path.file.length == 0)
+			path.file = Md5.encode('${match.seed}');
+
+		if (path.dir != null && !sys.FileSystem.exists(path.dir) )
+			sys.FileSystem.createDirectory(path.dir);
+
+		var v = 0;
+		var f = path.file;
+		do {
+			path.file = f + (v > 0 ? '_$v' : '');
+			v++;
+		} while (sys.FileSystem.exists(path.toString()));
+
+		sys.io.File.saveBytes(path.toString(), bytes);
+	}
+
+	public static function loadMatch<Ts : GameState, Ta : Action>(path : String) : Match<Ts, Ta> {
+		var p = new haxe.io.Path(path);
+		p.ext = REPLAY_EXT;
+		path = p.toString();
+		
+		if (!sys.FileSystem.exists(path))
+			throw ('Replay file $path does not exist');
+		
+		try { 
+			// @todo using "save/load" instead to keep versioning 
+			final bytes = sys.io.File.getBytes(path);
+			return serializer.unserialize(bytes, Match);
+		} catch (e : Exception) {
+			throw 'Could not read match file $path : ${e.details()}';
+		}
+	}
+}

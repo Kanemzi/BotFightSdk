@@ -2,14 +2,13 @@ package botfight;
 
 import haxe.Json;
 import haxe.Exception;
-import haxe.crypto.Base64;
-import haxe.crypto.Md5;
 import botfight.core.GameServer;
 import botfight.core.GameState;
 import botfight.core.History;
 import botfight.core.Player.PlayerInfo;
 import botfight.core.Player.PlayerId;
 import botfight.core.action.Action;
+import botfight.core.Storage;
 import botfight.viewer.GameViewer;
 import botfight.Match;
 
@@ -59,16 +58,10 @@ final class Runner {
 
 	public static inline function error(e : String) Sys.stderr().writeString('[Error] $e\n');
 
-	public static var serializer : hxbit.Serializer;
-
 	var args : RunnerArgs;
 
 	@:generic
 	public function new<Ts : GameState, Ta : Action>(cl : Class<GameServer<Ts, Ta>>, viewcl : Class<GameViewer<Ts>>, arg : Array<String>) {
-		
-		serializer = new hxbit.Serializer();
-		serializer.remapIds = true;
-
 		this.args = new RunnerArgs(arg);
 		final hasGen = args.has("gen");
 		final hasMatch = args.has("match");
@@ -108,13 +101,13 @@ final class Runner {
 		var match = if (shouldRunMatch) {
 			var m = runMatch();
 			if (args.has("out"))
-				saveReplay(args.getParam("out"), m);
+				Storage.saveMatch(args.getParam("out"), m);
 			m;
 		} else null;
 
 		final replayPath = args.getParam("replay");
 		if (replayPath != null) {
-			match = try loadReplay(replayPath) catch (e : Exception) {
+			match = try Storage.loadMatch(replayPath) catch (e : Exception) {
 				error(e.details());
 				return;
 			}
@@ -157,47 +150,5 @@ final class Runner {
 		}
 
 		var viewer = Type.createInstance(viewcl, [match]);
-	}
-
-	static inline final REPLAY_EXT = "replay"; 
-	static function saveReplay<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>) {
-		final bytes = serializer.serialize(match);
-		var path = new haxe.io.Path(out ?? ".");
-		path.ext = REPLAY_EXT;
-		// @todo auto file name should be encoded based on bytes (but we should
-		// exclude __uid from the hash so that it doesn't change with the same seed)
-		// -> Allows checking if the game is deterministic
-		// @todo checkDeterministic (bruteforce many games with different seeds to ensure the outcome is always the same)
-		if (path.file.length == 0)
-			path.file = Md5.encode('${match.seed}');
-
-		if (path.dir != null && !sys.FileSystem.exists(path.dir) )
-			sys.FileSystem.createDirectory(path.dir);
-
-		var v = 0;
-		var f = path.file;
-		do {
-			path.file = f + (v > 0 ? '_$v' : '');
-			v++;
-		} while (sys.FileSystem.exists(path.toString()));
-
-		sys.io.File.saveBytes(path.toString(), bytes);
-	}
-
-	static function loadReplay<Ts : GameState, Ta : Action>(path : String) : Match<Ts, Ta> {
-		var p = new haxe.io.Path(path);
-		p.ext = REPLAY_EXT;
-		path = p.toString();
-		
-		if (!sys.FileSystem.exists(path))
-			throw ('Replay file $path does not exist');
-		
-		try { 
-			// @todo using "save/load" instead to keep versioning 
-			final bytes = sys.io.File.getBytes(path);
-			return serializer.unserialize(bytes, Match);
-		} catch (e : Exception) {
-			throw 'Could not read match file $path : ${e.details()}';
-		}
 	}
 }

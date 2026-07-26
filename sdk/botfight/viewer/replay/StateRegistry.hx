@@ -17,8 +17,7 @@ import botfight.core.action.Action;
 	Therefore we need to store all the state references bound to a specific SUID in a
 	registry. That is then passed to the EventView
 
-	// @todo some ids seem to be broken (seem to be vectors)
-	// @todo could be pack and optimize this memory ? check object size ?
+	@todo could be pack and optimize this memory ? check object size ?
 */
 class StateRegistry {
 	var entries : Map<SUID, RegistryEntry>;

@@ -23,7 +23,7 @@ abstract class State implements hxbit.Serializable {
 		Recursive iteration of all the sub states of [this]
 	*/
 	public function iterStates(f : (State, path : String) -> Void) : Void {
-		function iter(s : State, _, p : String) : Bool {
+		function iter(s : State, _, p : String, _) : Bool {
 			f(s, p);
 			for (field in getAllFields(s)) {
 				var v = Reflect.field(s, field);
@@ -36,10 +36,29 @@ abstract class State implements hxbit.Serializable {
 
 	public function equals(o : State) : Bool {
 		if (o == null) return false;
-		function iter(a : State, b : State, p : String) : Bool {
+		function iter(a : State, b : State, p : String, _) : Bool {
 			return walkFields(a, b, p, getAllFields, iter);
 		}
 		return walk(this, o, iter);
+	}
+
+	public function optimizeDelta(prev : GameState) {
+		if (prev == null) return;
+		// @todo pass a default set for the case GameState is exactly the same
+		function iter(s : State, ps : State, path: String, set : Null<Dynamic -> Void>) {
+			if (ps == null) // state appeared in this transition
+				return false;
+
+			if (s.equals(ps)) {
+				if (set != null) set(ps);
+				return true;
+			}
+
+			walkFields(s, ps, path, getAllFields, iter);
+			return false;
+		}
+
+		walk(this, prev, iter);
 	}
 
 	static function getAllFields(o : Dynamic) {
@@ -56,8 +75,15 @@ abstract class State implements hxbit.Serializable {
 
 	/**
 		Walks recursively either on one or two values. If [b] is set, return whether the two values are equal
+		The optional [set] function allows remapping states within the state while iterating.
 	*/
-	static function walk(a : Dynamic, b : Null<Dynamic>, ?path : String, f : (State, Null<State>, String) -> Bool) : Bool {		
+	static function walk(
+		a : Dynamic, 
+		b : Null<Dynamic>, 
+		?path : String, 
+		?set : (Dynamic -> Void),
+		f : (State, Null<State>, String, Null<Dynamic -> Void>) -> Bool
+	) : Bool {		
 		if (a == null)
 			return b == null;
 		
@@ -70,7 +96,7 @@ abstract class State implements hxbit.Serializable {
 
 		var ast = Std.downcast(a, State);
 		if (ast != null)
-			return f(ast, Std.downcast(b, State), path);
+			return f(ast, Std.downcast(b, State), path, set);
 
 		var awr = Std.downcast(a, WeakRef);
 		if (awr != null) {
@@ -82,8 +108,8 @@ abstract class State implements hxbit.Serializable {
 
 		switch (type) {
 			case TClass(Array):
-				var aarr = Std.downcast(a, Array);
-				var barr = Std.downcast(b, Array);
+				var aarr : Array<Dynamic> = Std.downcast(a, Array);
+				var barr : Array<Dynamic> = Std.downcast(b, Array);
 				if (comp && aarr.length != barr.length)
 					return false;
 				else {
@@ -91,7 +117,8 @@ abstract class State implements hxbit.Serializable {
 					for (i in 0...aarr.length) {
 						var ai = aarr[i];
 						var bi = barr != null ? barr[i] : null;
-						if (!walk(ai, bi, '$path[$i]', f)) eq = false;
+						final set = v -> aarr[i] = v;
+						if (!walk(ai, bi, '$path[$i]', set, f)) eq = false;
 					}
 					return eq;
 				}
@@ -104,10 +131,12 @@ abstract class State implements hxbit.Serializable {
 					return false;
 				else {
 					var eq = true;
+					// @todo is it ok to swap map items during iteration ?
 					for (k => va in amap) {
 						if (comp && !bmap.exists(k)) eq = false;
 						var bv = comp ? bmap.get(k) : null;
-						if (!walk(va, bv, '$path[$k]', f)) eq = false;
+						final set = v -> amap.set(k, v);
+						if (!walk(va, bv, '$path[$k]', set, f)) eq = false;
 					}
 					return eq;
 				}
@@ -125,7 +154,17 @@ abstract class State implements hxbit.Serializable {
 					var pa = Type.enumParameters(a);
 					var pb = comp ? Type.enumParameters(b) : null;
 					final ct = haxe.EnumTools.EnumValueTools.getName(a);
-					return walk(pa, pb, '$path#$ct', f);
+					var eq = true;
+					var dirty = false;
+					for (i in 0...pa.length) {
+						var ai = pa[i];
+						var bi = pb != null ? pb[i] : null;
+						final set = v -> { pa[i] = v; dirty = true; }
+						if (!walk(ai, bi, '$path[$i]', set, f)) eq = false;
+					}
+					if (dirty && set != null)
+						set(Type.createEnum(Type.getEnum(a), ct, pa));
+					return eq;
 				}
 
 			default:
@@ -137,12 +176,12 @@ abstract class State implements hxbit.Serializable {
 		a : Dynamic, 
 		b : Dynamic, 
 		path : String, 
-		getFields : Dynamic -> Array<String>, 
-		f : (State, Null<State>, String) -> Bool
+		getFields : Dynamic -> Array<String>,
+		f : (State, Null<State>, String, Null<Dynamic -> Void>) -> Bool
 	) : Bool {
 		final afs = getFields(a);
 		final bfs = getFields(b);
-		if (b != null && bfs.exists(f -> afs.has(f)))
+		if (b != null && bfs.exists(f -> !afs.has(f)))
 			return false;
 		else {
 			var eq = true;
@@ -150,7 +189,8 @@ abstract class State implements hxbit.Serializable {
 				if (!bfs.has(field)) eq = false;
 				var va = Reflect.field(a, field);
 				var vb = b != null ? Reflect.field(b, field) : null;
-				if (!walk(va, vb, '$path.$field', f)) eq = false;
+				final set = v -> Reflect.setField(a, field, v);
+				if (!walk(va, vb, '$path.$field', set, f)) eq = false;
 			}
 			return eq;
 		}

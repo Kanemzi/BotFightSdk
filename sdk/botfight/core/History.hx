@@ -3,6 +3,7 @@ package botfight.core;
 import botfight.core.action.Action;
 import botfight.core.action.ActionsResult;
 import botfight.core.Player.PlayerId;
+import botfight.core.Storage;
 
 enum PlayerOutcome {
 	Defeat(turn : Int, ?tiebreak : Int);
@@ -37,6 +38,7 @@ class HistoryPlayer implements hxbit.Serializable {
 class HistoryHeader implements hxbit.Serializable {
 	@:s var version : Int;
 	@:s var seed : Int;
+	@:s var format : StorageMode;
 }
 
 @:generic
@@ -55,6 +57,7 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 		header = {
 			version : v,
 			seed : seed,
+			format : Full,
 		}
 		this.players = [for (p in players) p.id => new HistoryPlayer()];
 		turns = [];
@@ -63,13 +66,13 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 
 	public function addTurn(state : Ts, actions : Array<ActionsResult<Ta>>) {
 		if (completed)
-			throw 'Can\'t add new turns to a locked history';
+			throw 'Cannot add new turns to a locked history';
 		turns.push(new HistoryTurn(state, actions));
 	}
 
 	public function outcome(pid : PlayerId, out : PlayerOutcome) {
 		if (completed)
-			throw 'Can\'t add outcomes to a locked history';
+			throw 'Cannot add outcomes to a locked history';
 		var hp = players.get(pid);
 		if (hp.outcome != null)
 			throw 'An outcome was already registered for player $pid';
@@ -79,6 +82,21 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 	public function lock() {
 		completed = true;
 		return this;
+	}
+
+	public function optimize<Ts : GameState, Ta : Action>(?format : StorageMode) {
+		if (!completed)
+			throw 'Cannot optimize an history that is not locked yet';
+
+		switch (format ?? header.format) {
+			case Full:
+			case Delta: for (i in 0...length) {
+				var prev = turns[i - 1]?.state;
+				var next = turns[i].state;
+				next.optimizeDelta(prev);
+			}
+			case Deterministic: // @todo implement
+		}
 	}
 
 	public inline function getStateUID() return turns[0].state.id;

@@ -15,13 +15,13 @@
 				"args": "active configuration"
 			},
             "args": [
-                //"--players", "ExampleBot.hl", "ClaudeBot.hl",
+                "--players", "ExampleBot.hl", "ExampleBot.hl",
                 // "--gen",
-                //"--match", "series", "5",
-                //"--seed", "123415116",
+                "--match", "series", "3",
+                "--seed", "123456",
                 // "--match", "5",
-                "--replay", "./replays/test-claude-bot",
-                //"--out", "./replays/test-claude-bot",
+                //"--replay", "./replays/test-claude-bot",
+                "--out", "./replays/test-storage-full",
 				//"--out",
 				//"--headless"
             ]

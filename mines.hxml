@@ -5,11 +5,11 @@
 -hl ExampleBot.hl
 -main MinesExampleBot
 
---next
-
--cp games/mines/bots
--hl ClaudeBot.hl
--main MinesClaudeBot
+# --next
+# 
+# -cp games/mines/bots
+# -hl ClaudeBot.hl
+# -main MinesClaudeBot
 
 --next
 
