@@ -6,38 +6,29 @@ import botfight.core.Exception;
 import botfight.core.action.Action;
 import botfight.core.action.*;
 
-enum Status { 
+enum Status {
 	Alive; // Currently active in the game
 	Defeated; // Has lost the game
 	TimedOut; // Has not responded in time for a turn
 	Crashed; // The process has crashed
-	Invalid; // An exception occured while collecting actions (unknown cause) 
+	Invalid; // An exception occured while collecting actions (unknown cause)
 	Terminated; // Was disposed properly at the end of the game
 	Victory; // Has won the game
 }
 
 typedef PlayerId = Int;
 
-@:publicFields @:structInit
-class PlayerInfo implements hxbit.Serializable {
-	var id : PlayerId;
-	var name : String;
-	var path : String;
-}
-
 final class Player<Ta : Action> {
-	public inline static final MAX_NAME_LENGTH = 15; 
-
-	public var id(get, never) : PlayerId;
-	public var name(get, never) : String;
-	public var status(default, null) : Status;
+	public inline static final MAX_NAME_LENGTH = 15;
 	
-	var info : PlayerInfo;
-	var io : PlayerIO;
+	public var id(default, null) : PlayerId;
+	public var status(default, null) : Status;
 
-	public function new(info : PlayerInfo , ?io : PlayerIO) {
-		this.info = info;
-		this.io = io ?? new ProcessPlayerIO(info.path, []);
+	var io : PlayerIO<Ta>;
+
+	public function new(id : PlayerId, io : PlayerIO<Ta>) {
+		this.id = id;
+		this.io = io;
 		status = Alive;
 	}
 
@@ -53,57 +44,35 @@ final class Player<Ta : Action> {
 		io.dispose();
 	}
 
-	public function sendLines(lines : Array<String>) {
-		for (l in lines) io.writeLine(l);
-	}
-
-	function collectLogs() {
-		var l = null;
-		var logs = [];
-		while ((l = io.poll(Logs)) != null) logs.push(l);
-		return logs;
-	}
-
-	public function collectActions<Ts : GameState>(turnProfile : ActionCollector<Ta>, timeout : Float, ap : ActionParser<Ta>) : ActionsResult<Ta> {
-		final start = Timer.stamp();
-		final deadline = start + timeout;
-
-		function next() {
-			try {
-				var to = deadline - Timer.stamp();
-				var line = io.readLine(to);
-				var action = ap.parseAction(line);
-				if (action == null ) throw new InvalidActionException('Invalid action "$line"');
-				return action;
-			} catch (e : TimeoutException) {
-				throw new TimeoutException('Turn timeout reached (${timeout}s)');
-			}
-		}
-
-		var actions : Array<Ta> = null;
-		var error : String = null;
-		var s = null;
+	@:allow(botfight.core.GameServer)
+	function sendLines(lines : Array<String>) : Bool {
 		try {
-			actions = turnProfile.collect(next);
+			for (l in lines) io.writeLine(l);
+			return true;
+		} catch (e : CrashException) {
+			status = Crashed;
+			return false;
 		} catch (e : std.haxe.Exception) {
-			// @todo Exception might not be core.Exception. Therefore it might not be bot's fault
-			error = e.message;
-			s = if (io.isDisposed()) Crashed
-				else if (Std.isOfType(e, TimeoutException)) TimedOut
-				else Invalid;
+			status = Invalid;
+			return false;
 		}
-
-		final time = Timer.stamp() - start;
-		return {
-			pid : id,
-			actions : actions ?? [],
-			time : time,
-			status : s ?? status, // @todo improve this flow
-			error : error,
-			logs : collectLogs(),
-		};
 	}
 
-	function get_id() return info.id;
-	function get_name() return info.name;
+	public function play(data : Array<String>, turnProfile : ActionCollector<Ta>, timeout : Float, ap : ActionParser<Ta>) : ActionsResult<Ta> {
+		final start = Timer.stamp();
+		if (!sendLines(data)) return {
+			pid : id,
+			actions : [],
+			time : Timer.stamp() - start,
+			status : status,
+			error : 'Failed to send turn data',
+			logs : [] // @todo collect last logs before or retrieve them in the error field
+		};
+
+		var result : ActionsResult<Ta> = io.collectActions(turnProfile, timeout, ap);
+		result.pid = id;
+
+		status = result.status;
+		return result;
+	}
 }

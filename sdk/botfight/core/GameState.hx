@@ -6,8 +6,6 @@ package botfight.core;
 // If I could ensure that, I could only save the first state and player actions
 // @todo think about a "state" authority for every n turns, the other turns are compupted from preview state and player actions
 
-import botfight.core.Player;
-
 typedef SUID = Int;
 
 abstract class State implements hxbit.Serializable {

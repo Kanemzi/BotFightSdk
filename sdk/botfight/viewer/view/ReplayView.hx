@@ -1,9 +1,7 @@
 package botfight.viewer.view;
 
 import botfight.core.GameState;
-import botfight.core.History;
 import botfight.core.History.HistoryHeader;
-import botfight.core.action.Action;
 import botfight.viewer.replay.GameScene;
 
 // @todo clean

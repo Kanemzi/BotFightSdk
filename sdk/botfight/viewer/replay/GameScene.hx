@@ -1,6 +1,5 @@
 package botfight.viewer.replay;
 
-import botfight.core.GameState;
 import botfight.viewer.VisualEventTimeline;
 import botfight.viewer.VisualEvent;
 import botfight.viewer.widget.*;

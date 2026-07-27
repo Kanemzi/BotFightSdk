@@ -1,14 +1,11 @@
 package botfight;
 
-import haxe.Json;
 import haxe.Exception;
 import botfight.core.GameServer;
 import botfight.core.GameServer.ServerConfig;
 import botfight.core.GameSimulation;
 import botfight.core.GameState;
-import botfight.core.History;
-import botfight.core.Player.PlayerInfo;
-import botfight.core.Player.PlayerId;
+import botfight.core.PlayerIO.ProcessPlayerIO;
 import botfight.core.action.Action;
 import botfight.core.Storage;
 import botfight.viewer.GameViewer;
@@ -147,7 +144,8 @@ final class Runner {
 
 	inline function createGame<Ts : GameState, Ta : Action>(cl : Class<GameSimulation<Ts, Ta>>, config : ServerConfig, info : GameInfo) : GameServer<Ts, Ta> {
 		var gs = new GameServer(cl, config, info.seed);
-		for (p in info.players) gs.addPlayer(p);
+		for (p in info.players)
+			gs.addPlayer(p.id, new ProcessPlayerIO<Ta>(p.path, []));
 		return gs;
 	}
 

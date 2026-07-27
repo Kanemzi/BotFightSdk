@@ -1,8 +1,5 @@
 package botfight.core;
 
-import botfight.core.History;
-import botfight.core.GameSimulation.PlayersActions;
-import botfight.core.GameServer.ServerConfig;
 import botfight.core.Player.PlayerId;
 import botfight.core.action.Action;
 import botfight.core.action.ActionCollector;
@@ -37,9 +34,8 @@ final class SimulationContext<Ta : Action> {
 	var victories : Array<PlayerId> = [];
 	var defeats : Array<PlayerId> = [];
 
-	function new(turn : Int, actions : PlayersActions<Ta>, alive : ReadOnlyArray<PlayerId>, seed : Int) {
+	function new(turn : Int, alive : ReadOnlyArray<PlayerId>, seed : Int) {
 		this.turn = turn;
-		this.actions = actions;
 		this.rnd = new hxd.Rand(seed);
 		this.wasAlive = alive;
 	}

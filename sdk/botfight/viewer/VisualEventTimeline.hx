@@ -2,7 +2,6 @@ package botfight.viewer;
 
 import botfight.core.GameState;
 import botfight.core.GameState.State;
-import botfight.core.GameState.SUID;
 import botfight.core.action.Action;
 import botfight.core.History;
 import botfight.viewer.VisualEvent.EventId;

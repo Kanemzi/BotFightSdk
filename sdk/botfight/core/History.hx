@@ -2,6 +2,7 @@ package botfight.core;
 
 import botfight.core.action.Action;
 import botfight.core.action.ActionsResult;
+import botfight.core.GameServer.ServerConfig;
 import botfight.core.Player.PlayerId;
 import botfight.core.Storage;
 import botfight.core.GameSimulation;
@@ -107,8 +108,7 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 		header.format = format;
 	}
 
-	// @todo avoid reallocation
-	public function getAlivePlayers(?turn : Int) : ReadOnlyArray<PlayerId> {
+	public function getAlivePlayers(?turn : Int) : Array<PlayerId> {
 		return [for (i => p in players) {
 			final alive = switch (p.outcome) {
 				case null : true;
@@ -117,6 +117,10 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 			}
 			if (alive) i;
 		}];
+	}
+
+	public inline function getPlayerActions(pid : PlayerId) : Array<ActionsResult<Ta>> {
+		return turns.filterMap(t -> t.actions.find(a -> a.pid == pid));
 	}
 
 	@:access(botfight.core.GameSimulation)
@@ -131,13 +135,11 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 				var initState = sim.init(players, new hxd.Rand(header.seed));
 				turns[0]._state = initState;
 				for (t in 1...turns.length) {
+					turns[t]._state = GameServer.cloneState(turns[t - 1].state);
 					final alive = getAlivePlayers(t);
-					final actions = ActionsResult.toPlayersActions(turns[t].actions);
-					final turnSeed = header.seed + t + 1;
-					var newState = GameServer.cloneState(turns[t - 1].state);
-					var ctx = new SimulationContext(t, actions, alive, turnSeed);
-					sim.update(newState, ctx);
-					turns[t]._state = newState;
+					var ctx = new SimulationContext(t, alive, header.seed + t + 1);
+					ctx.actions = ActionsResult.toPlayersActions(turns[t].actions);
+					sim.update(turns[t].state, ctx);
 				}
 		}
 	}

@@ -35,6 +35,7 @@ class Mutex<T> {
 		}
 	}
 
+	public inline function get(block = true) : Null<T> return map(v -> v, block);
 	public inline function map<U>(f : T -> U, block = true) : Null<U> {
 		var res = null;
 		if (acquire(block)) {

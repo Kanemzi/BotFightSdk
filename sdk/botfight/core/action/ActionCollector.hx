@@ -1,7 +1,6 @@
 package botfight.core.action;
 
 import botfight.core.Exception.InvalidActionException;
-import botfight.core.GameServer;
 import botfight.core.action.Action;
 
 using Lambda;

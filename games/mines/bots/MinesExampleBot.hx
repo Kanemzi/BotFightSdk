@@ -198,7 +198,6 @@ class MinesExampleBot {
 	static var t = 0;
 	static function loop() {
 		t ++;
-		if( t == 4) Sys.exit(0);
 		final state = parseState();
 		//debug('State : $state');
 		

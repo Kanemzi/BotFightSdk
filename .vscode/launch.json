@@ -17,7 +17,7 @@
             "args": [
                 "--players", "ExampleBot.hl", "ExampleBot.hl",
                 // "--gen",
-                "--match", "series", "3",
+                "--match", "series", "10",
                 "--seed", "123456",
                 // "--match", "5",
                 //"--replay", "./replays/test",

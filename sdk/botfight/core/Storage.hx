@@ -1,6 +1,5 @@
 package botfight.core;
 
-import haxe.crypto.Base64;
 import haxe.crypto.Md5;
 import botfight.core.action.Action;
 import botfight.core.GameState;

@@ -4,12 +4,18 @@ import botfight.core.Exception;
 import botfight.core.Player;
 import botfight.core.PlayerIO;
 import botfight.core.action.Action;
-import botfight.core.GameServer;
 import botfight.core.GameState;
 import botfight.core.History;
 
 class InvalidMatch extends Exception {}
-class InvalidPlayer extends Exception {}
+class InvalidPlayerException extends Exception {}
+
+@:publicFields @:structInit
+class PlayerInfo implements hxbit.Serializable {
+	var id : PlayerId;
+	var name : String;
+	var path : String;
+}
 
 typedef GameInfo = { seed : Int, players : Array<PlayerInfo> }
 
@@ -28,23 +34,31 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 	final public function addPlayer(path : String) : PlayerInfo {
 		if (started) throw 'Can\'t add player $path after match start';
 		
+		final pid = players.length;
 		var name = null;
-		var pio : PlayerIO = null;
+		var pio : PlayerIO<Ta> = null;
 		try {
-			pio = new ProcessPlayerIO(path, ["--config"]);
+			pio = new ProcessPlayerIO<Ta>(path, ["--config"]);
 			name = pio.readLine(1.0);
-			pio.dispose();
 			if (name.length > Player.MAX_NAME_LENGTH || !~/^[\w~]+$/.match(name))
-				throw new InvalidPlayer('$path : Player name should be ${Player.MAX_NAME_LENGTH} max alphanumeric characters');
+				throw new InvalidPlayerException('$path : Player name should be ${Player.MAX_NAME_LENGTH} max alphanumeric characters');
+		} catch (e : InvalidPlayerException) {
+			pio?.dispose();
+			throw e;
 		} catch (_ : TimeoutException) {
 			pio?.dispose();
-			throw new InvalidPlayer('Process $path should send a name when started with parameter --config');
+			throw new InvalidPlayerException('Process $path (id=$pid) should send a name when started with parameter --config');
+		} catch (e : CrashException) {
+			pio?.dispose();
+			throw new InvalidPlayerException('Process $path (id=$pid) crashed during initialization : ${e.message}');
 		} catch (e : haxe.Exception) {
-			throw new InvalidPlayer('Could not run $path properly : $e');
+			pio?.dispose();
+			throw new InvalidPlayerException('Could not run $path properly : $e');
 		}
+		pio?.dispose();
 
 		final info : PlayerInfo = {
-			id: players.length,
+			id: pid,
 			path : path,
 			name : name
 		};

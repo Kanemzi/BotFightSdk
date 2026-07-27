@@ -72,28 +72,6 @@ class IndexedLazyIteratorItem<T> {
 }
 
 class UtilsIterators {
-
-	// @todo implement for LazyIterators
-	public static inline function filterMap<T, U>(array: Array<T>, func: T->U) : Array<U> {
-		var res = array.map(func);
-		res.keep(e -> e != null);
-		return res;
-	}
-	
-	public static inline function castArray<T : {}, S : T>(array: Array<T>, cl : Class<S>) : Array<S> {
-		var c : Array<S> = array.filterMap(Std.downcast.bind(_, cl));
-		return c.length == array.length ? c : null;
-	}
-
-	// @todo remove after LazyIterators integration
-	public static inline function keep<T>(array: Array<T>, f: T -> Bool) {
-		var i = array.length;
-		while (i-- > 0) {
-			if (!f(array[i]))
-				array.remove(array[i]);
-		}
-	}
-
 	public static inline function toIterator<T>(array: Array<T>) {
 		return new ArrayIterator(array);
 	}

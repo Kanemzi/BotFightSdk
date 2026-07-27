@@ -1,8 +1,6 @@
 package botfight.viewer.view;
 
 import botfight.core.GameState;
-import botfight.core.History;
-import botfight.core.action.Action;
 import botfight.viewer.widget.Widget;
 import botfight.viewer.VisualEventTimeline;
 import botfight.viewer.VisualEvent;
