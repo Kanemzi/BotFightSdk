@@ -109,7 +109,7 @@ final class Runner {
 		var match = if (shouldRunMatch) {
 			var m = runMatch();
 			if (args.has("out"))
-				Storage.saveMatch(args.getParam("out"), m, config.defaultStorageMode);
+				Storage.saveMatch(args.getParam("out"), m, config.storageMode);
 			m;
 		} else null;
 

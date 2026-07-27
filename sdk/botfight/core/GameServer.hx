@@ -18,7 +18,7 @@ typedef ServerConfig = {
 	var firstTurnTimeout : Float;
 	var turnTimeout : Float;
 	var turnModel : Class<TurnModel>;
-	var ?defaultStorageMode : Storage.StorageMode;
+	var ?storageMode : Storage.StorageMode;
 }
 
 final class GameServer<Ts : GameState, Ta : Action> {
@@ -92,7 +92,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 		}
 			
 		while (history.length < config.maxTurns) {
-			var newState = cloneState(state);
+			var newState = config.storageMode == Deterministic ? state : cloneState(state);
 			var alive = history.getAlivePlayers().copy();
 
 			final playing = turnModel.getPlayingThisTurn(alive, newState, turn);
@@ -101,7 +101,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 
 			final actions = ActionsResult.toPlayersActions(results);
 			final turnSeed = seed + turn + 1;
-			var ctx = new SimulationContext(actions, alive.copy(), turnSeed);
+			var ctx = new SimulationContext(turn, actions, alive.copy(), turnSeed);
 			sim.update(newState, ctx);
 
 			// so Players might defeat themselves on timeout ?

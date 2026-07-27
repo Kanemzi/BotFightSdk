@@ -135,7 +135,7 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 					final actions = ActionsResult.toPlayersActions(turns[t].actions);
 					final turnSeed = header.seed + t + 1;
 					var newState = GameServer.cloneState(turns[t - 1].state);
-					var ctx = new SimulationContext(actions, alive, turnSeed);
+					var ctx = new SimulationContext(t, actions, alive, turnSeed);
 					sim.update(newState, ctx);
 					turns[t]._state = newState;
 				}

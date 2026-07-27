@@ -38,7 +38,7 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 			firstTurnTimeout : 1.0,
 			turnTimeout : 0.5,
 			turnModel : TurnModel.SimultaneousTurn,
-			defaultStorageMode : Delta,
+			storageMode : Delta,
 		});
 	}
 }

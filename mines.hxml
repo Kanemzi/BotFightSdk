@@ -7,7 +7,7 @@
 
 --next
 
-# -D hl_profile
+-D hl_profile
 -D dump=pretty
 -cp games/mines/
 -lib botfight-sdk

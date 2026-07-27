@@ -20,8 +20,8 @@
                 "--match", "series", "3",
                 "--seed", "123456",
                 // "--match", "5",
-                //"--replay", "./replays/test-storage-deterministic",
-                "--out", "./replays/test-storage-delta",
+                //"--replay", "./replays/test",
+                "--out", "./replays/test",
 				//"--out",
 				//"--headless"
             ]

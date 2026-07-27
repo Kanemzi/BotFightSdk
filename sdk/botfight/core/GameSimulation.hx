@@ -29,6 +29,7 @@ abstract PlayersActions<Ta : Action>(Array<PlayerActions<Ta>>) from Array<Player
 
 @:allow(botfight.core.GameServer)
 final class SimulationContext<Ta : Action> {
+	public var turn(default, null) : Int; 
 	public var actions(default, null) : PlayersActions<Ta>;
 	public var rnd(default, null) : hxd.Rand;
 
@@ -36,7 +37,8 @@ final class SimulationContext<Ta : Action> {
 	var victories : Array<PlayerId> = [];
 	var defeats : Array<PlayerId> = [];
 
-	function new(actions : PlayersActions<Ta>, alive : ReadOnlyArray<PlayerId>, seed : Int) {
+	function new(turn : Int, actions : PlayersActions<Ta>, alive : ReadOnlyArray<PlayerId>, seed : Int) {
+		this.turn = turn;
 		this.actions = actions;
 		this.rnd = new hxd.Rand(seed);
 		this.wasAlive = alive;

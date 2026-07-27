@@ -119,7 +119,7 @@ typedef GameState = {
 
 class MinesExampleBot {
 
-	static final rnd = new Rand(1);
+	static final rnd = new Rand(0);
 
 	static final stdin = Sys.stdin();
 	static final stdout = Sys.stdout();
@@ -195,7 +195,10 @@ class MinesExampleBot {
 		while (true) loop();
 	}
 
+	static var t = 0;
 	static function loop() {
+		t ++;
+		if( t == 4) Sys.exit(0);
 		final state = parseState();
 		//debug('State : $state');
 		
@@ -203,6 +206,7 @@ class MinesExampleBot {
 		var spawned = false;
 		var scrapLeft = state.inv.scrap;
 		var microshipLeft = state.inv.microship;
+		debug('[$PID][$t] I got $actionCount actions to play');
 
 		var targets = state.scraps.concat(state.microships).map(o -> o.pos);
 		var foes = state.foes.robots.map(f -> f.pos);
@@ -258,6 +262,7 @@ class MinesExampleBot {
 
 			if (canSpawn) {
 				if (!spawned && scrapLeft >= 5 && microshipLeft >= 1) {
+					debug('[$PID][$t] Spawned');
 					stdout.writeString('SPAWN\n');
 					spawned = true;
 					scrapLeft -= 5;
@@ -272,6 +277,7 @@ class MinesExampleBot {
 				if (c != null && dist(bot.pos, c) <= 3) {
 					stdout.writeString('MINE ${c.x} ${c.y}\n');
 					scrapLeft -= 4;
+					continue;
 				}
 			}
 

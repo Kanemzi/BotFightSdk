@@ -34,12 +34,8 @@ class VisualEventTimeline {
 		sortedEvents.sort((a, b) -> a.begin > b.begin ? 1 : -1);
 	}
 
-	var _activeEventsCache : Array<VisualEvent> = null;
 	public function activeEventsAt(t : Float) : ReadOnlyArray<VisualEvent> {
-		(_activeEventsCache ??= []).resize(0);
-		for (ev in sortedEvents)
-			if (ev.begin <= t && t <= ev.end) _activeEventsCache.push(ev);
-		return _activeEventsCache;
+		return sortedEvents.filter(ev -> ev.begin <= t && t <= ev.end);
 	}
 }
 
