@@ -1,0 +1,470 @@
+{
+	"sheets": [
+		{
+			"name": "stat",
+			"columns": [
+				{
+					"typeStr": "0",
+					"name": "kind",
+					"opt": null,
+					"scope": null
+				}
+			],
+			"lines": [
+				{
+					"kind": "Health"
+				},
+				{
+					"kind": "Armor"
+				},
+				{
+					"kind": "MoveSpeed"
+				},
+				{
+					"kind": "GatherSpeed"
+				},
+				{
+					"kind": "BuildSpeed"
+				},
+				{
+					"kind": "Damage"
+				},
+				{
+					"kind": "AttackSpeed"
+				},
+				{
+					"kind": "BlockChance"
+				},
+				{
+					"kind": "CriticalChance"
+				},
+				{
+					"kind": "Precision"
+				}
+			],
+			"separators": [],
+			"props": {
+				"editor": {
+					"index": 2
+				}
+			}
+		},
+		{
+			"name": "constant",
+			"columns": [
+				{
+					"typeStr": "0",
+					"name": "name",
+					"opt": null,
+					"scope": null
+				},
+				{
+					"name": "value",
+					"opt": null,
+					"structRef": "types@any"
+				},
+				{
+					"typeStr": "1",
+					"name": "doc",
+					"opt": true
+				}
+			],
+			"lines": [
+				{
+					"name": "Width",
+					"value": {
+						"float": 50
+					}
+				},
+				{
+					"name": "Height",
+					"value": {
+						"float": 30
+					}
+				},
+				{
+					"name": "SayActionDuration",
+					"value": {
+						"integer": 30
+					},
+					"doc": "How many turns a Say action will be visible in replay mode"
+				}
+			],
+			"separators": [
+				{
+					"title": "Simulation",
+					"level": null,
+					"id": "Width"
+				},
+				{
+					"title": "Viewer",
+					"level": null,
+					"id": "SayActionDuration"
+				}
+			],
+			"props": {
+				"editor": {
+					"index": 6
+				}
+			}
+		},
+		{
+			"name": "unit",
+			"columns": [
+				{
+					"typeStr": "0",
+					"name": "kind",
+					"opt": null,
+					"scope": null
+				},
+				{
+					"typeStr": "6:behavior",
+					"name": "behavior",
+					"opt": null
+				},
+				{
+					"name": "cost",
+					"opt": null,
+					"structRef": "types@resources"
+				}
+			],
+			"lines": [
+				{
+					"kind": "Civilian",
+					"cost": [
+						{
+							"item": "Food",
+							"count": 5
+						}
+					],
+					"behavior": "Worker"
+				},
+				{
+					"kind": "Soldier",
+					"cost": [
+						{
+							"item": "Food",
+							"count": 7
+						},
+						{
+							"item": "Wood",
+							"count": 3
+						}
+					],
+					"behavior": "Melee"
+				},
+				{
+					"kind": "Archer",
+					"cost": [
+						{
+							"item": "Food",
+							"count": 7
+						},
+						{
+							"item": "Wood",
+							"count": 1
+						}
+					],
+					"behavior": "Ranged"
+				}
+			],
+			"separators": [],
+			"props": {
+				"editor": {
+					"index": 0
+				}
+			}
+		},
+		{
+			"name": "building",
+			"columns": [
+				{
+					"typeStr": "0",
+					"name": "kind",
+					"opt": null
+				},
+				{
+					"typeStr": "3",
+					"name": "maxUnits",
+					"opt": null
+				},
+				{
+					"typeStr": "8",
+					"name": "spawns",
+					"opt": false
+				},
+				{
+					"name": "cost",
+					"opt": null,
+					"structRef": "types@resources"
+				}
+			],
+			"lines": [
+				{
+					"kind": "House",
+					"cost": [
+						{
+							"item": "Wood",
+							"count": 20
+						}
+					],
+					"maxUnits": 10,
+					"spawns": [
+						{
+							"unit": "Civilian"
+						}
+					]
+				},
+				{
+					"kind": "Tower",
+					"cost": [
+						{
+							"item": "Wood",
+							"count": 30
+						}
+					],
+					"maxUnits": 40,
+					"spawns": [
+						{
+							"unit": "Soldier"
+						},
+						{
+							"unit": "Archer"
+						}
+					]
+				}
+			],
+			"separators": [],
+			"props": {
+				"editor": {
+					"index": 4
+				}
+			}
+		},
+		{
+			"name": "building@spawns",
+			"props": {
+				"hide": true
+			},
+			"separators": [],
+			"lines": [],
+			"columns": [
+				{
+					"typeStr": "6:unit",
+					"name": "unit",
+					"opt": null
+				}
+			]
+		},
+		{
+			"name": "resource",
+			"columns": [
+				{
+					"typeStr": "0",
+					"name": "kind",
+					"opt": null,
+					"scope": null
+				}
+			],
+			"lines": [
+				{
+					"kind": "Food"
+				},
+				{
+					"kind": "Wood"
+				}
+			],
+			"separators": [],
+			"props": {
+				"editor": {
+					"index": 5
+				}
+			}
+		},
+		{
+			"name": "types",
+			"columns": [
+				{
+					"typeStr": "8",
+					"name": "resources",
+					"opt": true,
+					"shared": true
+				},
+				{
+					"typeStr": "21",
+					"name": "any",
+					"opt": null,
+					"shared": true
+				}
+			],
+			"lines": [
+				{
+					"cost": [
+						{
+							"item": "Food",
+							"count": 0
+						}
+					],
+					"any": {
+						"curve": null
+					}
+				}
+			],
+			"separators": [],
+			"props": {
+				"editor": {
+					"index": 7
+				}
+			}
+		},
+		{
+			"name": "types@resources",
+			"props": {
+				"hide": true
+			},
+			"separators": [],
+			"lines": [],
+			"columns": [
+				{
+					"typeStr": "6:resource",
+					"name": "item",
+					"opt": null
+				},
+				{
+					"typeStr": "3",
+					"name": "count",
+					"opt": null
+				}
+			]
+		},
+		{
+			"name": "types@any",
+			"props": {
+				"hide": true,
+				"isProps": true
+			},
+			"separators": [],
+			"lines": [],
+			"columns": [
+				{
+					"typeStr": "3",
+					"name": "integer",
+					"opt": true
+				},
+				{
+					"typeStr": "4",
+					"name": "float",
+					"opt": true
+				},
+				{
+					"typeStr": "2",
+					"name": "boolean",
+					"opt": true
+				},
+				{
+					"typeStr": "19",
+					"name": "curve",
+					"opt": true
+				}
+			]
+		},
+		{
+			"name": "behavior",
+			"columns": [
+				{
+					"typeStr": "0",
+					"name": "kind",
+					"opt": null,
+					"scope": null
+				}
+			],
+			"lines": [
+				{
+					"kind": "Worker"
+				},
+				{
+					"kind": "Melee"
+				},
+				{
+					"kind": "Ranged"
+				}
+			],
+			"separators": [],
+			"props": {
+				"editor": {
+					"index": 1
+				}
+			}
+		},
+		{
+			"name": "effect",
+			"columns": [
+				{
+					"typeStr": "0",
+					"name": "kind",
+					"opt": null,
+					"scope": null
+				},
+				{
+					"typeStr": "19",
+					"name": "decay",
+					"opt": true
+				}
+			],
+			"lines": [
+				{
+					"kind": "TerrainKnowledge"
+				},
+				{
+					"kind": "Home"
+				},
+				{
+					"kind": "Efficiency"
+				},
+				{
+					"kind": "Aim"
+				},
+				{
+					"kind": "SurvivalInstinct"
+				},
+				{
+					"kind": "MilitaryFatigue"
+				},
+				{
+					"kind": "Horde"
+				},
+				{
+					"kind": "SurpriseAttack",
+					"decay": [
+						0,
+						1,
+						-10000000000,
+						2,
+						-10000000000,
+						-10000000000,
+						4.02757551570941,
+						0.7495298238361584,
+						-1.3919649847240747,
+						0.2439282325318191,
+						1.4002660962344171,
+						-0.24826429381090098,
+						6.2,
+						0,
+						-10000000000,
+						2,
+						-10000000000,
+						-10000000000
+					]
+				}
+			],
+			"separators": [],
+			"props": {
+				"editor": {
+					"index": 3
+				}
+			}
+		}
+	],
+	"customTypes": [],
+	"compress": false
+}

@@ -1,5 +1,6 @@
 import botfight.utils.Const;
 import haxe.ds.ReadOnlyArray;
+import botfight.Res;
 
 using botfight.utils.Extensions;
 using StringTools;

@@ -208,10 +208,11 @@ abstract class State implements hxbit.Serializable {
 	}
 }
 
-class WeakRef<T : State> {
-	@:s var ref : T;
+// @todo improve and test this
+class WeakRef<T : State> implements hxbit.Serializable {
+	@:s var ref : State;
 	public function new(ref : T) this.ref = ref;
-	public function get() return ref?.__alive ? ref : null;
+	public function get() : T return ref?.__alive ? cast ref : null;
 }
 
 abstract class GameState extends State {

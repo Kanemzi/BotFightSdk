@@ -2,13 +2,15 @@
 --each
 
 -cp games/war/bots
--hl ExampleBot.hl
 -main ExampleBot
+-hl ExampleBot.hl
 
 --next
 
--D dump=pretty
 -cp games/war/
 -lib botfight-sdk
--hl WarServer.hl
+-lib castle
 -main server.WarSimulation
+-hl WarServer.hl
+-D dump=pretty
+-D resourcesPath=games/war/res

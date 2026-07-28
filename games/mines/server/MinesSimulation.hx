@@ -130,7 +130,7 @@ class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 		}
 	}
 
-	function getTurnActionProfile(state : MinesState, pid : PlayerId) return Fixed(state.getPlayer(pid).robots.length );
+	function getTurnActionProfile(state : MinesState, pid : PlayerId) return Fixed(state.getPlayer(pid).robots.length);
 	
 	function getTiebreakerScore(state : MinesState, pid : PlayerId) {
 		var p = state.getPlayer(pid);

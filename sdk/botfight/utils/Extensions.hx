@@ -8,6 +8,8 @@ import haxe.io.Eof;
 
 class Extensions {
 
+
+
 	/**
 		Thread safe blocking readline function.
 		Based on the implementation from haxe.io.Input.readLine().

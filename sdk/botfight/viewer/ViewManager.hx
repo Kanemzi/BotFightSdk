@@ -25,6 +25,8 @@ class ViewManager extends h2d.Flow {
 	}
 
 	function initStyle() {
+		final loader = hxd.res.Loader.currentInstance;
+		hxd.res.Loader.currentInstance = Res.loader;
 		style = new h2d.domkit.Style();
 		style.useSmartCache = true;
 		style.loadComponents("style");
@@ -32,6 +34,7 @@ class ViewManager extends h2d.Flow {
 		//if (hl.Api.hasDebugger())
 		//	style.allowInspect = true;
 		#end
+		hxd.res.Loader.currentInstance = loader;
 	}
 
 	public function push(view : View) {

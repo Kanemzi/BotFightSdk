@@ -21,8 +21,7 @@ abstract class GameViewer<Ts : GameState> extends hxd.App {
 
 	public function new(match : Match<Ts, Action>) {
 		super();
-		
-		hxd.Res.initLocal();
+		botfight.Res.init();
 		hxd.res.Resource.LIVE_UPDATE = #if hl hl.Api.hasDebugger() #else false #end;
 
 		this.match = match;

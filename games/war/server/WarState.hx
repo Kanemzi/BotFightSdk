@@ -1,15 +1,33 @@
 package server;
 
 import botfight.core.GameState;
+import botfight.core.GameState.WeakRef;
 import botfight.core.Player.PlayerId;
 import server.TerrainGen;
+import Data;
 
-enum BuildingKind { House; Tower; }
-enum UnitKind { Civilian; Military; }
-enum ResourceKind { Wood; Food; }
+enum GroupOrder {
+	Idle;
+	Guard(pos : Vec, radius : Float);
+	Gather(pos : Vec, radius : Float);
+	Construct(pos : Vec, ?kind : Data.BuildingKind);
+	Siege(target : WeakRef<Building>);
+}
 
-@:publicFields
-class Vec extends State {
+enum ConstructionStatus { Done; Pending(d : ConstructionInfo); }
+@:publicFields class ConstructionInfo extends State {
+	@:s var res : Resources;
+	
+	function new() { 
+		super();
+		res = new Map();
+	}
+}
+
+typedef Resources = Map<Data.ResourceKind, Int>;
+typedef Say = { msg : String, onUnit : Bool, expire : Int };
+
+@:publicFields class Vec extends State {
 	@:s var x : Float;
 	@:s var y : Float;
 
@@ -20,35 +38,69 @@ class Vec extends State {
 	}
 }
 
-@:publicFields
-class Building extends State {
-	@:s var kind : BuildingKind;
+@:publicFields class Building extends State {
+	@:s var bid : Int;
+	@:s var kind : Data.BuildingKind;
 	@:s var pos : Vec;
+	@:s var owner : WeakRef<WarPlayer>;
+	@:s var construction : ConstructionStatus;
+	@:s var order : GroupOrder;
+	@:s var sayInfo : Null<Say>;
 
-	function new(kind, pos, gs : WarState) {
+	function new(kind, pos, owner) {
+		// @todo bid attribution
 		super();
 		this.kind = kind;
 		this.pos = pos;
+		this.owner = new WeakRef(owner);
+		construction = Done;
+		order = Idle;
+	}
+
+	public inline function isFinished() return switch(construction) {
+		case Done: true;
+		default: false;
+	}
+
+	public function say(msg : String, onUnit : Bool) {
+		sayInfo = { msg : msg, onUnit : onUnit, expire : Const.SayActionDuration };
+	}
+
+	public function spawn(state : WarState, unit : Data.UnitKind) { // @todo returns a result ?
+		if (!isFinished()) return;
+		final data = Data.building.get(kind);
+		final udata = Data.unit.get(unit);
+
+		if (!data.spawns.exists(s -> s.unitId == unit)) return;
+		if (state.getBuildingUnits(id).length >= data.maxUnits) return;
+		//if (owner.get().hasResources()) // @todo ensure has resources
+
+		var u = new Unit(unit, new Vec(pos.x, pos.y), this);
+		state.units.push(u);
+	}
+
+	public static function makeConstructionSite(kind, pos, owner) : Building {
+		var cs = new Building(kind, pos, owner);
+		cs.construction = Pending(new ConstructionInfo());
+		return cs;
 	}
 }
 
-@:publicFields
-class Unit extends State {
-	@:s var kind : UnitKind;
+@:publicFields class Unit extends State {
+	@:s var kind : Data.UnitKind;
 	@:s var pos : Vec;
-	@:s var building : Null<Building>;
+	@:s var building : WeakRef<Building>;
 
 	function new(kind, pos, building) {
 		super();
 		this.kind = kind;
 		this.pos = pos;
-		this.building = building;
+		this.building = new WeakRef(building);
 	}
 }
 
-@:publicFields
-class Resource extends State {
-	@:s var kind : ResourceKind;
+@:publicFields class Resource extends State {
+	@:s var kind : Data.ResourceKind;
 	@:s var pos : Vec;
 	@:s var radius : Float;
 	@:s var amount : Int;
@@ -62,37 +114,65 @@ class Resource extends State {
 	}
 }
 
-@:publicFields
-class WarPlayer extends State {
+@:publicFields class WarPlayer extends State {
 	@:s var pid : PlayerId;
-	@:s var buildings : Array<Building>;
-	@:s var units : Array<Unit>;
+	@:s var res : Resources;
 
 	function new(pid) {
 		super();
 		this.pid = pid;
-		buildings = [];
-		units = [];
+		res = new Map();
+	}
+
+	public function hasResources(r : Resources) {
+		for (k => c in r) {
+			final pc = res.get(k);
+			if (pc == null || pc < c) return false; 
+		}
+		return true;
 	}
 }
 
 class WarState extends GameState {
 	@:s public var players : Array<WarPlayer>;
+	@:s public var units : Array<Unit>;
+	@:s public var buildings : Array<Building>;
 	@:s public var resources : Array<Resource>;
-
-	public inline static final WIDTH : Float = 100.; 
-	public inline static final HEIGHT : Float = 60.; 
 
 	public function new(pids : ReadOnlyArray<PlayerId>, rnd : hxd.Rand) {
 		super();
+		/*
 		final sym = TerrainGen.randSym(WIDTH / 2., HEIGHT / 2., rnd);
-
+		*/
+		players = pids.map(id -> new WarPlayer(id));
+		units = [];
+		buildings = [];
 		resources = [];
-		players = pids.map(pid -> new WarPlayer(pid));
 
-		generateTerrain(sym, rnd);
+//		generateTerrain(sym, rnd);
 	}
 
+	/**
+		Finds a building based on its id. Will limit the search to a specific player
+		if [owner] is provided
+	*/
+	public function getBuildingById(id : Int, ?owner : PlayerId) {
+		return buildings.find(b -> b.id == id && (owner == null || b.owner.get().id == owner)); 
+	}
+
+	public function getBuildingUnits(id : Int) {
+		return units.filter(u -> u.building.get()?.id == id);
+	}
+
+	public function getPlayerBuildings(id : PlayerId) {
+		return buildings.filter(b -> b.owner.get().id == id);
+	}
+
+	public function getPlayerUnits(id : PlayerId) {
+		return getPlayerBuildings(id).flatMap(b -> getBuildingUnits(b.id));
+	}
+
+/*
 	function generateTerrain(sym : Sym, rnd : hxd.Rand) {
 		final MARGIN = 10.;
 		final RES_RATIO = switch (sym.k) {
@@ -129,8 +209,8 @@ class WarState extends GameState {
 		for (p in players) {
 			p.buildings.push(new Building(House, ps.shift(), this));
 		}
-
-
+		
 		// @todo compute the total amount of resources based on unit and building costs and game difficulty
 	}
+	*/
 }

@@ -7,7 +7,6 @@
 -D domkit_heaps
 -D analyzer-optimize
 -D hxbit_host_mt
--D resourcesPath=res
 
 --macro domkit.Macros.registerComponentsPath("botfight.viewer.view.$")
 --macro domkit.Macros.registerComponentsPath("botfight.viewer.widget.$")

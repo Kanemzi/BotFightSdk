@@ -30,6 +30,8 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 	}
 
 	public static function main() {
+		hxd.Res.initLocal();
+		Data.load(hxd.Res.data.entry.getText());
 		new botfight.Runner(WarSimulation, WarViewer, Sys.args(), {
 			version : 1,
 			minPlayers : 2,
@@ -38,7 +40,7 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 			firstTurnTimeout : 1.0,
 			turnTimeout : 0.5,
 			turnModel : TurnModel.SimultaneousTurn,
-			storageMode : Delta,
+			storageMode : Deterministic,
 		});
 	}
 }
