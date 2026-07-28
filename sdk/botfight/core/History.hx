@@ -18,7 +18,6 @@ enum PlayerOutcome {
 class HistoryTurn<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 	@:s @:noPrivateAccess var actions : Array<ActionsResult<Ta>>;
 	@:s @:noPrivateAccess var _state : GameState;
-	// @todo if I use the authority system, GameServer.update() function will need to be aware of player state (alive, defeated, ...) 
 
 	public function new(state : Ts, actions : Array<ActionsResult<Ta>>) {
 		this.actions = actions;

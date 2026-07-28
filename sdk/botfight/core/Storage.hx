@@ -24,7 +24,7 @@ class Storage {
 	public static function saveMatch<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>, ?mode : StorageMode) {
 		for(g in match.games) g.optimize(mode);
 
-		final bytes = serializer.serialize(match);
+		final bytes = haxe.zip.Compress.run(serializer.serialize(match), 2);
 		var path = new haxe.io.Path(out ?? ".");
 		path.ext = REPLAY_EXT;
 		// @todo auto file name should be encoded based on bytes (but we should
@@ -59,7 +59,7 @@ class Storage {
 		try { 
 			// @todo using "save/load" instead to keep versioning 
 			final bytes = sys.io.File.getBytes(path);
-			return serializer.unserialize(bytes, Match);
+			return serializer.unserialize(haxe.zip.Uncompress.run(bytes), Match);
 		} catch (e : Exception) {
 			throw 'Could not read match file $path : ${e.details()}';
 		}

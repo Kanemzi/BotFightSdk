@@ -17,11 +17,11 @@
             "args": [
                 "--players", "ExampleBot.hl", "ExampleBot.hl",
                 // "--gen",
-                "--match", "series", "10",
+                "--match", "series", "3",
                 "--seed", "123456",
                 // "--match", "5",
                 //"--replay", "./replays/test",
-                "--out", "./replays/test",
+                "--out", "./replays/test-det-nozip",
 				//"--out",
 				//"--headless"
             ]

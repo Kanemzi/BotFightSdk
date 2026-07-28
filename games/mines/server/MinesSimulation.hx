@@ -187,7 +187,7 @@ class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 			firstTurnTimeout : 1.0,
 			turnTimeout : 0.5,
 			turnModel : TurnModel.SimultaneousTurn,
-			storageMode : Delta,
+			storageMode : Deterministic,
 		});
 	}
 }
