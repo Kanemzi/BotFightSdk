@@ -34,7 +34,7 @@ enum WarAction {
 	/* Economy*/
 	Gather(bid : Int, x : Float, y : Float, radius : Float); // Units of [bid] will gather freely in a [radius] around [x, y]
 	ConstructAt(bid : Int, x : Float, y : Float, type : Word); // Units of [bid] will start to build a [building] of type (HOUSE|TOWER)] at [x, y]
-	Construct(bid : Int, tid : Int); // Units of [bid] will start to help building [tid]
+	Construct(bid : Int, tid : Int); // Units of [bid] will start to help building or repair [tid]
 
 	/* Military */
 	Siege(bid : Int, tid : Int); // Units of [bid] will attack building [tid]
@@ -51,6 +51,7 @@ class ActionSystem {
 		var ordered = new Map<Int, Bool>();
 		var recruited = new Map<Int, Bool>();
 		var said = new Map<Int, Bool>();
+
 		function check(map : Map<Int, Bool>, id, dupErr) {
 			var building = state.getBuildingById(id); 
 			if (building == null) return Error('Building [$id] does not exists.');
@@ -60,6 +61,7 @@ class ActionSystem {
 			map.set(id, true);
 			return Ok(true);
 		}
+
 		final checkRecruit = check.bind(recruited, _, 'Cannot recruit multiple units from');
 		final checkSay = check.bind(said, _, 'Cannot say multiple messages from');
 		final checkOrder = (act, id) -> {

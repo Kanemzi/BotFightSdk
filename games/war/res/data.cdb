@@ -59,7 +59,7 @@
 					"scope": null
 				},
 				{
-					"name": "value",
+					"name": "val",
 					"opt": null,
 					"structRef": "types@any"
 				},
@@ -72,22 +72,22 @@
 			"lines": [
 				{
 					"name": "Width",
-					"value": {
+					"val": {
 						"float": 50
 					}
 				},
 				{
 					"name": "Height",
-					"value": {
+					"val": {
 						"float": 30
 					}
 				},
 				{
 					"name": "SayActionDuration",
-					"value": {
+					"doc": "How many turns a Say action will be visible in replay mode",
+					"val": {
 						"integer": 30
-					},
-					"doc": "How many turns a Say action will be visible in replay mode"
+					}
 				}
 			],
 			"separators": [
@@ -118,6 +118,11 @@
 					"scope": null
 				},
 				{
+					"typeStr": "8",
+					"name": "baseStats",
+					"opt": null
+				},
+				{
 					"typeStr": "6:behavior",
 					"name": "behavior",
 					"opt": null
@@ -137,7 +142,13 @@
 							"count": 5
 						}
 					],
-					"behavior": "Worker"
+					"behavior": "Worker",
+					"baseStats": [
+						{
+							"stat": "MoveSpeed",
+							"val": 1
+						}
+					]
 				},
 				{
 					"kind": "Soldier",
@@ -151,7 +162,13 @@
 							"count": 3
 						}
 					],
-					"behavior": "Melee"
+					"behavior": "Melee",
+					"baseStats": [
+						{
+							"stat": "MoveSpeed",
+							"val": 0.8
+						}
+					]
 				},
 				{
 					"kind": "Archer",
@@ -165,7 +182,13 @@
 							"count": 1
 						}
 					],
-					"behavior": "Ranged"
+					"behavior": "Ranged",
+					"baseStats": [
+						{
+							"stat": "MoveSpeed",
+							"val": 1.2
+						}
+					]
 				}
 			],
 			"separators": [],
@@ -174,6 +197,26 @@
 					"index": 0
 				}
 			}
+		},
+		{
+			"name": "unit@baseStats",
+			"props": {
+				"hide": true
+			},
+			"separators": [],
+			"lines": [],
+			"columns": [
+				{
+					"typeStr": "6:stat",
+					"name": "stat",
+					"opt": null
+				},
+				{
+					"typeStr": "4",
+					"name": "val",
+					"opt": null
+				}
+			]
 		},
 		{
 			"name": "building",
@@ -223,6 +266,9 @@
 						},
 						{
 							"order": "Gather"
+						},
+						{
+							"order": "ConstructAt"
 						},
 						{
 							"order": "Construct"
@@ -531,6 +577,9 @@
 				},
 				{
 					"kind": "Gather"
+				},
+				{
+					"kind": "ConstructAt"
 				},
 				{
 					"kind": "Construct"

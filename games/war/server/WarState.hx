@@ -7,8 +7,8 @@ import server.TerrainGen;
 import Data;
 
 enum GroupOrder {
-	Rally(pos : Vec);
 	Return;
+	Rally(pos : Vec);
 	Gather(pos : Vec, radius : Float);
 	ConstructAt(pos : Vec, ?kind : Data.BuildingKind);
 	Construct(target : WeakRef<Building>); // @todo place a building imediately on construct, but hidden. Destroy if still untouch when changing order
@@ -37,7 +37,7 @@ typedef Say = { msg : String, onUnit : Bool, expire : Int };
 	@:s var x : Float;
 	@:s var y : Float;
 
-	public function new(x, y) {
+	public function new(x = 0., y = 0.) {
 		super();
 		this.x = x;
 		this.y = y;
@@ -100,6 +100,9 @@ typedef Say = { msg : String, onUnit : Bool, expire : Int };
 	@:s var kind : Data.UnitKind;
 	@:s var pos : UnitPos;
 	@:s var building : WeakRef<Building>;
+
+	public var isOrphan(get, never);
+	inline function get_isOrphan() return building.get() == null;
 
 	// @todo units can be in garnison in their building (heal) ?
 
