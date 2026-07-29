@@ -7,7 +7,7 @@
         {
             "name": "Mines",
             "request": "launch",
-            "port": 47711,
+            "port": 4771,
             "type": "hl",
             "cwd": "${workspaceRoot}",
             "preLaunchTask": {

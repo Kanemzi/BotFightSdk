@@ -17,17 +17,29 @@ enum Status {
 }
 
 typedef PlayerId = Int;
+typedef TeamId = Int;
+
+@:publicFields @:structInit
+class PlayerInfo implements hxbit.Serializable {
+	var id : PlayerId;
+	var team : TeamId;
+	var name : String;
+	var path : String;
+}
 
 final class Player<Ta : Action> {
 	public inline static final MAX_NAME_LENGTH = 15;
 	
-	public var id(default, null) : PlayerId;
+	public var info(default, null) : PlayerInfo;
 	public var status(default, null) : Status;
+	
+	public var id(get, never) : PlayerId;
+	public var team(get, never) : TeamId;
 
 	var io : PlayerIO<Ta>;
 
-	public function new(id : PlayerId, io : PlayerIO<Ta>) {
-		this.id = id;
+	public function new(info : PlayerInfo, io : PlayerIO<Ta>) {
+		this.info = info;
 		this.io = io;
 		status = Alive;
 	}
@@ -75,4 +87,7 @@ final class Player<Ta : Action> {
 		status = result.status;
 		return result;
 	}
+
+	inline function get_id() return info.id;
+	inline function get_team() return info.team;
 }

@@ -57,8 +57,6 @@ final class Runner {
 
 	public static inline function error(e : String) Sys.stderr().writeString('[Error] $e\n');
 
-	//var args : RunnerArgs;
-	
 	@:generic
 	public function new<Ts : GameState, Ta : Action>(
 		simcl : Class<GameSimulation<Ts, Ta>>,
@@ -70,16 +68,54 @@ final class Runner {
 		final hasGen = args.has("gen");
 		final hasMatch = args.has("match");
 		final playerPaths = args.getParams("players");
-		
-		final shouldRunMatch = if (playerPaths == null || playerPaths.length == 0) {
+		final playerCount = playerPaths.length;
+		final teamSize = Std.parseInt(args.getParam("teamSize")) ?? 1;
+
+		final shouldRunMatch = if (playerPaths == null || playerCount == 0) {
 			// @todo debugGen should not require players (add dummy players)
-			if (hasGen) error('Trying to test generation without any bot program');
-			else if (hasMatch) error('Trying to start a match without any bot program');
+			if (hasGen) error('Trying to test generation without any bot program.');
+			else if (hasMatch) error('Trying to start a match without any bot program.');
 			false;
-		} else true;
+		} else {
+			// Ensure teams params are valid
+			final teams = hxd.Math.floor(playerCount / teamSize);
+			final remain = playerCount % teamSize;
+	
+			final minTeamSize = config.minTeamSize ?? 1;
+			final maxTeamSize = config.maxTeamSize ?? 1;
+
+			final minTeams = config.minTeams ?? 2;
+			final maxTeams = config.maxTeams ?? 2;
+			final term = teamSize == 1 ? 'players' : 'teams';
+
+			if (teamSize < minTeamSize || teamSize > maxTeamSize) {
+				var err = 'Team size should be between $minTeamSize and $maxTeamSize.';
+				if (!args.has("teamSize"))
+					err += 'Consider setting a team size for the match using --teamSize [n].';
+				error(err);
+				false;
+			} else if (teams < minTeams) {
+				final need = (minTeams - teams) * teamSize - remain;
+				error('With $playerCount player(s), there would not be enough $term for the match.'
+					+ 'Consider adding at least $need path(s) to the --players list.');
+				false;
+			} else if (teams > maxTeams) {
+				final over = (teams - minTeams) * teamSize + remain;
+				error('With $playerCount player(s), there would be too many $term for the match.'
+					+ 'Consider adding removing $over path(s) from the --players list.');
+				false;
+			} else if (remain > 0) {
+				var options = ['removing $remain path(s) from'];
+				if (teams != maxTeams) options.unshift('adding ${teamSize - remain} path(s) to');
+				error('$playerCount players does not allow forming even teams of $teamSize.'
+					+ 'Consider ${options.join(' or ')} the --players list.');
+				false;
+			}
+			true;
+		}
 
 		inline function runMatch() : Match<Ts, Ta> {
-			var match = createMatch(args);
+			var match = createMatch(args, teamSize);
 			for (p in playerPaths)
 				match.addPlayer(p);
 			trace('Starting match on [${match.toString()}] format with ${match.players.length} players (seed=${match.seed})');
@@ -118,23 +154,23 @@ final class Runner {
 			}
 		}
 
-		final headless = args.has("headless") && replayPath == null;
+		final headless = match == null || (args.has("headless") && replayPath == null);
 		if (!headless)
-			replay(simcl, viewcl, match);		
+			replay(simcl, viewcl, match);
 	}
 
-	static function createMatch<Ts : GameState, Ta : Action>(args : RunnerArgs) : Match<Ts, Ta> {
+	static function createMatch<Ts : GameState, Ta : Action>(args : RunnerArgs, teamSize) : Match<Ts, Ta> {
 		final seed = Std.parseInt(args.getParam("seed")) ?? Std.random(Const.INT_MAX);
 		if (args.has("gen")) {
 			final n = Std.parseInt(args.getParam("gen")) ?? 1;
-			return new Series(n, seed);
+			return new Series(n, seed, teamSize);
 		}
 		
 		final margs = args.getParams("match");
 		if (margs?.length > 0) {
 			final format = margs.shift(); 
 			switch (format) {
-				case "series": return new Series(Std.parseInt(margs[0]), seed);
+				case "series": return new Series(Std.parseInt(margs[0]), seed, teamSize);
 				//case "bo": return new BestOf(Std.parseInt(margs[0]));
 				default:
 			}
@@ -145,7 +181,7 @@ final class Runner {
 	inline function createGame<Ts : GameState, Ta : Action>(cl : Class<GameSimulation<Ts, Ta>>, config : ServerConfig, info : GameInfo) : GameServer<Ts, Ta> {
 		var gs = new GameServer(cl, config, info.seed);
 		for (p in info.players)
-			gs.addPlayer(p.id, new ProcessPlayerIO<Ta>(p.path, []));
+			gs.addPlayer(p, new ProcessPlayerIO<Ta>(p.path, []));
 		return gs;
 	}
 
@@ -155,7 +191,7 @@ final class Runner {
 			return;
 		}
 		
-		for (g in match.games) g.recover(simcl);
+		for (g in match.games) g.recover(simcl, match);
 		var viewer = Type.createInstance(viewcl, [match]);
 	}
 }

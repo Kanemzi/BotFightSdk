@@ -14,8 +14,8 @@ using server.Simulation;
 
 class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 
-	function init(players : ReadOnlyArray<PlayerId>, rnd : hxd.Rand) : MinesState {
-		return new MinesState(players, rnd);
+	function init(ctx : InitContext<MinesAction>) : MinesState {
+		return new MinesState(ctx.getPlayers(), ctx.rnd);
 	}
 
 	function update(state : MinesState, ctx : SimulationContext<MinesAction>) : Void {
@@ -181,8 +181,6 @@ class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 	public static function main() {
 		new botfight.Runner(MinesSimulation, MinesViewer, Sys.args(), {
 			version : 1,
-			minPlayers : 2,
-			maxPlayers : 2,
 			maxTurns : Sim.MAX_TURNS,
 			firstTurnTimeout : 1.0,
 			turnTimeout : 0.5,

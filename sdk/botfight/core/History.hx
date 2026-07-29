@@ -2,7 +2,6 @@ package botfight.core;
 
 import botfight.core.action.Action;
 import botfight.core.action.ActionsResult;
-import botfight.core.GameServer.ServerConfig;
 import botfight.core.Player.PlayerId;
 import botfight.core.Storage;
 import botfight.core.GameSimulation;
@@ -124,20 +123,19 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 
 	@:access(botfight.core.GameSimulation)
 	@:access(botfight.core.SimulationContext)
-	public function recover(cl : Class<GameSimulation<Ts, Ta>>) {
+	public function recover(cl : Class<GameSimulation<Ts, Ta>>, match : Match<Ts, Ta>) {
 		if (turns.length == 0) return;
 		switch (header.format) {
 			case Full, Delta:
 			case Deterministic: // resimulate the whole game based on registered player actions
 				var sim = Type.createInstance(cl, []);
 				final players = getAlivePlayers(0);
-				var initState = sim.init(players, new hxd.Rand(header.seed));
+				var ctx = new SimulationContext(match.players, header.seed);
+				var initState = sim.init(ctx);
 				turns[0]._state = initState;
 				for (t in 1...turns.length) {
 					turns[t]._state = GameServer.cloneState(turns[t - 1].state);
-					final alive = getAlivePlayers(t);
-					var ctx = new SimulationContext(t, alive, header.seed + t + 1);
-					ctx.actions = ActionsResult.toPlayersActions(turns[t].actions);
+					ctx.initTurn(t, getAlivePlayers(t), ActionsResult.toPlayersActions(turns[t].actions));
 					sim.update(turns[t].state, ctx);
 				}
 		}

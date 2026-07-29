@@ -2,6 +2,7 @@ package botfight;
 
 import botfight.core.Exception;
 import botfight.core.Player;
+import botfight.core.Player.PlayerInfo;
 import botfight.core.PlayerIO;
 import botfight.core.action.Action;
 import botfight.core.GameState;
@@ -10,16 +11,11 @@ import botfight.core.History;
 class InvalidMatch extends Exception {}
 class InvalidPlayerException extends Exception {}
 
-@:publicFields @:structInit
-class PlayerInfo implements hxbit.Serializable {
-	var id : PlayerId;
-	var name : String;
-	var path : String;
-}
-
 typedef GameInfo = { seed : Int, players : Array<PlayerInfo> }
 
+@:allow(botfight.core.History)
 abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable {
+	@:s var teamSize : Int = 1;
 	@:s var players : Array<PlayerInfo> = [];
 	@:s var games : Array<History<Ts, Ta>> = [];
 	@:s var seed : Int;
@@ -27,8 +23,9 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 	var started = false;
 	var rnd : hxd.Rand;
 
-	public function new(seed : Int) {
+	public function new(seed : Int, teamSize = 1) {
 		this.seed = seed;
+		this.teamSize = teamSize;
 	}
 
 	final public function addPlayer(path : String) : PlayerInfo {
@@ -59,10 +56,11 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 
 		final info : PlayerInfo = {
 			id: pid,
+			team : hxd.Math.floor(pid / teamSize),
 			path : path,
 			name : name
 		};
-
+		
 		players.push(info);
 		return info;
 	}
@@ -102,8 +100,8 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 
 class Series<Ts : GameState, Ta : Action> extends Match<Ts, Ta> {
 	var count : Int;
-	public function new(count : Int, seed : Int) {
-		super(seed);
+	public function new(count : Int, seed : Int, teamSize = 1) {
+		super(seed, teamSize);
 		this.count = count;
 	}
 

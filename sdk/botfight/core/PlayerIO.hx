@@ -43,7 +43,7 @@ class ProcessPlayerIO<Ta : Action> implements PlayerIO<Ta> {
 	}
 
 	function reader(i : haxe.io.Input, o : Mutex<Array<String>>, ?forward : haxe.io.Output) {
-		try while (!isDisposed()) {
+		try while (true) {
 			final line = i.safeReadLine();
 			forward?.writeString('[forward] $line\n');
 			o.execute(o -> o.push(line));

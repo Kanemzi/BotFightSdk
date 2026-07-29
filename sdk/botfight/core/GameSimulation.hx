@@ -1,6 +1,8 @@
 package botfight.core;
 
 import botfight.core.Player.PlayerId;
+import botfight.core.Player.TeamId;
+import botfight.core.Player.PlayerInfo;
 import botfight.core.action.Action;
 import botfight.core.action.ActionCollector;
 
@@ -29,15 +31,27 @@ final class SimulationContext<Ta : Action> {
 	public var turn(default, null) : Int; 
 	public var actions(default, null) : PlayersActions<Ta>;
 	public var rnd(default, null) : hxd.Rand;
-
+	
+	var seed : Int;
+	var players : Map<PlayerId, PlayerInfo>;
 	var wasAlive : ReadOnlyArray<PlayerId>;
 	var victories : Array<PlayerId> = [];
 	var defeats : Array<PlayerId> = [];
 
-	function new(turn : Int, alive : ReadOnlyArray<PlayerId>, seed : Int) {
+	function new(players : ReadOnlyArray<PlayerInfo>, seed : Int) {
+		this.players = [for (p in players) p.id => p];
+		this.seed = seed;
+		rnd = new hxd.Rand(seed);
+		initTurn(0, players.map(p -> p.id));
+	}
+
+	function initTurn(turn : Int, alive : ReadOnlyArray<PlayerId>, ?actions : PlayersActions<Ta>) {
 		this.turn = turn;
-		this.rnd = new hxd.Rand(seed);
 		this.wasAlive = alive;
+		this.actions = actions;
+		rnd.init(seed + turn);
+		victories.resize(0);
+		defeats.resize(0);
 	}
 
 	public inline function getAlivePlayers() {
@@ -46,6 +60,19 @@ final class SimulationContext<Ta : Action> {
 
 	public inline function isAlive(pid : PlayerId) : Bool {
 		return wasAlive.has(pid) && !defeats.has(pid);
+	}
+
+	public inline function getTeam(pid : PlayerId) : TeamId {
+		return players.get(pid).team;
+	}
+
+	public inline function getTeammates(pid : PlayerId, alive = true) : Array<PlayerId> {
+		final team = getTeam(pid);
+		return [for (_ => p in players) if (p.id != pid && getTeam(p.id) == team && (!alive || isAlive(p.id))) p.id];
+	}
+
+	public inline function getName(pid : PlayerId) : String {
+		return players.get(pid).name;
 	}
 
 	public function victory(pid : PlayerId) : Void {
@@ -63,19 +90,26 @@ final class SimulationContext<Ta : Action> {
 	}
 }
 
+@:forward(getTeam, getTeammates, getName)
+abstract InitContext<Ta : Action>(SimulationContext<Ta>) from SimulationContext<Ta> {
+	public var rnd(get, never) : hxd.Rand;
+	inline function get_rnd() return this.rnd;
+	public function getPlayers() return this.getAlivePlayers();
+}
+
 @:allow(botfight.core.GameServer)
 abstract class GameSimulation<Ts : GameState, Ta : Action> extends ActionParser<Ta> {
 
 	/**
 		Called before the first turn. Should return the initial game state.
-		Use [rnd] only to ensure the game will be deterministic with the game seed.
+		Use [ctx.rnd] only to ensure the game will be deterministic with the game seed.
 	*/
-	abstract function init(players : ReadOnlyArray<PlayerId>, rnd : hxd.Rand) : Ts;
+	abstract function init(ctx : InitContext<Ta>) : Ts;
 
 	/**
 		Called every update. Should mutate state depending on players actions.
 
-		Use [rnd] only to ensure the game will be deterministic with the game seed.
+		Use [ctx.rnd] only to ensure the game will be deterministic with the game seed.
 
 		@todo : should returns logs (errors, warnings, debug) that will be sent back to players
 			or out stream passed in parameters

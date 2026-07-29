@@ -5,14 +5,17 @@ import sys.thread.*;
 import botfight.core.action.Action;
 import botfight.core.action.ActionsResult;
 import botfight.core.Player.PlayerId;
+import botfight.core.Player.PlayerInfo;
 import botfight.core.History.PlayerOutcome;
 import botfight.core.Storage;
 import botfight.core.GameSimulation.SimulationContext;
 
 typedef ServerConfig = {
 	var version : Int;
-	var minPlayers : Int;
-	var maxPlayers : Int;
+	var ?minTeams : Int; // defaults to 2
+	var ?maxTeams : Int; // defaults to 2
+	var ?minTeamSize : Int; // defaults to 1
+	var ?maxTeamSize : Int; // defaults to 1
 	var maxTurns : Int;
 	var firstTurnTimeout : Float;
 	var turnTimeout : Float;
@@ -37,11 +40,8 @@ final class GameServer<Ts : GameState, Ta : Action> {
 		players = [];
 	}
 
-	final public function addPlayer(pid: PlayerId, io : PlayerIO<Ta>) {
-		if (players.length >= config.maxPlayers) {
-			throw 'Cannot add player ${pid}, the game already full';
-		}
-		players.push(new Player<Ta>(pid, io));
+	final public function addPlayer(info : PlayerInfo, io : PlayerIO<Ta>) {
+		players.push(new Player<Ta>(info, io));
 	}
 
 	inline function getPlayer(pid : PlayerId) {
@@ -62,9 +62,6 @@ final class GameServer<Ts : GameState, Ta : Action> {
 	}
 
 	final public function run() : History<Ts, Ta> {
-		if (players.length < config.minPlayers || players.length > config.maxPlayers)
-			throw "Trying to run a game with an invalid amount of players";
-
 		final wto = Math.max(config.firstTurnTimeout, config.turnTimeout) * 2;
 		turnWorkers = new ElasticThreadPool(players.length, wto / 1000.);
 		
@@ -73,7 +70,9 @@ final class GameServer<Ts : GameState, Ta : Action> {
 		var history = new History(config.version, players, seed);
 		var sim = Type.createInstance(simuClass, []);
 
-		final initState = sim.init(history.getAlivePlayers(), new hxd.Rand(seed));
+		var ctx = new SimulationContext(players.map(p -> p.info), seed);
+
+		final initState = sim.init(ctx);
 		history.addTurn(initState, []);
 
 		inline function getTurn() return history.length;
@@ -87,7 +86,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 			final turn = getTurn();
 			
 			var newState = config.storageMode == Deterministic ? getState() : cloneState(getState());
-			var ctx = new SimulationContext(turn, history.getAlivePlayers(), seed + turn + 1);
+			ctx.initTurn(turn, history.getAlivePlayers());
 
 			final playing = turnModel.getPlayingThisTurn(ctx.getAlivePlayers(), newState, turn);
 			final res = playTurns(turn, playing, newState, sim);
