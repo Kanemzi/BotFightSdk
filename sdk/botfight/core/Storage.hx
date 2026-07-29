@@ -22,7 +22,7 @@ class Storage {
 	static inline final REPLAY_EXT = "replay"; 
 	@:access(botfight.Match)
 	public static function saveMatch<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>, ?mode : StorageMode) {
-		for(g in match.games) g.optimize(mode);
+		for (g in match.games) g.optimize(mode);
 
 		final bytes = haxe.zip.Compress.run(serializer.serialize(match), 2);
 		var path = new haxe.io.Path(out ?? ".");

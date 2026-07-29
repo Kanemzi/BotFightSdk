@@ -2,14 +2,16 @@ package botfight.core.action;
 
 import botfight.core.Exception.InvalidActionException;
 import botfight.core.action.Action;
+import botfight.utils.Result;
 
 using Lambda;
 
-typedef ActionCond<Ta : Action> = Ta -> Bool;
+typedef ActionCond<Ta : Action> = Ta -> Result<Bool, String>;
+typedef ActionCheck<Ta : Action> = Ta -> Bool;
 
 enum TurnActionProfile<Ta : Action> {
 	Fixed(n : Int, ?cond : ActionCond<Ta> );
-	Until(end : ActionCond<Ta>, ?max : Int, ?cond : ActionCond<Ta>);
+	Until(end : ActionCheck<Ta>, ?max : Int, ?cond : ActionCond<Ta>);
 	Sequence(s : Array<TurnActionProfile<Ta>>);
 }
 
@@ -17,8 +19,11 @@ abstract ActionCollector<Ta : Action>(TurnActionProfile<Ta>) from TurnActionProf
 	public function new(v) { this = v; }
 	public function collect(reader : Void -> Ta) : Array<Ta> {
 		function validate(a : Ta, ?cond : ActionCond<Ta>) {
-			if (cond != null && !cond(a)) // @todo send an error message explaining the mistake to the player based on the collector structure
-				throw new InvalidActionException('Unexepected action "${ActionParser.toString(a)}"');
+			if (cond != null) switch (cond(a)) {
+				case Ok(_):
+				case Error(e):
+					throw new InvalidActionException('Unexepected action "${ActionParser.toString(a)}" : $e');
+			}
 			return a;
 		}
 		final next = (?cond : ActionCond<Ta>) -> validate(reader(), cond);

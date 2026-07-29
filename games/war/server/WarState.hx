@@ -7,10 +7,11 @@ import server.TerrainGen;
 import Data;
 
 enum GroupOrder {
-	Idle;
-	Guard(pos : Vec, radius : Float);
+	Rally(pos : Vec);
+	Return;
 	Gather(pos : Vec, radius : Float);
-	Construct(pos : Vec, ?kind : Data.BuildingKind);
+	ConstructAt(pos : Vec, ?kind : Data.BuildingKind);
+	Construct(target : WeakRef<Building>); // @todo place a building imediately on construct, but hidden. Destroy if still untouch when changing order
 	Siege(target : WeakRef<Building>);
 }
 
@@ -24,6 +25,11 @@ enum ConstructionStatus { Done; Pending(d : ConstructionInfo); }
 	}
 }
 
+enum UnitPos {
+	Garnison;
+	Out(pos : Vec);
+}
+
 typedef Resources = Map<Data.ResourceKind, Int>;
 typedef Say = { msg : String, onUnit : Bool, expire : Int };
 
@@ -35,6 +41,10 @@ typedef Say = { msg : String, onUnit : Bool, expire : Int };
 		super();
 		this.x = x;
 		this.y = y;
+	}
+
+	public function clone() {
+		return new Vec(x, y);
 	}
 }
 
@@ -54,10 +64,10 @@ typedef Say = { msg : String, onUnit : Bool, expire : Int };
 		this.pos = pos;
 		this.owner = new WeakRef(owner);
 		construction = Done;
-		order = Idle;
+		order = Rally(pos.clone());
 	}
 
-	public inline function isFinished() return switch(construction) {
+	public inline function isFinished() return switch (construction) {
 		case Done: true;
 		default: false;
 	}
@@ -66,16 +76,16 @@ typedef Say = { msg : String, onUnit : Bool, expire : Int };
 		sayInfo = { msg : msg, onUnit : onUnit, expire : Const.SayActionDuration };
 	}
 
-	public function spawn(state : WarState, unit : Data.UnitKind) { // @todo returns a result ?
+	public function recruit(state : WarState, unit : Data.UnitKind) { // @todo returns a result ?
 		if (!isFinished()) return;
 		final data = Data.building.get(kind);
 		final udata = Data.unit.get(unit);
 
-		if (!data.spawns.exists(s -> s.unitId == unit)) return;
+		if (!data.recruits.exists(s -> s.unitId == unit)) return;
 		if (state.getBuildingUnits(id).length >= data.maxUnits) return;
 		//if (owner.get().hasResources()) // @todo ensure has resources
 
-		var u = new Unit(unit, new Vec(pos.x, pos.y), this);
+		var u = new Unit(unit, Out(pos.clone()), this);
 		state.units.push(u);
 	}
 
@@ -88,8 +98,10 @@ typedef Say = { msg : String, onUnit : Bool, expire : Int };
 
 @:publicFields class Unit extends State {
 	@:s var kind : Data.UnitKind;
-	@:s var pos : Vec;
+	@:s var pos : UnitPos;
 	@:s var building : WeakRef<Building>;
+
+	// @todo units can be in garnison in their building (heal) ?
 
 	function new(kind, pos, building) {
 		super();
@@ -157,19 +169,23 @@ class WarState extends GameState {
 		if [owner] is provided
 	*/
 	public function getBuildingById(id : Int, ?owner : PlayerId) {
-		return buildings.find(b -> b.id == id && (owner == null || b.owner.get().id == owner)); 
+		return buildings.find(b -> b.id == id && (owner == null || b.owner.get().pid == owner)); 
 	}
 
 	public function getBuildingUnits(id : Int) {
-		return units.filter(u -> u.building.get()?.id == id);
+		return units.filter(u -> u.building.get()?.bid == id);
 	}
 
 	public function getPlayerBuildings(id : PlayerId) {
-		return buildings.filter(b -> b.owner.get().id == id);
+		return buildings.filter(b -> b.owner.get().pid == id);
 	}
-
+	
 	public function getPlayerUnits(id : PlayerId) {
 		return getPlayerBuildings(id).flatMap(b -> getBuildingUnits(b.id));
+	}
+	
+	public function getPlayer(id : PlayerId) {
+		return players.find(p -> p.pid == id);
 	}
 
 /*

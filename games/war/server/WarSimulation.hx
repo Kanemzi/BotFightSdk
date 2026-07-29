@@ -7,6 +7,7 @@ import botfight.core.action.ActionCollector;
 import botfight.core.Player.PlayerId;
 
 import server.WarState;
+import server.system.ActionSystem;
 import view.WarViewer;
 
 class WarSimulation extends GameSimulation<WarState, WarAction> {
@@ -16,10 +17,16 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 	}
 
 	function update(state : WarState, ctx : SimulationContext<WarAction>) : Void {
+		ActionSystem.apply(state, ctx.actions);
 	}
 
-	function getTurnActionProfile(state : WarState, pid : PlayerId) return Fixed(1); // @todo
-	function getTiebreakerScore(state : WarState, pid : PlayerId) : Int return 0;
+	function getTurnActionProfile(state : WarState, pid : PlayerId) : TurnActionProfile<WarAction> {
+		return ActionSystem.getTurnProfile(state, pid);
+	}
+
+	function getTiebreakerScore(state : WarState, pid : PlayerId) : Int {
+		return state.getPlayerUnits(pid).length; // @todo use extensions to keep the state as empty as possible
+	}
 
 	function serializeHeaderForPlayer(initialState : WarState, pid : PlayerId) : Array<String> {
 		return ['$pid'];

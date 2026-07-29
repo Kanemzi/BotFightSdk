@@ -8,6 +8,7 @@ import haxe.macro.TypeTools;
 
 class Macros {
 	#if macro
+	static final upperSnakeReg = ~/([a-z0-9])([A-Z])/g;
 	public static function buildActionParser() : Array<Field> {
 		final pos = Context.currentPos();
 		var fields = Context.getBuildFields();
@@ -29,10 +30,11 @@ class Macros {
 			return fields;
 		var consts = TypeTools.getEnum(actionType).constructs;
 
+		inline function toUpperSnakeCase(s : String) return upperSnakeReg.replace(s, "$1_$2").toUpperCase();
 
 		var matchers : Array<Expr> = [];
 		for (name => c in consts) {
-			var patterns = [name.toUpperCase()];
+			var patterns = [toUpperSnakeCase(name)];
 			var values : Array<Expr> = [];
 
 			var params = switch (c.type) {

@@ -45,7 +45,7 @@
 			"separators": [],
 			"props": {
 				"editor": {
-					"index": 2
+					"index": 3
 				}
 			}
 		},
@@ -104,7 +104,7 @@
 			],
 			"props": {
 				"editor": {
-					"index": 6
+					"index": 7
 				}
 			}
 		},
@@ -190,8 +190,13 @@
 				},
 				{
 					"typeStr": "8",
-					"name": "spawns",
+					"name": "recruits",
 					"opt": false
+				},
+				{
+					"typeStr": "8",
+					"name": "orders",
+					"opt": null
 				},
 				{
 					"name": "cost",
@@ -209,7 +214,21 @@
 						}
 					],
 					"maxUnits": 10,
-					"spawns": [
+					"orders": [
+						{
+							"order": "Return"
+						},
+						{
+							"order": "Rally"
+						},
+						{
+							"order": "Gather"
+						},
+						{
+							"order": "Construct"
+						}
+					],
+					"recruits": [
 						{
 							"unit": "Civilian"
 						}
@@ -224,7 +243,18 @@
 						}
 					],
 					"maxUnits": 40,
-					"spawns": [
+					"orders": [
+						{
+							"order": "Return"
+						},
+						{
+							"order": "Rally"
+						},
+						{
+							"order": "Siege"
+						}
+					],
+					"recruits": [
 						{
 							"unit": "Soldier"
 						},
@@ -237,12 +267,12 @@
 			"separators": [],
 			"props": {
 				"editor": {
-					"index": 4
+					"index": 5
 				}
 			}
 		},
 		{
-			"name": "building@spawns",
+			"name": "building@recruits",
 			"props": {
 				"hide": true
 			},
@@ -252,6 +282,21 @@
 				{
 					"typeStr": "6:unit",
 					"name": "unit",
+					"opt": null
+				}
+			]
+		},
+		{
+			"name": "building@orders",
+			"props": {
+				"hide": true
+			},
+			"separators": [],
+			"lines": [],
+			"columns": [
+				{
+					"typeStr": "6:order",
+					"name": "order",
 					"opt": null
 				}
 			]
@@ -277,7 +322,7 @@
 			"separators": [],
 			"props": {
 				"editor": {
-					"index": 5
+					"index": 6
 				}
 			}
 		},
@@ -313,7 +358,7 @@
 			"separators": [],
 			"props": {
 				"editor": {
-					"index": 7
+					"index": 8
 				}
 			}
 		},
@@ -392,7 +437,10 @@
 			"separators": [],
 			"props": {
 				"editor": {
-					"index": 1
+					"index": 1,
+					"categories": [
+						"viewer"
+					]
 				}
 			}
 		},
@@ -460,7 +508,41 @@
 			"separators": [],
 			"props": {
 				"editor": {
-					"index": 3
+					"index": 4
+				}
+			}
+		},
+		{
+			"name": "order",
+			"columns": [
+				{
+					"typeStr": "0",
+					"name": "kind",
+					"opt": null,
+					"scope": null
+				}
+			],
+			"lines": [
+				{
+					"kind": "Return"
+				},
+				{
+					"kind": "Rally"
+				},
+				{
+					"kind": "Gather"
+				},
+				{
+					"kind": "Construct"
+				},
+				{
+					"kind": "Siege"
+				}
+			],
+			"separators": [],
+			"props": {
+				"editor": {
+					"index": 2
 				}
 			}
 		}
