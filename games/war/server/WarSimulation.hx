@@ -8,16 +8,18 @@ import botfight.core.Player.PlayerId;
 
 import server.WarState;
 import server.system.ActionSystem;
+import server.system.MovementSystem;
 import view.WarViewer;
 
 class WarSimulation extends GameSimulation<WarState, WarAction> {
 
-	function init(players : ReadOnlyArray<PlayerId>, rnd : hxd.Rand) : WarState {
-		return new WarState(players, rnd);
+	function init(ctx : InitContext<WarAction>) : WarState {
+		return new WarState(ctx.getPlayers(), ctx.rnd);
 	}
 
 	function update(state : WarState, ctx : SimulationContext<WarAction>) : Void {
 		ActionSystem.apply(state, ctx.actions);
+		MovementSystem.tick(state);
 	}
 
 	function getTurnActionProfile(state : WarState, pid : PlayerId) : TurnActionProfile<WarAction> {
@@ -41,8 +43,6 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 		Data.load(hxd.Res.data.entry.getText());
 		new botfight.Runner(WarSimulation, WarViewer, Sys.args(), {
 			version : 1,
-			minPlayers : 2,
-			maxPlayers : 2,
 			maxTurns : 10,
 			firstTurnTimeout : 1.0,
 			turnTimeout : 0.5,

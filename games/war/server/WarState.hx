@@ -101,7 +101,7 @@ typedef Say = { msg : String, onUnit : Bool, expire : Int };
 	@:s var pos : UnitPos;
 	@:s var building : WeakRef<Building>;
 
-	public var isOrphan(get, never);
+	public var isOrphan(get, never) : Bool;
 	inline function get_isOrphan() return building.get() == null;
 
 	// @todo units can be in garnison in their building (heal) ?
