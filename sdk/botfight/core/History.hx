@@ -43,7 +43,6 @@ class HistoryHeader implements hxbit.Serializable {
 }
 
 @:generic
-@:allow(History)
 class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 	@:s public var header(default, null) : HistoryHeader;
 	@:s public var players(default, null) : Map<PlayerId, HistoryPlayer>;
@@ -52,7 +51,7 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 	public var length(get, never) : Int;
 	function get_length() return turns.length;
 	
-	@:noPrivateAccess var completed : Bool = true;
+	@:s public var complete(default, null) : Bool = true;
 
 	public function new(v : Int, players : ReadOnlyArray<Player<Ta>>, seed : Int) {
 		header = {
@@ -62,17 +61,17 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 		}
 		this.players = [for (p in players) p.id => new HistoryPlayer()];
 		turns = [];
-		completed = false;
+		complete = false;
 	}
 
 	public function addTurn(state : Ts, actions : Array<ActionsResult<Ta>>) {
-		if (completed)
+		if (complete)
 			throw 'Cannot add new turns to a locked history';
 		turns.push(new HistoryTurn(state, actions));
 	}
 
 	public function outcome(pid : PlayerId, out : PlayerOutcome) {
-		if (completed)
+		if (complete)
 			throw 'Cannot add outcomes to a locked history';
 		var hp = players.get(pid);
 		if (hp.outcome != null)
@@ -81,12 +80,12 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 	}
 
 	public function lock() {
-		completed = true;
+		complete = true;
 		return this;
 	}
 
 	public function optimize(format : StorageMode) {
-		if (!completed)
+		if (!complete)
 			throw 'Cannot optimize an history that is not locked yet.';
 		if (header.format != Full)
 			throw 'Cannot optimize an history twice.';

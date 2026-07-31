@@ -133,7 +133,7 @@ final class Runner {
 					} else {
 						gs.run();
 					}
-					match.onGameComplete(history);
+					match.onGameComplete(g, history);
 				}
 			}
 			return match;
@@ -178,9 +178,9 @@ final class Runner {
 		return new Series(1, seed);
 	}
 
-	inline function createGame<Ts : GameState, Ta : Action>(cl : Class<GameSimulation<Ts, Ta>>, config : ServerConfig, info : GameInfo) : GameServer<Ts, Ta> {
-		var gs = new GameServer(cl, config, info.seed);
-		for (p in info.players)
+	inline function createGame<Ts : GameState, Ta : Action>(cl : Class<GameSimulation<Ts, Ta>>, config : ServerConfig, game : GameSlot<Ts, Ta>) : GameServer<Ts, Ta> {
+		var gs = new GameServer(cl, config, game.seed);
+		for (p in game.players)
 			gs.addPlayer(p, new ProcessPlayerIO<Ta>(p.path, []));
 		return gs;
 	}
@@ -191,7 +191,7 @@ final class Runner {
 			return;
 		}
 		
-		for (g in match.games) g.recover(simcl, match);
+		for (g in match.games) g.history.recover(simcl, match);
 		var viewer = Type.createInstance(viewcl, [match]);
 	}
 }

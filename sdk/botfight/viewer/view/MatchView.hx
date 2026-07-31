@@ -17,7 +17,7 @@ class MatchView<Ts : GameState> extends View {
 		</flow>
 		<flow class="game-list">
 			for (i => g in match.games) {
-				<button class="game-btn" id="match-btn[]" onClick={onClickGame.bind(_, g)} text={'${i + 1} - ${g.header.seed}'} />
+				<button class="game-btn" id="match-btn[]" onClick={onClickGame.bind(_, g.history)} text={'${g.name} - ${g.history.header.seed}'} />
 			}
 		</flow>
 	</match-view>
