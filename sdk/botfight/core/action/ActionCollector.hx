@@ -1,12 +1,13 @@
 package botfight.core.action;
 
+
 import botfight.core.Exception.InvalidActionException;
 import botfight.core.action.Action;
 import botfight.utils.Result;
 
 using Lambda;
 
-typedef ActionCond<Ta : Action> = Ta -> Result<Bool, String>;
+typedef ActionCond<Ta : Action> = Ta -> Result<haxe.Unit, String>;
 typedef ActionCheck<Ta : Action> = Ta -> Bool;
 
 enum TurnActionProfile<Ta : Action> {

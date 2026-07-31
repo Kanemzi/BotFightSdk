@@ -9,6 +9,7 @@ import botfight.core.Player.PlayerId;
 import server.WarState;
 import server.system.ActionSystem;
 import server.system.MovementSystem;
+import server.system.UnitBehaviourSystem;
 import view.WarViewer;
 
 class WarSimulation extends GameSimulation<WarState, WarAction> {
@@ -20,6 +21,7 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 	function update(state : WarState, ctx : SimulationContext<WarAction>) : Void {
 		ActionSystem.apply(state, ctx.actions);
 		MovementSystem.tick(state);
+		UnitBehaviourSystem.tick(state, ctx.rnd);
 	}
 
 	function getTurnActionProfile(state : WarState, pid : PlayerId) : TurnActionProfile<WarAction> {

@@ -65,7 +65,7 @@ abstract NodeBuilder(Node) from Node to Node {
 	}
 
 	static function _sequence(a : NodeBuilder, b : NodeBuilder, reactive : Bool) : NodeBuilder {
-		var s = cast Std.downcast(cast a, _Sequence);
+		var s = Std.downcast(a, Sequence);
 		if (s != null) {
 			s.children.push(cast b);
 			return cast new Sequence(s.children, reactive);

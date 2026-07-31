@@ -1,6 +1,7 @@
 package server.system;
 
 import server.WarState.Unit;
+import server.WarState.Vec;
 
 class MovementSystem {
 	static var _tmpSlot = new Vec();
@@ -27,8 +28,8 @@ class MovementSystem {
 		out ??= new Vec();
 		_slotRnd.init(unit.id);
 		var r = _slotRnd.rand() * radius;
-		var a = _slotRand.rand() * hxd.Math.PI * 2;
-		out.x = target.x + hxd.Math.cos(a) * r
+		var a = _slotRnd.rand() * hxd.Math.PI * 2;
+		out.x = target.x + hxd.Math.cos(a) * r;
 		out.y = target.y + hxd.Math.sin(a) * r;
 		return out;
 	}

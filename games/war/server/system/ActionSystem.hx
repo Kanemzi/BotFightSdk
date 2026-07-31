@@ -52,14 +52,14 @@ class ActionSystem {
 		var recruited = new Map<Int, Bool>();
 		var said = new Map<Int, Bool>();
 
-		function check(map : Map<Int, Bool>, id, dupErr) {
+		function check(map : Map<Int, Bool>, id, dupErr) : Result<haxe.Unit, String> {
 			var building = state.getBuildingById(id); 
 			if (building == null) return Error('Building [$id] does not exists.');
 			if (state.getBuildingById(id, pid) == null) return Error('Building [$id] does not belong to [$pid].');
 
 			if (map.exists(id)) return Error(dupErr + ' building [$id] on the same turn.');
 			map.set(id, true);
-			return Ok(true);
+			return Ok(Unit);
 		}
 
 		final checkRecruit = check.bind(recruited, _, 'Cannot recruit multiple units from');
@@ -110,7 +110,7 @@ class ActionSystem {
 
 				case Say(bid, _, _): checkSay(bid);
 
-				case End: Ok(true);
+				case End: Ok(Unit);
 			}		
 		);
 	}

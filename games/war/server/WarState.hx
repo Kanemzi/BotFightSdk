@@ -4,7 +4,7 @@ import botfight.core.GameState;
 import botfight.core.GameState.WeakRef;
 import botfight.core.Player.PlayerId;
 import server.TerrainGen;
-import Data;
+import server.system.UnitBehaviourSystem.UnitBehaviourContext;
 
 enum GroupOrder {
 	Return;
@@ -101,6 +101,8 @@ typedef Say = { msg : String, onUnit : Bool, expire : Int };
 	@:s var pos : UnitPos;
 	@:s var building : WeakRef<Building>;
 
+	private var behaviour : UnitBehaviourContext;
+	
 	public var isOrphan(get, never) : Bool;
 	inline function get_isOrphan() return building.get() == null;
 

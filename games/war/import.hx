@@ -1,4 +1,5 @@
 import haxe.ds.ReadOnlyArray;
+import Data;
 
 using StringTools;
 using Lambda;
