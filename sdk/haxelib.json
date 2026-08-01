@@ -1,9 +1,9 @@
 {
-    "name": "botfight-sdk",
+    "name": "cogpit",
     "url": "",
     "license": "MIT",
     "tags": ["game", "engine", "bot"],
-    "description": "Bot fight game development SDK",
+    "description": "Cogpit is a SDK for creating competitive bot games",
     "version": "0.1.0",
     "contributors": ["Kanemzi"],
 	"dependencies": {

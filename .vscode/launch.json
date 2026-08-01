@@ -22,7 +22,7 @@
                 // "--match", "5",
                 //"--replay", "./replays/test",
                 "--out", "./replays/test-det-nozip",
-				//"--live",
+				"--live",
 				//"--out",
 				//"--headless"
             ]

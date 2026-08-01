@@ -1,8 +1,8 @@
 package server;
 
-import botfight.core.GameState;
-import botfight.core.GameState.WeakRef;
-import botfight.core.Player.PlayerId;
+import cogpit.core.GameState;
+import cogpit.core.GameState.WeakRef;
+import cogpit.core.Player.PlayerId;
 import server.TerrainGen;
 import server.system.UnitBehaviourSystem.UnitBehaviourContext;
 

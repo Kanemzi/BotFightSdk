@@ -1,16 +1,16 @@
 package server;
 
-import botfight.core.GameSimulation;
-import botfight.core.GameSimulation.PlayersActions;
-import botfight.core.TurnModel;
-import botfight.core.action.ActionCollector;
-import botfight.core.Player.PlayerId;
+import cogpit.core.GameSimulation;
+import cogpit.core.GameSimulation.PlayersActions;
+import cogpit.core.TurnModel;
+import cogpit.core.action.ActionCollector;
+import cogpit.core.Player.PlayerId;
 
 import server.WarState;
 import server.system.ActionSystem;
 import server.system.MovementSystem;
 import server.system.UnitBehaviourSystem;
-import view.WarViewer;
+import client.WarClient;
 
 class WarSimulation extends GameSimulation<WarState, WarAction> {
 
@@ -43,7 +43,7 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 	public static function main() {
 		hxd.Res.initLocal();
 		Data.load(hxd.Res.data.entry.getText());
-		new botfight.Runner(WarSimulation, WarViewer, Sys.args(), {
+		new cogpit.Runner(WarSimulation, WarClient, Sys.args(), {
 			version : 1,
 			maxTurns : 10,
 			firstTurnTimeout : 1.0,

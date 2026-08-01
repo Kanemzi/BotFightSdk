@@ -1,12 +1,12 @@
 package server.system;
 
-import botfight.core.GameState.WeakRef;
-import botfight.core.GameSimulation.PlayerActions;
-import botfight.core.GameSimulation.PlayersActions;
-import botfight.core.Player.PlayerId;
-import botfight.core.action.Action;
-import botfight.core.action.ActionCollector;
-import botfight.utils.Result;
+import cogpit.core.GameState.WeakRef;
+import cogpit.core.GameSimulation.PlayerActions;
+import cogpit.core.GameSimulation.PlayersActions;
+import cogpit.core.Player.PlayerId;
+import cogpit.core.action.Action;
+import cogpit.core.action.ActionCollector;
+import cogpit.utils.Result;
 
 import server.WarState;
 

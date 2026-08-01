@@ -1,13 +1,13 @@
 package server;
 
-import botfight.core.Player.PlayerId;
-import botfight.core.GameSimulation;
-import botfight.core.GameSimulation.PlayersActions;
-import botfight.core.TurnModel;
-import botfight.core.action.ActionCollector;
+import cogpit.core.Player.PlayerId;
+import cogpit.core.GameSimulation;
+import cogpit.core.GameSimulation.PlayersActions;
+import cogpit.core.TurnModel;
+import cogpit.core.action.ActionCollector;
 
 import server.MinesState;
-import view.MinesViewer;
+import client.MinesClient;
 import server.Simulation in Sim;
 
 using server.Simulation;
@@ -179,7 +179,7 @@ class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 	}
 
 	public static function main() {
-		new botfight.Runner(MinesSimulation, MinesViewer, Sys.args(), {
+		new cogpit.Runner(MinesSimulation, MinesClient, Sys.args(), {
 			version : 1,
 			maxTurns : Sim.MAX_TURNS,
 			firstTurnTimeout : 1.0,

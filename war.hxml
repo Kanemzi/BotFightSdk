@@ -8,7 +8,7 @@
 --next
 
 -cp games/war/
--lib botfight-sdk
+-lib cogpit
 -lib castle
 -main server.WarSimulation
 -hl WarServer.hl

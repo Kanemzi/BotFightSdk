@@ -1,7 +1,7 @@
 package server;
 
-import botfight.core.GameState;
-import botfight.core.Player.PlayerId;
+import cogpit.core.GameState;
+import cogpit.core.Player.PlayerId;
 
 import server.Simulation in Sim;
 

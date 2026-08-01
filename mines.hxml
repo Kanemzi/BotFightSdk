@@ -10,6 +10,6 @@
 -D hl_profile
 -D dump=pretty
 -cp games/mines/
--lib botfight-sdk
+-lib cogpit
 -hl MinesServer.hl
 -main server.MinesSimulation

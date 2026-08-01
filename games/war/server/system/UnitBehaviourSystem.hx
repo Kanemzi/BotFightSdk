@@ -1,6 +1,6 @@
 package server.system;
 
-import botfight.core.GameState.SUID;
+import cogpit.core.GameState.SUID;
 
 import server.behaviour.Behaviour as BH;
 import server.behaviour.Behaviour.BehaviourContext;

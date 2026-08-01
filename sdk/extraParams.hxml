@@ -8,5 +8,5 @@
 -D analyzer-optimize
 -D hxbit_host_mt
 
---macro domkit.Macros.registerComponentsPath("botfight.viewer.view.$")
---macro domkit.Macros.registerComponentsPath("botfight.viewer.widget.$")
+--macro domkit.Macros.registerComponentsPath("cogpit.client.view.$")
+--macro domkit.Macros.registerComponentsPath("cogpit.client.widget.$")

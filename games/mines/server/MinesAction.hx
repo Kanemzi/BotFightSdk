@@ -1,6 +1,6 @@
 package server;
 
-import botfight.core.action.Action;
+import cogpit.core.action.Action;
 
 enum MinesAction {
 	Say(msg : String); // Displays [msg] above the robot

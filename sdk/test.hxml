@@ -1,5 +1,5 @@
 -cp .
--main botfight.test.TestMain
+-main cogpit.test.TestMain
 -lib munit
 -lib hxbit
 -lib hamcrest
