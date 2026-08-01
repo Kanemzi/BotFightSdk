@@ -7,6 +7,7 @@ import cogpit.core.action.Action;
 
 enum LiveEvent {
 	MatchSlotAllocated;
+	MatchSlotReady;
 	GameBegin;
 	GameTurn;
 	GameComplete;

@@ -23,6 +23,12 @@ match-view {
 		
 		.game-btn {
 			align: middle middle;
+
+			&.empty { background: #75837f; }
+			&.ready { background: #448d9a; }
+			&.running { background: #9e8d37; }
+			&.complete { background: #369936; }
+			&.failed { background: #993636; }
 		}
 	}
 }
@@ -119,9 +125,9 @@ button {
 	cursor: button;
 	
 	&:hover {
-		background: red;//lighten(black, 20%);
+		filter: brightness(0.2);
 	}
 	&:active {
-		background: yellow;
+		filter: brightness(0.3);
 	}
 }

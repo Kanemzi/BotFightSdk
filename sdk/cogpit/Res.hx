@@ -13,6 +13,7 @@ class Res {
 	public static function init() {
 		fs = new hxd.fs.LocalFileSystem(RES, "");
 		loader = new hxd.res.Loader(fs);
+		hxd.res.Loader.currentInstance = loader; // @todo temporary, games need an instance too
 	}
 	#end
 }

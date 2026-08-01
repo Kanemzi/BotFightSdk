@@ -9,6 +9,7 @@ import cogpit.live.MatchHandle;
 import cogpit.client.VisualEventTimeline;
 import cogpit.client.VisualEventTimeline.TimelineBuilder;
 import cogpit.client.replay.GameScene;
+import cogpit.Match.GameSlot;
 
 import cogpit.live.LiveChannel.LiveEvent;
 
@@ -19,9 +20,12 @@ class MatchView<Ts : GameState> extends View {
 			<text text={'${match.toString()} - ${match.seed}'} />
 		</flow>
 		<flow class="game-list">
+		${
 			for (g in match.games) {
-				<button class="game-btn" id="match-btn[]" onClick={onClickGame.bind(_, g.history)} text={'${g.name} - ${g.history.header.seed}'} if(!g.status.match(Empty|Ready))/>
+				var status = Type.enumConstructor(g.status);
+				<button class={'game-btn ${status.toLowerCase()}'} id="match-btn[]" onClick={onClickGame.bind(_, g)} text={'${g.name} - ${status}'}/>
 			}
+		}
 		</flow>
 	</match-view>
 
@@ -37,9 +41,14 @@ class MatchView<Ts : GameState> extends View {
 	}
 
 	override function init() {
-		final onClickGame = (r, g) -> {
-			var tl = tb.bake(g);
-			r ? openTimeline(tl) : openReplay(g.header, tl, gscFactory);
+		final onClickGame = (r, g : GameSlot<Ts, Action>) -> {
+			switch (g.status) {
+				case Empty, Ready: return;
+				default:
+			}
+			final history = g.history;
+			var tl = tb.bake(history);
+			r ? openTimeline(tl) : openReplay(history.header, tl, gscFactory);
 		}
 		initComponent();
 	}
@@ -54,7 +63,7 @@ class MatchView<Ts : GameState> extends View {
 
 	override function onLiveEvent(ev : LiveEvent) {
 		switch (ev) {
-			case GameBegin:
+			case MatchSlotAllocated, MatchSlotReady, GameBegin, GameComplete:
 				rebuild();
 			default:
 		}

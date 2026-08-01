@@ -17,7 +17,6 @@ class InvalidPlayerException extends Exception {}
 
 enum GameStatus { Empty; Ready; Running; Complete; Failed; }
 
-@:allow(cogpit.Match)
 class GameSlot<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 	@:s public var name(default, null) : String; // Display name for preview
 	@:s public var history(default, null) : History<Ts, Ta>;
@@ -32,14 +31,22 @@ class GameSlot<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 			else Complete;
 	}
 
+	@:allow(cogpit.Match)
 	function new(id : Int, name : String, seed : Int) {
 		this.name = name;
 		this.seed = new hxd.Rand(seed + id).random(Const.INT_MAX);
 	}
 
+	@:allow(cogpit.Match)
 	function fillPlayers(players : ReadOnlyArray<PlayerInfo>) {
 		if (!status.match(Empty)) throw 'Game [$name] already $status, cannot set players';
 		this.players = players.copy();
+	}
+
+	@:allow(cogpit.Match)
+	function registerHistory(history : History<Ts, Ta>) {
+		if (status.match(Running)) throw 'Game [$name] already $status, cannot register another history';
+		this.history = history;
 	}
 }
 
@@ -110,6 +117,11 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 		return slot;
 	}
 
+	final public function fillSlotPlayers(slot : GameSlot<Ts, Ta>, players : ReadOnlyArray<PlayerInfo>) {
+		slot.fillPlayers(players);
+		live?.notify(MatchSlotReady);
+	}
+
 	final public function pollGames() : Array<GameSlot<Ts, Ta>> {
 		if (!started) {
 			started = true;
@@ -133,7 +145,7 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 	}
 
 	final function onGameBegin(slot : GameSlot<Ts, Ta>, history : History<Ts, Ta>) {
-		slot.history = history;
+		slot.registerHistory(history);
 	}
 
 	/**
@@ -159,7 +171,7 @@ class Series<Ts : GameState, Ta : Action> extends Match<Ts, Ta> {
 	function init() {
 		for (i in 0...count) {
 			final slot = allocateSlot('Game #$i');
-			slot.fillPlayers(players.copy());
+			fillSlotPlayers(slot, players);
 		}
 	}
 	
