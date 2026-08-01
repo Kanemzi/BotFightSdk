@@ -1,6 +1,7 @@
 package botfight;
 
 import haxe.Exception;
+import botfight.Match;
 import botfight.core.GameServer;
 import botfight.core.GameServer.ServerConfig;
 import botfight.core.GameSimulation;
@@ -9,8 +10,7 @@ import botfight.core.PlayerIO.ProcessPlayerIO;
 import botfight.core.action.Action;
 import botfight.core.Storage;
 import botfight.viewer.GameViewer;
-import botfight.Match;
-
+import botfight.live.LiveChannel;
 
 final class RunnerArgs {
 	var args(default, null) : Map<String, Array<String>>;
@@ -57,7 +57,6 @@ final class Runner {
 
 	public static inline function error(e : String) Sys.stderr().writeString('[Error] $e\n');
 
-	@:generic
 	public function new<Ts : GameState, Ta : Action>(
 		simcl : Class<GameSimulation<Ts, Ta>>,
 		viewcl : Class<GameViewer<Ts>>,
@@ -114,39 +113,43 @@ final class Runner {
 			true;
 		}
 
-		inline function runMatch() : Match<Ts, Ta> {
-			var match = createMatch(args, teamSize);
-			for (p in playerPaths)
-				match.addPlayer(p);
-			trace('Starting match on [${match.toString()}] format with ${match.players.length} players (seed=${match.seed})');
+		final replayPath = args.getParam("replay");
+		final headless = args.has("headless") && replayPath == null;
+		final liveMode = args.has("live") && shouldRunMatch && !headless && replayPath == null;
 
-			while (!match.isComplete()) {
-				final games = match.pollGames();
-				for (g in games) {
-					var gs = createGame(simcl, config, g);
-					var history = if (hasGen) {
-						throw 'Debug gen not supported yet';
-						//var h = new History(gs.config.version, gs.players, gs.seed);
-						//h.addTurn(gs.init(new hxd.Rand(gs.seed)), []);
-						//for (p in g.players) h.outcome(p.id, Victory(0));
-						//h.lock();
-					} else {
-						gs.run();
-					}
-					match.onGameComplete(g, history);
-				}
-			}
+		function buildMatch() {
+			var match = createMatch(args, teamSize);
+			for (p in playerPaths) match.addPlayer(p);
 			return match;
 		}
 
-		var match = if (shouldRunMatch) {
-			var m = runMatch();
+		function runMatch(match : Match<Ts, Ta>) : Void {
+			trace('Starting match on [${match.toString()}] format with ${match.players.length} players (seed=${match.seed})');
+			final gsFactory = createGame.bind(simcl, config);
+			match.run(gsFactory);
 			if (args.has("out"))
-				Storage.saveMatch(args.getParam("out"), m, config.storageMode);
-			m;
-		} else null;
+				Storage.saveMatch(args.getParam("out"), match, config.storageMode);
+		}
 
-		final replayPath = args.getParam("replay");
+		function replay(match : Match<Ts, Ta>, ?live : LiveChannel) {
+			if (match == null) {
+				error("Nothing to replay");
+				return;
+			}
+			for (g in match.games) g.history.recover(simcl, match); // @todo /!\ ensure ok in live mode. Live might default to Delta (computed each turn)
+			var viewer = Type.createInstance(viewcl, [match, live]);
+		}
+
+		var match = shouldRunMatch ? buildMatch() : null;
+		var live = null;
+		if (liveMode) {
+			live = new LiveChannel();
+			match.watch(live);
+			sys.thread.Thread.create(runMatch.bind(match)); // @todo check where to close this
+		} else if (match != null) {
+			runMatch(match);
+		}
+
 		if (replayPath != null) {
 			match = try Storage.loadMatch(replayPath) catch (e : Exception) {
 				error(e.details());
@@ -154,12 +157,11 @@ final class Runner {
 			}
 		}
 
-		final headless = match == null || (args.has("headless") && replayPath == null);
-		if (!headless)
-			replay(simcl, viewcl, match);
+		if (match != null && !headless)
+			replay(match, live);
 	}
 
-	static function createMatch<Ts : GameState, Ta : Action>(args : RunnerArgs, teamSize) : Match<Ts, Ta> {
+	function createMatch<Ts : GameState, Ta : Action>(args : RunnerArgs, teamSize) : Match<Ts, Ta> {
 		final seed = Std.parseInt(args.getParam("seed")) ?? Std.random(Const.INT_MAX);
 		if (args.has("gen")) {
 			final n = Std.parseInt(args.getParam("gen")) ?? 1;
@@ -171,27 +173,16 @@ final class Runner {
 			final format = margs.shift(); 
 			switch (format) {
 				case "series": return new Series(Std.parseInt(margs[0]), seed, teamSize);
-				//case "bo": return new BestOf(Std.parseInt(margs[0]));
 				default:
 			}
 		} 
 		return new Series(1, seed);
 	}
 
-	inline function createGame<Ts : GameState, Ta : Action>(cl : Class<GameSimulation<Ts, Ta>>, config : ServerConfig, game : GameSlot<Ts, Ta>) : GameServer<Ts, Ta> {
+	function createGame<Ts : GameState, Ta : Action>(cl : Class<GameSimulation<Ts, Ta>>, config : ServerConfig, game : GameSlot<Ts, Ta>) : GameServer<Ts, Ta> {
 		var gs = new GameServer(cl, config, game.seed);
 		for (p in game.players)
 			gs.addPlayer(p, new ProcessPlayerIO<Ta>(p.path, []));
 		return gs;
-	}
-
-	function replay<Ts : GameState, Ta : Action>(simcl : Class<GameSimulation<Ts, Ta>>, viewcl : Class<GameViewer<Ts>>, match : Match<Ts, Ta>) {
-		if (match == null) {
-			error("Nothing to replay");
-			return;
-		}
-		
-		for (g in match.games) g.history.recover(simcl, match);
-		var viewer = Type.createInstance(viewcl, [match]);
 	}
 }

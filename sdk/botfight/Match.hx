@@ -1,12 +1,16 @@
 package botfight;
 
+import sys.thread.Mutex;
+
 import botfight.core.Exception;
 import botfight.core.Player;
 import botfight.core.Player.PlayerInfo;
 import botfight.core.PlayerIO;
 import botfight.core.action.Action;
+import botfight.core.GameServer;
 import botfight.core.GameState;
 import botfight.core.History;
+import botfight.live.LiveChannel;
 
 class InvalidMatch extends Exception {}
 class InvalidPlayerException extends Exception {}
@@ -52,6 +56,8 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 	@:s var seed : Int;
 
 	var started = false;
+	var live : Null<LiveChannel>;
+	var mut : Mutex = new Mutex();
 
 	public function new(seed : Int, teamSize = 1) {
 		this.seed = seed;
@@ -97,14 +103,12 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 
 	final public function allocateSlot(name : String) : GameSlot<Ts, Ta> {
 		final slot = new GameSlot(games.length, name, seed);
+		mut.acquire();
 		games.push(slot);
+		mut.release();
+		live?.notify(MatchSlotAllocated);
 		return slot;
 	}
-
-	final public function isComplete() : Bool {
-		return started && !games.exists(g -> g.status.match(Empty|Ready));
-	}
-
 
 	final public function pollGames() : Array<GameSlot<Ts, Ta>> {
 		if (!started) {
@@ -114,12 +118,29 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 		return games.filter(g -> g.status.match(Ready));
 	}
 
+	public inline function watch(live : LiveChannel) this.live = live;
+	public inline function isComplete() : Bool {
+		return started && !games.exists(g -> g.status.match(Empty|Ready));
+	}
+
+
+	final public function run(gsFactory : GameSlot<Ts, Ta> -> GameServer<Ts, Ta>) {
+		while (!isComplete()) {
+			for (g in pollGames()) {
+				var gs = gsFactory(g);
+				gs.run(onGameBegin.bind(g), live);
+			}
+		}
+	}
+
+	final function onGameBegin(slot : GameSlot<Ts, Ta>, history : History<Ts, Ta>) {
+		slot.history = history;
+	}
+
 	/**
 		Called on each game complete. Should be used to allocate more GameSlots, or fill players in existing game slots.
 	*/
-	function onGameComplete(slot : GameSlot<Ts, Ta>, history : History<Ts, Ta>) {
-		slot.history = history; // @todo temporary
-	}
+	function onGameComplete(slot : GameSlot<Ts, Ta>) {}
 
 	/**
 		Should be used to allocate the initial GameSlot batch.

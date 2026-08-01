@@ -5,6 +5,7 @@ import botfight.core.History;
 import botfight.core.action.Action;
 import botfight.viewer.VisualEventTimeline.TimelineBuilder;
 import botfight.viewer.replay.GameScene;
+import botfight.live.MatchHandle;
 
 /*
 Design : 
@@ -16,10 +17,10 @@ Design :
 */
 
 abstract class GameViewer<Ts : GameState> extends hxd.App {
-	var match : Match<Ts, Action>;
+	var match : MatchHandle<Ts, Action>;
 	var ui : ViewManager;
 
-	public function new(match : Match<Ts, Action>) {
+	public function new(match : MatchHandle<Ts, Action>) {
 		super();
 		botfight.Res.init();
 		hxd.res.Resource.LIVE_UPDATE = #if hl hl.Api.hasDebugger() #else false #end;

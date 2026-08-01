@@ -9,6 +9,7 @@ import botfight.core.Player.PlayerInfo;
 import botfight.core.History.PlayerOutcome;
 import botfight.core.Storage;
 import botfight.core.GameSimulation.SimulationContext;
+import botfight.live.LiveChannel;
 
 typedef ServerConfig = {
 	var version : Int;
@@ -61,7 +62,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 		return cast ser.unserialize(ser.serialize(st), GameState);
 	}
 
-	final public function run() : History<Ts, Ta> {
+	final public function run(onBegin : History<Ts, Ta> -> Void, ?live : LiveChannel) : History<Ts, Ta> {
 		final wto = Math.max(config.firstTurnTimeout, config.turnTimeout) * 2;
 		turnWorkers = new ElasticThreadPool(players.length, wto / 1000.);
 		
@@ -74,6 +75,9 @@ final class GameServer<Ts : GameState, Ta : Action> {
 
 		final initState = sim.init(ctx);
 		history.addTurn(initState, []);
+
+		onBegin(history);
+		live?.notify(GameBegin);
 
 		inline function getTurn() return history.length;
 		inline function getState() : Ts return history.turns.last().state;
@@ -110,6 +114,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 			// @todo the status should be updated in the results (defeat / victory) ?
 
 			history.addTurn(newState, res);
+			live?.notify(GameTurn);
 
 			if (ctx.getAlivePlayers().empty() || !ctx.victories.empty())
 				break;
@@ -131,7 +136,10 @@ final class GameServer<Ts : GameState, Ta : Action> {
 		}
 
 		dispose();
-		return history.lock();
+
+		history.lock();
+		live?.notify(GameComplete);
+		return history;
 	}
 
 	final function playTurns(turn : Int, pids : ReadOnlyArray<PlayerId>, state : Ts, sim : GameSimulation<Ts, Ta>) : Array<ActionsResult<Ta>> {

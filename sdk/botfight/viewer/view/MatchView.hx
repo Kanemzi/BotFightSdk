@@ -5,6 +5,7 @@ import botfight.viewer.widget.Button;
 import botfight.core.GameState;
 import botfight.core.History;
 import botfight.core.action.Action;
+import botfight.live.MatchHandle;
 import botfight.viewer.VisualEventTimeline;
 import botfight.viewer.VisualEventTimeline.TimelineBuilder;
 import botfight.viewer.replay.GameScene;
@@ -16,13 +17,13 @@ class MatchView<Ts : GameState> extends View {
 			<text text={'${match.toString()} - ${match.seed}'} />
 		</flow>
 		<flow class="game-list">
-			for (i => g in match.games) {
-				<button class="game-btn" id="match-btn[]" onClick={onClickGame.bind(_, g.history)} text={'${g.name} - ${g.history.header.seed}'} />
+			for (g in match.games) {
+				<button class="game-btn" id="match-btn[]" onClick={onClickGame.bind(_, g.history)} text={'${g.name} - ${g.history.header.seed}'} if(!g.status.match(Empty|Ready))/>
 			}
 		</flow>
 	</match-view>
 
-	public function new(match : Match<Ts, Action>, tb : TimelineBuilder<Ts>, gscFactory : Void -> GameScene) {
+	public function new(match : MatchHandle<Ts, Action>, tb : TimelineBuilder<Ts>, gscFactory : Void -> GameScene) {
 		super();
 		final onClickGame = (r, g) -> {
 			var tl = tb.bake(g);
