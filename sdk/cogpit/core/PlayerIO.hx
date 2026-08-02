@@ -42,7 +42,7 @@ class PlayerIOResolver {
 	}
 
 	public static function resolveName(path : String) return find(path).resolveName(path);
-	public static function create<Ta : Action>(path : String) return find(path).create(path);
+	public static function create(path : String) return find(path).create(path);
 }
 
 /**

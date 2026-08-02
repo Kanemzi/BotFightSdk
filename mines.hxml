@@ -2,7 +2,7 @@
 --each
 
 -cp games/mines/bots
--hl ExampleBot.hl
+-hl MinesBot.hl
 -main MinesExampleBot
 
 --next

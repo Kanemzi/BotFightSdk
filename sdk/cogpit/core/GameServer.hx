@@ -110,7 +110,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 			var newState = storageMode == Deterministic ? getState() : cloneState(getState());
 			ctx.initTurn(turn, history.getAlivePlayers());
 
-			Sys.sleep(0.015); // @todo remove used for debugging live mode
+			//Sys.sleep(0.015); // @todo remove used for debugging live mode
 
 			final playing = turnModel.getPlayingThisTurn(ctx.getAlivePlayers(), newState, turn);
 			final res = playTurns(turn, playing, newState, sim);

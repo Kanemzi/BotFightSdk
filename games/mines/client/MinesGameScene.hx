@@ -1,16 +1,17 @@
 package client;
 
-import cogpit.core.GameState.SUID;
-import cogpit.client.replay.GameScene;
-import cogpit.client.VisualEvent;
+import client.MinesClient.ObjectLifetimeEvent;
+import client.MinesClient.RobotLifetimeEvent;
 import cogpit.client.VisualEvent.EventId;
-import server.MinesState;
-import server.MinesState.Robot;
+import cogpit.client.VisualEvent;
+import cogpit.client.replay.GameScene;
+import cogpit.client.replay.Gizmos;
+import cogpit.core.GameState.SUID;
 import server.MinesState.Object;
 import server.MinesState.ObjectKind;
+import server.MinesState.Robot;
 import server.MinesState.Vec;
-import client.MinesClient.RobotLifetimeEvent;
-import client.MinesClient.ObjectLifetimeEvent;
+import server.MinesState;
 
 private typedef Visual = {
 	var mesh : h3d.scene.Object;
@@ -178,6 +179,17 @@ class MinesGameScene extends GameScene {
 		final t1 = hxd.Math.ceil(t);
 		final k = t - t0;
 
+		var objs : Array<ObjectLifetimeEvent> = events
+			.map(Std.downcast.bind(_, ObjectLifetimeEvent))
+			.filter(o -> o != null);
+
+		gizmos.clear();
+		gizmos2d.clear();
+
+		gizmos2d.line(new h3d.col.Point(0, 0, 0), new h3d.col.Point(300, 300, 0), 0x00ff00);
+		gizmos2d.circle(new h3d.col.Point(300, 300, 0), 100, 3, 0x007700);
+		gizmos2d.text(new h3d.col.Point(200, 300, 0), "Testing 2d text debug", 0xFFBB00);
+
 		for (ev in events) {
 			final v = visuals.get(ev.id);
 			if (v == null) continue;
@@ -190,6 +202,30 @@ class MinesGameScene extends GameScene {
 
 			v.mesh.x = hxd.Math.lerp(p0.x, p1.x, k);
 			v.mesh.y = hxd.Math.lerp(p0.y, p1.y, k);
+
+			final o = Std.downcast(ev, ObjectLifetimeEvent)?.resolve(hxd.Math.ceil(ev.begin));
+			if (o?.k == Mine) {
+				gizmos.circle(new h3d.col.Point(v.mesh.x, v.mesh.y, 0.1), 2.0, 16, 0xff00ff);
+				continue;
+			}
+
+			final r = Std.downcast(ev, RobotLifetimeEvent);
+			if (r == null) continue;
+			var close = null; 
+			var min = 10000;
+			for (o in objs) {
+				var p = resolvePos(o, t0);
+				var dx = p.x - p1.x;
+				var dy = p.y - p1.y;
+				var d = dx * dx + dy * dy;
+				if ( d < min ) {
+					close = p;
+					min = d;
+				}
+			}
+
+			gizmos.line(new h3d.col.Point(close.x, close.y, .1), new h3d.col.Point(v.mesh.x, v.mesh.y, .1));
+			gizmos.text(new h3d.col.Point(v.mesh.x, v.mesh.y, 2.0), 'Robot ${Std.random((1 << 31) - 1)}', 0x334400);
 		}
 	}
 

@@ -12,6 +12,8 @@ import cogpit.client.widget.*;
 abstract class GameScene {
 	var s2d(default, null) : h2d.Object;
 	var s3d(default, null) : h3d.scene.Scene;
+	var gizmos(default, null) : Gizmos;
+	var gizmos2d(default, null) : Gizmos;
 
 	public function new() {}
 
@@ -49,6 +51,8 @@ final class GameViewport extends Widget {
 		viewport.backgroundColor = 0xFF202020;
 		gameScene.s2d = viewport.s2d;
 		gameScene.s3d = viewport.s3d;
+		gameScene.gizmos = Gizmos.make3d(viewport.s3d, viewport.s2d);
+		gameScene.gizmos2d = Gizmos.make2d(viewport.s2d);
 
 		fpsGraph = new FpsGraph(viewport.s2d);
 
@@ -80,6 +84,8 @@ final class GameViewport extends Widget {
 	override function sync(ctx : h2d.RenderContext) {
 		viewport.events.checkEvents();
 		fpsGraph.update(ctx.elapsedTime);
+		gameScene.gizmos.refresh();
+		gameScene.gizmos2d.refresh();
 		super.sync(ctx);
 	}
 
