@@ -139,6 +139,4 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 				}
 		}
 	}
-
-	public inline function getStateUID() return turns[0].state.id;
 }

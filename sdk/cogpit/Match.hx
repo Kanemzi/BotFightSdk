@@ -1,18 +1,17 @@
 package cogpit;
 
-import sys.thread.Mutex;
-
 import cogpit.core.Exception;
-import cogpit.core.Player;
-import cogpit.core.Player.PlayerInfo;
-import cogpit.core.PlayerIO;
-import cogpit.core.action.Action;
 import cogpit.core.GameServer;
 import cogpit.core.GameState;
 import cogpit.core.History;
+import cogpit.core.Player.PlayerInfo;
+import cogpit.core.Player;
+import cogpit.core.PlayerIO.PlayerIOResolver;
+import cogpit.core.PlayerIO;
+import cogpit.core.action.Action;
 import cogpit.live.LiveChannel;
+import sys.thread.Mutex;
 
-class InvalidMatch extends Exception {}
 class InvalidPlayerException extends Exception {}
 
 enum GameStatus { Empty; Ready; Running; Complete; Failed; }
@@ -64,7 +63,7 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 
 	var started = false;
 	var live : Null<LiveChannel>;
-	var mut : Mutex = new Mutex();
+	var liveMut = new Mutex();
 
 	public function new(seed : Int, teamSize = 1) {
 		this.seed = seed;
@@ -75,27 +74,9 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 		if (started) throw 'Can\'t add player $path after match start';
 		
 		final pid = players.length;
-		var name = null;
-		var pio : PlayerIO<Ta> = null;
-		try {
-			pio = new ProcessPlayerIO<Ta>(path, ["--config"]);
-			name = pio.readLine(1.0);
-			if (name.length > Player.MAX_NAME_LENGTH || !~/^[\w~]+$/.match(name))
-				throw new InvalidPlayerException('$path : Player name should be ${Player.MAX_NAME_LENGTH} max alphanumeric characters');
-		} catch (e : InvalidPlayerException) {
-			pio?.dispose();
-			throw e;
-		} catch (_ : TimeoutException) {
-			pio?.dispose();
-			throw new InvalidPlayerException('Process $path (id=$pid) should send a name when started with parameter --config');
-		} catch (e : CrashException) {
-			pio?.dispose();
-			throw new InvalidPlayerException('Process $path (id=$pid) crashed during initialization : ${e.message}');
-		} catch (e : haxe.Exception) {
-			pio?.dispose();
-			throw new InvalidPlayerException('Could not run $path properly : $e');
-		}
-		pio?.dispose();
+		final name = PlayerIOResolver.resolveName(path);
+		if (name.length > Player.MAX_NAME_LENGTH || !~/^[\w~]+$/.match(name))
+			throw new InvalidPlayerException('$path : Player name should be ${Player.MAX_NAME_LENGTH} max alphanumeric characters');
 
 		final info : PlayerInfo = {
 			id: pid,
@@ -110,9 +91,9 @@ abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable 
 
 	final public function allocateSlot(name : String) : GameSlot<Ts, Ta> {
 		final slot = new GameSlot(games.length, name, seed);
-		mut.acquire();
+		liveMut.acquire();
 		games.push(slot);
-		mut.release();
+		liveMut.release();
 		live?.notify(MatchSlotAllocated);
 		return slot;
 	}

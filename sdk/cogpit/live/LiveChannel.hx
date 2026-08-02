@@ -22,11 +22,6 @@ class LiveChannel {
 		queue = new Deque();
 	}
 
-	public dynamic function onGameBegin<Ts : GameState, Ta : Action>(history : History<Ts, Ta>) {}
-	final public function notifyGameBegin<Ts : GameState, Ta : Action>(history : History<Ts, Ta>) {
-		onGameBegin(history);
-		notify(GameBegin);
-	}
 	final public function notify(e : LiveEvent) queue.add(e);
 	final public function poll() : Null<LiveEvent> return queue.pop(false);
 }

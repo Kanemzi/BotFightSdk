@@ -19,19 +19,14 @@ class Storage {
 		return serializer;
 	}
 
-	static inline final REPLAY_EXT = "replay"; 
-	@:access(cogpit.Match)
-	public static function saveMatch<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>, ?mode : StorageMode) {
-		// Save a deep copy of the match when a live client is attached to it, to avoid breaking references during optimize
-		if (match.live != null)
-			match = cast serializer.unserialize(cast serializer.serialize(match), Match);
-		
-		for (g in match.games) g.history.optimize(mode);
+	static inline final REPLAY_EXT = "replay";
+	static inline final GEN_EXT = "gen";
 
-		final bytes = haxe.zip.Compress.run(serializer.serialize(match), 2);
+	@:access(cogpit.Match)
+	static function writeMatch<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>, ext : String) {
+		final bytes = haxe.zip.Compress.run(hxbit.Serializer.save(match), 2);
 		var path = new haxe.io.Path(out ?? ".");
-		path.ext = REPLAY_EXT;
-		// @todo checkDeterministic (bruteforce many games with different seeds to ensure the outcome is always the same)
+		path.ext = ext;
 		if (path.file.length == 0)
 			path.file = Md5.encode('${match.seed}');
 
@@ -48,21 +43,44 @@ class Storage {
 		sys.io.File.saveBytes(path.toString(), bytes);
 	}
 
-	@:access(cogpit.Match)
-	public static function loadMatch<Ts : GameState, Ta : Action>(path : String) : Match<Ts, Ta> {
+	static function readMatch<Ts : GameState, Ta : Action>(path : String, ext : String) : Match<Ts, Ta> {
 		var p = new haxe.io.Path(path);
-		p.ext = REPLAY_EXT;
+		p.ext = ext;
 		path = p.toString();
-		
+
 		if (!sys.FileSystem.exists(path))
 			throw ('Replay file $path does not exist');
-		
-		try { 
-			// @todo using "save/load" instead to keep versioning 
-			final bytes = sys.io.File.getBytes(path);
-			return serializer.unserialize(haxe.zip.Uncompress.run(bytes), Match);
+
+		try {
+			final bytes = haxe.zip.Uncompress.run(sys.io.File.getBytes(path));
+			final match : Match<Ts, Ta> = cast hxbit.Serializer.load(bytes, Match);
+			return match;
 		} catch (e : Exception) {
 			throw 'Could not read match file $path : ${e.details()}';
 		}
+	}
+
+	@:access(cogpit.Match)
+	public static function saveMatch<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>, ?mode : StorageMode) {
+		// Save a deep copy of the match when a live client is attached to it, to avoid breaking references during optimize
+		if (match.live != null)
+			match = cast serializer.unserialize(cast serializer.serialize(match), Match);
+
+		for (g in match.games) g.history.optimize(mode);
+		writeMatch(out, match, REPLAY_EXT);
+	}
+
+	public static function loadMatch<Ts : GameState, Ta : Action>(path : String) : Match<Ts, Ta> {
+		return readMatch(path, REPLAY_EXT);
+	}
+
+	public static function saveGen<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>) {
+		writeMatch(out, match, GEN_EXT);
+	}
+
+	@:access(cogpit.Match)
+	public static function loadGen<Ts : GameState, Ta : Action>(path : String) : Ts {
+		var m = readMatch(path, GEN_EXT);
+		return m.games[0].history.turns[0].state;
 	}
 }

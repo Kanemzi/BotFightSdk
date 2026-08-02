@@ -32,6 +32,8 @@ final class GameServer<Ts : GameState, Ta : Action> {
 	var simuClass : Class<GameSimulation<Ts, Ta>>;
 	var turnWorkers : ElasticThreadPool;
 
+	var usedGen : Ts; // Initial state override, used for debugging
+
 	function new(simuClass : Class<GameSimulation<Ts, Ta>>, config : ServerConfig, seed : Int) {
 		this.config = config;
 		this.seed = seed;
@@ -62,10 +64,24 @@ final class GameServer<Ts : GameState, Ta : Action> {
 		return cast ser.unserialize(ser.serialize(st), GameState);
 	}
 
+	// Only run the generation of the initial state
+	final public function gen() : History<Ts, Ta> {
+		var history = new History(config.version, players, seed);
+		var sim = Type.createInstance(simuClass, []);
+		var ctx = new SimulationContext(players.map(p -> p.info), seed);
+
+		history.addTurn(sim.init(ctx), []);
+
+		dispose();
+		return history.lock();
+	}
+
+	public inline function useGen(s : Ts) usedGen = s;
+
 	final public function run(onBegin : History<Ts, Ta> -> Void, ?live : LiveChannel) : History<Ts, Ta> {
 		final wto = Math.max(config.firstTurnTimeout, config.turnTimeout) * 2;
 		turnWorkers = new ElasticThreadPool(players.length, wto / 1000.);
-		
+
 		// Do not apply storageMode optimizations when a live client is attached
 		final storageMode = live != null ? Full : config.storageMode;
 
@@ -76,7 +92,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 
 		var ctx = new SimulationContext(players.map(p -> p.info), seed);
 
-		final initState = sim.init(ctx);
+		final initState = usedGen ?? sim.init(ctx);
 		history.addTurn(initState, []);
 
 		onBegin(history);

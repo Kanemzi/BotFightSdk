@@ -1,16 +1,18 @@
 package cogpit;
 
-import haxe.Exception;
 import cogpit.Match;
-import cogpit.core.GameServer;
+import cogpit.client.GameClient;
 import cogpit.core.GameServer.ServerConfig;
+import cogpit.core.GameServer;
 import cogpit.core.GameSimulation;
 import cogpit.core.GameState;
+import cogpit.core.PlayerIO.PlayerIOResolver;
 import cogpit.core.PlayerIO.ProcessPlayerIO;
-import cogpit.core.action.Action;
+import cogpit.core.PlayerIO;
 import cogpit.core.Storage;
-import cogpit.client.GameClient;
+import cogpit.core.action.Action;
 import cogpit.live.LiveChannel;
+import haxe.Exception;
 
 final class RunnerArgs {
 	var args(default, null) : Map<String, Array<String>>;
@@ -57,6 +59,11 @@ final class Runner {
 
 	public static inline function error(e : String) Sys.stderr().writeString('[Error] $e\n');
 
+	static function __init__() {
+		PlayerIOResolver.register(new ScriptedPlayerIOProvider());
+		PlayerIOResolver.register(new ProcessPlayerIOProvider());
+	}
+
 	public function new<Ts : GameState, Ta : Action>(
 		simcl : Class<GameSimulation<Ts, Ta>>,
 		clicl : Class<GameClient<Ts>>,
@@ -64,15 +71,15 @@ final class Runner {
 		config : ServerConfig
 	) {
 		final args = new RunnerArgs(arg);
-		final hasGen = args.has("gen");
+		final debugGen = args.has("gen");
 		final hasMatch = args.has("match");
 		final playerPaths = args.getParams("players");
-		final playerCount = playerPaths.length;
+		final playerCount = playerPaths?.length ?? 0;
 		final teamSize = Std.parseInt(args.getParam("teamSize")) ?? 1;
 
 		final shouldRunMatch = if (playerPaths == null || playerCount == 0) {
 			// @todo debugGen should not require players (add dummy players)
-			if (hasGen) error('Trying to test generation without any bot program.');
+			if (debugGen) error('Trying to test generation without any bot program.');
 			else if (hasMatch) error('Trying to start a match without any bot program.');
 			false;
 		} else {
@@ -115,6 +122,7 @@ final class Runner {
 
 		final replayPath = args.getParam("replay");
 		final headless = args.has("headless") && replayPath == null;
+		final genPath = args.getParam("use-gen");
 		final liveMode = args.has("live") && shouldRunMatch && !headless && replayPath == null;
 
 		function buildMatch() {
@@ -123,12 +131,37 @@ final class Runner {
 			return match;
 		}
 
+		function gen(match : Match<Ts, Ta>, gsFactory : GameSlot<Ts, Ta> -> GameServer<Ts, Ta>) {
+			final slot = match.pollGames()[0];
+			final gs = gsFactory(slot);
+			final history = gs.gen();
+			match.onGameBegin(slot, history);
+		}
+
+		// @todo load multiple gen an distribute them on series games
+		var preset : Ts = genPath == null ? null : Storage.loadGen(genPath);
+
 		function runMatch(match : Match<Ts, Ta>) : Void {
 			trace('Starting match on [${match.toString()}] format with ${match.players.length} players (seed=${match.seed})');
-			final gsFactory = createGame.bind(simcl, config);
-			match.run(gsFactory);
-			if (args.has("out"))
-				Storage.saveMatch(args.getParam("out"), match, config.storageMode);
+			final gsFactory = g -> {
+				var gs = createGame(simcl, config, g);
+				gs.useGen(preset);
+				return gs;
+			}
+
+			if (debugGen) gen(match, gsFactory);
+			else match.run(gsFactory);
+
+			if (args.has("out")) {
+				final out = args.getParam("out");
+				if (debugGen) Storage.saveGen(out, match);
+				else {
+					var storageMode = config.storageMode;
+					if (storageMode == Deterministic && genPath != null)
+						storageMode = Delta; // Would not be able to regenerate first state from seed with use-gen
+					Storage.saveMatch(out, match, storageMode);
+				}
+			}
 		}
 
 		function replay(match : Match<Ts, Ta>, ?live : LiveChannel) {
@@ -186,7 +219,7 @@ final class Runner {
 	function createGame<Ts : GameState, Ta : Action>(cl : Class<GameSimulation<Ts, Ta>>, config : ServerConfig, game : GameSlot<Ts, Ta>) : GameServer<Ts, Ta> {
 		var gs = new GameServer(cl, config, game.seed);
 		for (p in game.players)
-			gs.addPlayer(p, new ProcessPlayerIO<Ta>(p.path, []));
+			gs.addPlayer(p, PlayerIOResolver.create(p.path));
 		return gs;
 	}
 }

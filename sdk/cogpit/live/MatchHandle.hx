@@ -13,9 +13,9 @@ import cogpit.Match;
 abstract MatchHandle<Ts : GameState, Ta : Action>(Match<Ts, Ta>) from Match<Ts, Ta> {
 	public var games(get, never) : Array<GameSlot<Ts, Ta>>;
 	inline function get_games() {
-		this.mut.acquire();
+		this.liveMut.acquire();
 		var g = this.games.copy();
-		this.mut.release();
+		this.liveMut.release();
 		return g;
 	}
 }
