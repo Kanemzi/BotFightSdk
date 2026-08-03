@@ -151,7 +151,7 @@
 					]
 				},
 				{
-					"kind": "Soldier",
+					"kind": "Guard",
 					"cost": [
 						{
 							"item": "Food",
@@ -171,7 +171,7 @@
 					]
 				},
 				{
-					"kind": "Archer",
+					"kind": "Hunter",
 					"cost": [
 						{
 							"item": "Food",
@@ -302,10 +302,10 @@
 					],
 					"recruits": [
 						{
-							"unit": "Soldier"
+							"unit": "Guard"
 						},
 						{
-							"unit": "Archer"
+							"unit": "Hunter"
 						}
 					]
 				}

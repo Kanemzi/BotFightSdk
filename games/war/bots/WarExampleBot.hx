@@ -1,4 +1,4 @@
-class ExampleBot {
+class WarExampleBot {
 
 	public static inline function getName() return "Michel~" + Std.random(10000);
 	

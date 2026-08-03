@@ -37,7 +37,57 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 	}
 
 	function serializeForPlayer(state : WarState, pid : PlayerId) : Array<String> {
-		return [];
+		// @todo players need confirmation that their order was taken into account
+		// @todo give unit ids for micro decisions & better tracking ?
+		/*
+			PLAYER [PID] [FOOD] [WOOD] (n following lines) 
+			BUILDING : [BID] [T|H] [PID | -1] [X] [Y] @todo info de construction, avancée
+			UNIT : [UID] [C|G|H] [BID | -1] ([G] [BID] | [X] [Y]) @todo hp, combat target
+			RES : [W|F] [AMOUNT] [X] [Y]
+		
+			[PLAYER]
+			...
+			[BUILDING]
+			... 
+			[UNIT]
+			...
+			[RES]
+			...
+		*/
+		
+		function serializeResource(r : Resource) {
+			final kind = r.kind.toString().charAt(0);
+			return '$kind ${r.amount} ${r.pos.x} ${r.pos.y}';
+		}
+
+		function serializeUnit(u : Unit) {
+			final kind = u.kind.toString().charAt(0);
+			final pos = switch(u.pos) {
+				case Garnison(bid): 'G $bid';
+				case Out(pos): '${pos.x} ${pos.y}';
+			}
+			final building = u.building.get()?.bid ?? -1;
+			return '${u.id} $kind $building $pos';
+		}
+
+		function serializeBuilding(b : Building) {
+			final kind = b.kind.toString().charAt(0);
+			var player = b.owner.get()?.pid ?? -1; 
+			return '${b.bid} $kind $player ${b.pos.x} ${p.pos.y}';
+		}
+
+		function serializePlayer(p : WarPlayer) {
+			return ['${p.pid} ${p.res.get(Food)} ${p.res.get(Wood)}']
+		}
+
+		final player = state.getPlayer(pid);
+		var players = state.players.filter(p -> p.pid != pid);
+		players.unshift(player);
+		return (players.map(serializePlayer))
+			.concat(state.buildings.map(serializeBuilding))
+			.concat(state.units.map(serializeUnit))
+			.concat(state.resources.map(serializeResource))
+			.join("\n");
 	}
 
 	public static function main() {

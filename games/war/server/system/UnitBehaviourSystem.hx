@@ -12,14 +12,12 @@ import server.WarState.Unit;
 
 @:allow(server.system.UnitBehaviourSystem)
 class UnitBehaviourContext extends BehaviourContext {
-	final uid : SUID;
-	var rnd : hxd.Rand;
-	var state : WarState;
-
+	final uid(get, null) : SUID;
+	var rnd(get, null) : hxd.Rand;
+	var state(get, null) : WarState;
 	var unit(get, null) : Unit;
-	inline function get_unit() return unit ??= state.units.find(u -> u.id == uid);
 
-	public function new(unit : Unit) {
+	function new(unit : Unit) {
 		super();
 		this.uid = unit.id;
 	}
@@ -34,7 +32,7 @@ class UnitBehaviourSystem {
 	@:access(server.Unit) // Should remain the only way to retrieve a context, to ensure it's initialized correctly for this turn
 	static inline function getContext(unit : Unit, state : WarState, rnd : hxd.Rand) {
 		unit.behaviour ??= new UnitBehaviourContext(unit);
-		unit.behaviour.unit = null;
+		unit.behaviour.unit = state.units.find(u -> u.id == unit.id);
 		unit.behaviour.state = state; // Update the state ref for this turn
 		unit.behaviour.rnd = rnd;
 		return unit.behaviour;
@@ -48,8 +46,12 @@ class UnitBehaviourSystem {
 				action(ctx -> { trace("Do civilian stuff"); return Running; }),
 			]),
 			BH.sequence([
-				cond(ctx -> ctx.unit.kind == Soldier),
-				action(ctx -> { trace("Do soldier stuff"); return Running; }),
+				cond(ctx -> ctx.unit.kind == Guard),
+				action(ctx -> { trace("Do guard stuff"); return Running; }),
+			]),
+			BH.sequence([
+				cond(ctx -> ctx.unit.kind == Hunter),
+				action(ctx -> { trace("Do hunter stuff"); return Running; }),
 			]),
 		], true),
 	], true);

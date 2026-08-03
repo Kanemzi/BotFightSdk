@@ -33,7 +33,6 @@ enum WarAction {
 
 	/* Economy*/
 	Gather(bid : Int, x : Float, y : Float, radius : Float); // Units of [bid] will gather freely in a [radius] around [x, y]
-	ConstructAt(bid : Int, x : Float, y : Float, type : Word); // Units of [bid] will start to build a [building] of type (HOUSE|TOWER)] at [x, y]
 	Construct(bid : Int, tid : Int); // Units of [bid] will start to help building or repair [tid]
 
 	/* Military */

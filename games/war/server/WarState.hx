@@ -26,7 +26,7 @@ enum ConstructionStatus { Done; Pending(d : ConstructionInfo); }
 }
 
 enum UnitPos {
-	Garnison;
+	Garnison(bid : Int);
 	Out(pos : Vec);
 }
 
@@ -119,14 +119,12 @@ typedef Say = { msg : String, onUnit : Bool, expire : Int };
 @:publicFields class Resource extends State {
 	@:s var kind : Data.ResourceKind;
 	@:s var pos : Vec;
-	@:s var radius : Float;
 	@:s var amount : Int;
 
-	function new(kind, pos, radius, amount) {
+	function new(kind, pos, amount) {
 		super();
 		this.kind = kind;
 		this.pos = pos;
-		this.radius = radius;
 		this.amount = amount;
 	}
 }
