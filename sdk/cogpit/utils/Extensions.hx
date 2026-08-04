@@ -42,9 +42,17 @@ class Extensions {
 	}
 
 	public static inline function filterMap<T, U>(array : Array<T>, func : T -> U) : Array<U> {
-		var res = array.map(func);
+		final res = array.map(func);
 		res.keep(e -> e != null);
 		return res;
+	}
+
+	public static inline function findMap<T, U>(array : Iterable<T>, func : T -> U) : Null<U> {
+		for (e in array) {
+			final m = func(e);
+			if (m != null) return m;
+		}
+		return null;
 	}
 	
 	public static inline function castArray<T : {}, S : T>(array : Array<T>, cl : Class<S>) : Array<S> {

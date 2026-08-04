@@ -15,7 +15,7 @@
 				"args": "active configuration"
 			},
             "args": [
-                "--players", "ExampleBot.hl", "ExampleBot.hl",
+                "--players", "MinesBot.hl", "MinesBot.hl",
                 // "--gen",
                 "--match", "series", "3",
                 "--seed", "123456",

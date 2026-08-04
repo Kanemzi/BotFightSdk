@@ -1,4 +1,4 @@
-package server;
+package server.state;
 
 import cogpit.core.GameState;
 import cogpit.core.GameState.WeakRef;
@@ -15,22 +15,11 @@ enum GroupOrder {
 	Siege(target : WeakRef<Building>);
 }
 
-enum ConstructionStatus { Done; Pending(d : ConstructionInfo); }
-@:publicFields class ConstructionInfo extends State {
-	@:s var res : Resources;
-	
-	function new() { 
-		super();
-		res = new Map();
-	}
-}
-
 enum UnitPos {
 	Garnison(bid : Int);
-	Out(pos : Vec);
+	Terrain(pos : Vec);
 }
 
-typedef Resources = Map<Data.ResourceKind, Int>;
 typedef Say = { msg : String, onUnit : Bool, expire : Int };
 
 @:publicFields class Vec extends State {
@@ -43,41 +32,51 @@ typedef Say = { msg : String, onUnit : Bool, expire : Int };
 		this.y = y;
 	}
 
-	public function clone() {
-		return new Vec(x, y);
-	}
+	public function clone() return new Vec(x, y);
 }
 
+package server.state;
+
+enum BuildingStatus {
+	Neutral;
+	Constructing(p : WeakRef<WarPlayer>);
+	Owned(p : WeakRef<WarPlayer>);
+}
+
+@:using(server.simulation.BuildingAction)
 @:publicFields class Building extends State {
-	@:s var bid : Int;
-	@:s var kind : Data.BuildingKind;
-	@:s var pos : Vec;
-	@:s var owner : WeakRef<WarPlayer>;
-	@:s var construction : ConstructionStatus;
-	@:s var order : GroupOrder;
+	@:s var bid(default, null) : Int;
+	@:s var kind(default, null) : Data.BuildingKind;
+	@:s var pos(default, null) : Vec;
+
+	@:s var durability(default, null) : Int;
+	@:s var status(default, null) : Int;
+	@:s var order(default, null) : GroupOrder;
 	@:s var sayInfo : Null<Say>;
 
-	function new(kind, pos, owner) {
+	var leading(get, never) : WarPlayer;
+	inline function get_leading() return switch (status) {
+		case Constructing(p), Owned(p): p.get();
+		default: null;
+	}
+	
+	var owner(get, never) : WarPlayer;
+	inline function get_owner() return switch (status) {
+		case Owned(p): p.get();
+		default: null;
+	}
+	
+	function new(kind, pos) {
 		// @todo bid attribution
 		super();
 		this.kind = kind;
 		this.pos = pos;
-		this.owner = new WeakRef(owner);
-		construction = Done;
+		status = Neutral;
 		order = Rally(pos.clone());
 	}
 
-	public inline function isFinished() return switch (construction) {
-		case Done: true;
-		default: false;
-	}
-
-	public function say(msg : String, onUnit : Bool) {
-		sayInfo = { msg : msg, onUnit : onUnit, expire : Const.SayActionDuration };
-	}
-
 	public function recruit(state : WarState, unit : Data.UnitKind) { // @todo returns a result ?
-		if (!isFinished()) return;
+		if (owner == null) return;
 		final data = Data.building.get(kind);
 		final udata = Data.unit.get(unit);
 
@@ -89,14 +88,51 @@ typedef Say = { msg : String, onUnit : Bool, expire : Int };
 		state.units.push(u);
 	}
 
-	public static function makeConstructionSite(kind, pos, owner) : Building {
-		var cs = new Building(kind, pos, owner);
-		cs.construction = Pending(new ConstructionInfo());
-		return cs;
+	/**
+		Simulates one tick of u hitting in the building durability (combat unit or worker).
+	*/
+	function hit(u : Unit) {
+		if (u.isOrphan) throw 'Orphan $kind [${u.uid}] should not be able to hit building.';
+		final uOwner = u.building.get().owner;
+		if (player != null && uOwner == player) throw '$kind [${u.uid}] should not be able to hit ally building.';
+		changeDurability(-1, uOwner);
 	}
+
+	function changeDurability(v : Int, from : WarPlayer) {
+		final cost = getCost();
+		durability = hxd.Math.iclamp(v + durability, 0, cost);
+		if (durability == 0 && v < 0) {
+			if (owned) neutralize();
+			else player = new WeakRef(from);
+		} else if (durability == cost && v > 0) {
+			if (owned) eject(); 
+			else {
+				if (player != from) throw 'Capturing clan [$from] was not the clan at advantage on the building [${player.get()}].';
+				owned = true;
+			}
+		}
+	}
+
+	
+
+	function neutralize() {
+		player = null;
+		owned = false;
+		eject(true);
+	}
+
+	/**
+		Ejects all units from the building. If not [all], garrisoned units parented to this building will stay
+	*/
+	function eject(all = false) {
+		// @todo ejects all units from the building
+	}
+
+	function getCost() return Data.building.get(kind).cost.findMap(c -> c.itemId == Wood ? c.count : null);
 }
 
 @:publicFields class Unit extends State {
+	@:s var uid : Int;
 	@:s var kind : Data.UnitKind;
 	@:s var pos : UnitPos;
 	@:s var building : WeakRef<Building>;
@@ -131,22 +167,16 @@ typedef Say = { msg : String, onUnit : Bool, expire : Int };
 
 @:publicFields class WarPlayer extends State {
 	@:s var pid : PlayerId;
-	@:s var res : Resources;
+	@:s var inv : Inventory;
 
 	function new(pid) {
 		super();
 		this.pid = pid;
-		res = new Map();
-	}
-
-	public function hasResources(r : Resources) {
-		for (k => c in r) {
-			final pc = res.get(k);
-			if (pc == null || pc < c) return false; 
-		}
-		return true;
+		inv = new Inventory();
 	}
 }
+
+// @todo replay events as EnumFlags<Event>
 
 class WarState extends GameState {
 	@:s public var players : Array<WarPlayer>;

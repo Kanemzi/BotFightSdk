@@ -1,4 +1,5 @@
 import haxe.ds.ReadOnlyArray;
+import cogpit.utils.Assert.assert;
 
 using StringTools;
 using Lambda;

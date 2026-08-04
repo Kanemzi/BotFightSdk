@@ -14,12 +14,12 @@ final class ActionsResult<Ta : Action> implements hxbit.Serializable {
 	
 	var actions : Array<Ta>;
 
-	public function customSerialize(ctx : hxbit.Serializer) @:privateAccess {
+	public function customSerialize(ctx : hxbit.Serializer) {
 		ctx.addInt(actions?.length);
 		for (a in actions) ctx.addDynamic(a);
 	}
 
-	public function customUnserialize(ctx : hxbit.Serializer) @:privateAccess {
+	public function customUnserialize(ctx : hxbit.Serializer) {
 		var len = ctx.getInt();
 		actions = [for (_ in 0...len) ctx.getDynamic()];
 	}
