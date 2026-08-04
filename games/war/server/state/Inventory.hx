@@ -2,12 +2,13 @@ package server.state;
 
 typedef Resources = Map<Data.ResourceKind, Int>;
 
-abstract Inventory(Resources) {
+@:forward(get)
+abstract Inventory(Resources) from Resources {
 	public function new() {
 		this = new Map();
 	}
 
-	public function has(res : Data.ResourceKind, amount : Int) {
+	public function has(k : Data.ResourceKind, amount : Int) {
 		final a = this.get(k);
 		return a != null && a >= amount;
 	}
@@ -17,11 +18,11 @@ abstract Inventory(Resources) {
 		return true;
 	}
 
-	public function add(res : Data.ResourceKind, amount : Int) : Bool {
+	public function add(k : Data.ResourceKind, amount : Int) : Bool {
 		final a = this.get(k);
-		if (amount < 0 && !has(res, -amount))
+		if (amount < 0 && !has(k, -amount))
 			return false;
-		res.set(k, a + amount);
+		this.set(k, a + amount);
 		return true;
 	}
 
@@ -31,9 +32,9 @@ abstract Inventory(Resources) {
 		return true;
 	}
 
-	public function consume(res : Data.ResourceKind, amount : Int) : Bool {
+	public function consume(k : Data.ResourceKind, amount : Int) : Bool {
 		if (amount > 0) amount *= -1;
-		return add(res, amount);
+		return add(k, amount);
 	}
 	
 	public function consumeAll(res : Resources) {

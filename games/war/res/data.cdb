@@ -8,38 +8,88 @@
 					"name": "kind",
 					"opt": null,
 					"scope": null
+				},
+				{
+					"typeStr": "1",
+					"name": "name",
+					"opt": null,
+					"kind": "localizable",
+					"editor": {
+						"categories": [
+							"viewer"
+						]
+					}
+				},
+				{
+					"typeStr": "4",
+					"name": "def",
+					"opt": null
+				},
+				{
+					"typeStr": "1",
+					"name": "doc",
+					"opt": null,
+					"editor": {
+						"categories": [
+							"documentation"
+						]
+					}
 				}
 			],
 			"lines": [
 				{
-					"kind": "Health"
+					"kind": "Valor",
+					"name": "Bravoure",
+					"doc": "Unit will flee the glade when [Valor] drops to 0. They gradually recover while the unit stays inside its building.",
+					"def": 40
 				},
 				{
-					"kind": "Armor"
+					"kind": "Armor",
+					"name": "Armure",
+					"doc": "[Armor] must drop to 0 before an unit starts loosing [Valor]. They never recover. Projectiles are less efficient against armor.",
+					"def": 10
 				},
 				{
-					"kind": "MoveSpeed"
+					"kind": "MoveSpeed",
+					"name": "Vitesse",
+					"doc": "Movement speed on the terrain in (meters / turn).",
+					"def": 0.3
 				},
 				{
-					"kind": "GatherSpeed"
+					"kind": "WorkSpeed",
+					"name": "Vitesse de travail",
+					"doc": "In (work action / turn). Determines the interval between each work action (gather 1 resource, deposit 1 resource, build for 1 material...).",
+					"def": 0.1
 				},
 				{
-					"kind": "BuildSpeed"
+					"kind": "Force",
+					"name": "Force",
+					"doc": "For [Melee] units, determines the damages dealt by each attack. For [Ranged] units, determines the range of the projectile.",
+					"def": 4
 				},
 				{
-					"kind": "Damage"
+					"kind": "AttackSpeed",
+					"name": "Vitesse d'attaque",
+					"doc": "In (attack / turn). Determines the interval between each attack.",
+					"def": 0.1
 				},
 				{
-					"kind": "AttackSpeed"
+					"kind": "BlockChance",
+					"name": "Chance de parade",
+					"doc": "Chances of parrying a [Melee] attack.",
+					"def": 0.1
 				},
 				{
-					"kind": "BlockChance"
+					"kind": "CriticalChance",
+					"name": "Critique",
+					"doc": "Chances of inflicting a critical hit x[constant.CriticalFactor] damages.",
+					"def": 0.2
 				},
 				{
-					"kind": "CriticalChance"
-				},
-				{
-					"kind": "Precision"
+					"kind": "Precision",
+					"name": "Précision",
+					"doc": "Chances of hitting the target with a [Ranged] attack.",
+					"def": 0.4
 				}
 			],
 			"separators": [],
@@ -66,7 +116,12 @@
 				{
 					"typeStr": "1",
 					"name": "doc",
-					"opt": true
+					"opt": true,
+					"editor": {
+						"categories": [
+							"documentation"
+						]
+					}
 				}
 			],
 			"lines": [
@@ -83,18 +138,46 @@
 					}
 				},
 				{
+					"name": "ConstructStep",
+					"val": {
+						"integer": 1
+					},
+					"doc": "The base amount of resources spent on each unit's construct action."
+				},
+				{
+					"name": "CriticalFactor",
+					"val": {
+						"float": 2
+					},
+					"doc": "Damage factor of a critical hit."
+				},
+				{
 					"name": "SayActionDuration",
-					"doc": "How many turns a Say action will be visible in replay mode",
+					"doc": "How many turns a Say action will be visible in replay mode.",
 					"val": {
 						"integer": 30
 					}
+				},
+				{
+					"name": "TurnDuration",
+					"val": {
+						"float": 0.1
+					},
+					"doc": "Duration of a turn (in seconds)."
 				}
 			],
 			"separators": [
 				{
-					"title": "Simulation",
-					"level": null,
+					"title": "Global",
 					"id": "Width"
+				},
+				{
+					"title": "Construction",
+					"id": "ConstructStep"
+				},
+				{
+					"title": "Fight",
+					"id": "CriticalFactor"
 				},
 				{
 					"title": "Viewer",
@@ -118,6 +201,17 @@
 					"scope": null
 				},
 				{
+					"typeStr": "1",
+					"name": "name",
+					"opt": null,
+					"kind": "localizable",
+					"editor": {
+						"categories": [
+							"viewer"
+						]
+					}
+				},
+				{
 					"typeStr": "8",
 					"name": "baseStats",
 					"opt": null
@@ -131,11 +225,16 @@
 					"name": "cost",
 					"opt": null,
 					"structRef": "types@resources"
+				},
+				{
+					"typeStr": "1",
+					"name": "doc",
+					"opt": null
 				}
 			],
 			"lines": [
 				{
-					"kind": "Civilian",
+					"kind": "Worker",
 					"cost": [
 						{
 							"item": "Food",
@@ -148,17 +247,19 @@
 							"stat": "MoveSpeed",
 							"val": 1
 						}
-					]
+					],
+					"name": "Petite main",
+					"doc": "Gather resources, construct and repair buildings. They move quickly when not carrying resources so they can easily escape [Bruisers]."
 				},
 				{
-					"kind": "Guard",
+					"kind": "Bruiser",
 					"cost": [
 						{
 							"item": "Food",
 							"count": 7
 						},
 						{
-							"item": "Wood",
+							"item": "Materials",
 							"count": 3
 						}
 					],
@@ -168,7 +269,9 @@
 							"stat": "MoveSpeed",
 							"val": 0.8
 						}
-					]
+					],
+					"name": "Cogneur",
+					"doc": "Fight with a club and a shield. They are slow but have better resistance to arrows due to their [Armor]. When in garrison, they fight by throwing pebbles."
 				},
 				{
 					"kind": "Hunter",
@@ -178,7 +281,7 @@
 							"count": 7
 						},
 						{
-							"item": "Wood",
+							"item": "Materials",
 							"count": 1
 						}
 					],
@@ -188,7 +291,9 @@
 							"stat": "MoveSpeed",
 							"val": 1.2
 						}
-					]
+					],
+					"name": "Chasseur",
+					"doc": "Fights with a bow. They move quickly and attack from a distance, making them effective at hunting [Workers]."
 				}
 			],
 			"separators": [],
@@ -227,6 +332,17 @@
 					"opt": null
 				},
 				{
+					"typeStr": "1",
+					"name": "name",
+					"opt": null,
+					"kind": "localizable",
+					"editor": {
+						"categories": [
+							"viewer"
+						]
+					}
+				},
+				{
 					"typeStr": "3",
 					"name": "maxUnits",
 					"opt": null
@@ -245,6 +361,11 @@
 					"name": "cost",
 					"opt": null,
 					"structRef": "types@resources"
+				},
+				{
+					"typeStr": "1",
+					"name": "doc",
+					"opt": null
 				}
 			],
 			"lines": [
@@ -252,14 +373,14 @@
 					"kind": "House",
 					"cost": [
 						{
-							"item": "Wood",
+							"item": "Materials",
 							"count": 20
 						}
 					],
 					"maxUnits": 10,
 					"orders": [
 						{
-							"order": "Return"
+							"order": "Garrison"
 						},
 						{
 							"order": "Rally"
@@ -268,30 +389,29 @@
 							"order": "Gather"
 						},
 						{
-							"order": "ConstructAt"
-						},
-						{
 							"order": "Construct"
 						}
 					],
 					"recruits": [
 						{
-							"unit": "Civilian"
+							"unit": "Worker"
 						}
-					]
+					],
+					"name": "Habitation",
+					"doc": "Allows recruiting new workers."
 				},
 				{
-					"kind": "Tower",
+					"kind": "Outpost",
 					"cost": [
 						{
-							"item": "Wood",
+							"item": "Materials",
 							"count": 30
 						}
 					],
 					"maxUnits": 40,
 					"orders": [
 						{
-							"order": "Return"
+							"order": "Garrison"
 						},
 						{
 							"order": "Rally"
@@ -302,12 +422,39 @@
 					],
 					"recruits": [
 						{
-							"unit": "Guard"
+							"unit": "Bruiser"
 						},
 						{
 							"unit": "Hunter"
 						}
-					]
+					],
+					"name": "Avant-poste",
+					"doc": "Allows recruiting fighting units. Units garrisoned in outpost can throw projectiles on nearby foes."
+				},
+				{
+					"kind": "Laboratory",
+					"name": "Laboratoire",
+					"maxUnits": 5,
+					"recruits": [],
+					"orders": [
+						{
+							"order": "Garrison"
+						},
+						{
+							"order": "Rally"
+						},
+						{
+							"order": "Siege"
+						}
+					],
+					"cost": [
+						{
+							"item": "Materials",
+							"count": 60
+						}
+					],
+					"doc": "Allows researching new upgrades for units and buildings.",
+					"__ignoreLoc__": true
 				}
 			],
 			"separators": [],
@@ -355,14 +502,44 @@
 					"name": "kind",
 					"opt": null,
 					"scope": null
+				},
+				{
+					"typeStr": "1",
+					"name": "name",
+					"opt": null,
+					"kind": "localizable",
+					"editor": {
+						"categories": [
+							"viewer"
+						]
+					}
+				},
+				{
+					"typeStr": "1",
+					"name": "doc",
+					"opt": null,
+					"editor": {
+						"categories": [
+							"documentation"
+						]
+					}
 				}
 			],
 			"lines": [
 				{
-					"kind": "Food"
+					"kind": "Food",
+					"name": "Nourriture",
+					"doc": "Used for recruiting. Gathered by [Worker]."
 				},
 				{
-					"kind": "Wood"
+					"kind": "Materials",
+					"name": "Matériaux",
+					"doc": "Used for recruiting and constructing. Gathered by [Worker]."
+				},
+				{
+					"kind": "Bravery",
+					"name": "Bravoure",
+					"doc": "Used for recruiting. Accumulated independently by each building depending it's unit's actions."
 				}
 			],
 			"separators": [],
@@ -566,26 +743,38 @@
 					"name": "kind",
 					"opt": null,
 					"scope": null
+				},
+				{
+					"typeStr": "1",
+					"name": "doc",
+					"opt": null,
+					"editor": {
+						"categories": [
+							"documentation"
+						]
+					}
 				}
 			],
 			"lines": [
 				{
-					"kind": "Return"
+					"kind": "Garrison",
+					"doc": "GARRISON [BuildingId]\nUnits of [BuildingId] will come back inside their building."
 				},
 				{
-					"kind": "Rally"
+					"kind": "Rally",
+					"doc": "RALLY [BuildingId] [x] [y]\nUnits of [BuildingId] will go and stay stationary around [x, y]."
 				},
 				{
-					"kind": "Gather"
+					"kind": "Gather",
+					"doc": "GATHER [BuildingId] [x] [y] [radius]\nUnits of [BuildingId] will gather resources freely in a [radius] around [x, y]."
 				},
 				{
-					"kind": "ConstructAt"
+					"kind": "Construct",
+					"doc": "CONSTRUCT [BuildingId] [TargetBuildingId]\nUnits of [BuildingId] will go inside neutral [TargetBuildingId] and start claiming or repairing it."
 				},
 				{
-					"kind": "Construct"
-				},
-				{
-					"kind": "Siege"
+					"kind": "Siege",
+					"doc": "SIEGE [BuildingId] [TargetBuildingId]\nUnits of [BuildingId] will attack [TargetBuildingId] to destroy it."
 				}
 			],
 			"separators": [],

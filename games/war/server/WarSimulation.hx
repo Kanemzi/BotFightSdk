@@ -1,16 +1,16 @@
 package server;
 
-import cogpit.core.GameSimulation;
+import client.WarClient;
 import cogpit.core.GameSimulation.PlayersActions;
+import cogpit.core.GameSimulation;
+import cogpit.core.Player.PlayerId;
 import cogpit.core.TurnModel;
 import cogpit.core.action.ActionCollector;
-import cogpit.core.Player.PlayerId;
-
-import server.WarState;
+import server.state.WarState;
 import server.system.ActionSystem;
 import server.system.MovementSystem;
 import server.system.UnitBehaviourSystem;
-import client.WarClient;
+import server.system.ReplaySystem;
 
 class WarSimulation extends GameSimulation<WarState, WarAction> {
 
@@ -19,9 +19,10 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 	}
 
 	function update(state : WarState, ctx : SimulationContext<WarAction>) : Void {
+		ReplaySystem.tick(state); // Should say first
 		ActionSystem.apply(state, ctx.actions);
-		MovementSystem.tick(state);
 		UnitBehaviourSystem.tick(state, ctx.rnd);
+		MovementSystem.tick(state);
 	}
 
 	function getTurnActionProfile(state : WarState, pid : PlayerId) : TurnActionProfile<WarAction> {
@@ -29,7 +30,7 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 	}
 
 	function getTiebreakerScore(state : WarState, pid : PlayerId) : Int {
-		return state.getPlayerUnits(pid).length; // @todo use extensions to keep the state as empty as possible
+		return state.getClanUnits(pid).length; // @todo use extensions to keep the state as empty as possible
 	}
 
 	function serializeHeaderForPlayer(initialState : WarState, pid : PlayerId) : Array<String> {
@@ -64,7 +65,7 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 			final kind = u.kind.toString().charAt(0);
 			final pos = switch(u.pos) {
 				case Garnison(bid): 'G $bid';
-				case Out(pos): '${pos.x} ${pos.y}';
+				case Terrain(pos): '${pos.x} ${pos.y}';
 			}
 			final building = u.building.get()?.bid ?? -1;
 			return '${u.id} $kind $building $pos';
@@ -72,22 +73,21 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 
 		function serializeBuilding(b : Building) {
 			final kind = b.kind.toString().charAt(0);
-			var player = b.owner.get()?.pid ?? -1; 
-			return '${b.bid} $kind $player ${b.pos.x} ${p.pos.y}';
+			var clan = b.clan?.pid ?? -1; 
+			return '${b.bid} $kind $clan ${b.pos.x} ${b.pos.y}';
 		}
 
-		function serializePlayer(p : WarPlayer) {
-			return ['${p.pid} ${p.res.get(Food)} ${p.res.get(Wood)}']
+		function serializeClan(p : Clan) {
+			return '${p.pid} ${p.inv.get(Food)} ${p.inv.get(Materials)}';
 		}
 
-		final player = state.getPlayer(pid);
-		var players = state.players.filter(p -> p.pid != pid);
-		players.unshift(player);
-		return (players.map(serializePlayer))
+		final clan = state.getClan(pid);
+		var clans = state.clans.filter(p -> p.pid != pid);
+		clans.unshift(clan);
+		return (clans.map(serializeClan))
 			.concat(state.buildings.map(serializeBuilding))
 			.concat(state.units.map(serializeUnit))
-			.concat(state.resources.map(serializeResource))
-			.join("\n");
+			.concat(state.resources.map(serializeResource));
 	}
 
 	public static function main() {

@@ -7,15 +7,15 @@ import server.behaviour.Behaviour.BehaviourContext;
 import server.behaviour.Node.Status;
 import server.behaviour.Node.Action;
 import server.behaviour.Node.Condition;
-import server.WarState;
-import server.WarState.Unit;
+import server.state.WarState;
+import server.state.WarState.Unit;
 
 @:allow(server.system.UnitBehaviourSystem)
 class UnitBehaviourContext extends BehaviourContext {
-	final uid(get, null) : SUID;
-	var rnd(get, null) : hxd.Rand;
-	var state(get, null) : WarState;
-	var unit(get, null) : Unit;
+	final uid : SUID;
+	var rnd(default, null) : hxd.Rand;
+	var state(default, null) : WarState;
+	var unit(default, null) : Unit;
 
 	function new(unit : Unit) {
 		super();
@@ -42,11 +42,11 @@ class UnitBehaviourSystem {
 		action(ctx -> { trace("React to attack"); return Success; }),
 		BH.fallback([
 			BH.sequence([
-				cond(ctx -> ctx.unit.kind == Civilian),
+				cond(ctx -> ctx.unit.kind == Worker),
 				action(ctx -> { trace("Do civilian stuff"); return Running; }),
 			]),
 			BH.sequence([
-				cond(ctx -> ctx.unit.kind == Guard),
+				cond(ctx -> ctx.unit.kind == Bruiser),
 				action(ctx -> { trace("Do guard stuff"); return Running; }),
 			]),
 			BH.sequence([

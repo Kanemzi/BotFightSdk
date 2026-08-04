@@ -1,5 +1,5 @@
 import haxe.ds.ReadOnlyArray;
-import cogpit.utils.Assert;
+import cogpit.utils.Assert.assert;
 import Data;
 
 using StringTools;

@@ -4,7 +4,7 @@ typedef SUID = Int;
 
 abstract class State implements hxbit.Serializable {
 	@:s public var id(default, null) : SUID;
-	@:allow(cogpit.core.WeakRef) @:noPrivateAccess @:s var __alive(default, null) = true; 
+	@:allow(cogpit.core.WeakRefImpl) @:noPrivateAccess @:s var __alive(default, null) = true; 
 	public inline function kill() __alive = false;
 	
 	public function new() {
@@ -94,10 +94,10 @@ abstract class State implements hxbit.Serializable {
 		if (ast != null)
 			return f(ast, Std.downcast(b, State), path, set);
 
-		var awr = Std.downcast(a, WeakRef);
+		var awr = Std.downcast(a, WeakRefImpl);
 		if (awr != null) {
 			if (comp)
-				return awr.get().id == Std.downcast(b, WeakRef)?.get().id;
+				return awr.get()?.id == Std.downcast(b, WeakRefImpl)?.get()?.id;
 			else
 				return true;
 		}
@@ -209,10 +209,18 @@ abstract class State implements hxbit.Serializable {
 }
 
 // @todo improve and test this
-class WeakRef<T : State> implements hxbit.Serializable {
+class WeakRefImpl implements hxbit.Serializable {
 	@:s var ref : State;
-	public function new(ref : T) this.ref = ref;
-	public function get() : T return ref?.__alive ? cast ref : null;
+	public function new(ref : State) this.ref = ref;
+	public function get() : State return ref?.__alive ? ref : null;
+}
+
+@:access(cogpit.core.WeakRefImpl)
+abstract WeakRef<T : State>(WeakRefImpl) {
+	public function new(state : T) this = new WeakRefImpl(state);
+	@:from static function fromT<T : State>(state : T) return new WeakRef(state);
+	public function get() : T return cast this.get();
+	@:to function toT() : T return get();
 }
 
 abstract class GameState extends State {

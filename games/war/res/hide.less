@@ -1,9 +1,27 @@
 .cdb-sheet {
 	td.t_id {
-		color: #44b09a !important;
+		color: #44b09a;
 	}
 	td.t_ref {
-		color: #389381 !important;
+		color: #389381;
 		font-style: italic;
+	}
+
+	td.t_string.t_loc {
+		color: white;
+		font-style: italic;
+	}
+
+	td.t_string.n_doc {
+		color: #93bd55;
+		font-style: italic;
+	}
+
+	.locIgnored td {
+		background-color: #82110070;
+
+		&.t_string.t_loc {
+			color: #ff5454f7;
+		}
 	}
 }

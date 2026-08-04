@@ -1,14 +1,12 @@
 package server.system;
 
-import cogpit.core.GameState.WeakRef;
 import cogpit.core.GameSimulation.PlayerActions;
 import cogpit.core.GameSimulation.PlayersActions;
 import cogpit.core.Player.PlayerId;
 import cogpit.core.action.Action;
 import cogpit.core.action.ActionCollector;
 import cogpit.utils.Result;
-
-import server.WarState;
+import server.state.WarState;
 
 // @todo macro should support multiple optional non strings params at the end of the line (default radius)
 
@@ -28,15 +26,15 @@ import server.WarState;
 enum WarAction {
 	/* All */
 	Recruit(bid : Int, type : Word); // Spawn a new unit in [bid]. Cost will depend on the [unit] type
-	Rally(bid : Int, x : Float, y : Float); // Units on [bid] will go and stay stationary around [x, y]
-	Return(bid : Int); // Units will move back to their building [bid]
+	Rally(bid : Int, x : Float, y : Float); // Units of [bid] will go and stay stationary around [x, y]
+	Garrison(bid : Int); // Units of [bid] will come back inside their building
 
 	/* Economy*/
 	Gather(bid : Int, x : Float, y : Float, radius : Float); // Units of [bid] will gather freely in a [radius] around [x, y]
-	Construct(bid : Int, tid : Int); // Units of [bid] will start to help building or repair [tid]
+	Construct(bid : Int, tid : Int); // Units of [bid] will go inside neutral building [tid] and start claiming or repairing it
 
 	/* Military */
-	Siege(bid : Int, tid : Int); // Units of [bid] will attack building [tid]
+	Siege(bid : Int, tid : Int); // Units of [bid] will attack [tid] to destroy it
 	
 	Say(bid : Int, onUnit : Int, msg : String); // Displays a [msg] from [bid] (or closest unit to the current targetPoint if [onUnit] == 1)
 	End; // Finishes the turn
@@ -82,20 +80,15 @@ class ActionSystem {
 
 				case Rally(bid, _, _): checkOrder(a, bid);
 
-				case Return(bid): checkOrder(a, bid);
+				case Garrison(bid): checkOrder(a, bid);
 
 				case Gather(bid, _, _, _): checkOrder(a, bid);
-
-				case ConstructAt(bid, _, _, type):
-					if (Data.building.resolve(type.toPascalCase(), true) == null)
-						Error('Unknown building type $type.');
-					else checkOrder(a, bid); // @todo check if always possible
 
 				case Construct(bid, tid):
 					final target = state.getBuildingById(tid);
 					if (target == null)
 						Error('Target building [$tid] does not exists.');
-					else if (target.owner.get().pid != pid)
+					else if (target.clan != null && target.clan.pid != pid)
 						Error('Building [$bid] cannot construct foe building [$tid].');
 					else checkOrder(a, bid);
 
@@ -103,7 +96,9 @@ class ActionSystem {
 					final target = state.getBuildingById(tid);
 					if (target == null)
 						Error('Target building [$tid] does not exists.');
-					else if (target.owner.get().pid == pid)
+					else if (target.clan == null)
+						Error('Cannot attack neutral building [$tid].')
+					else if (target.clan.pid == pid)
 						Error('Building [$bid] cannot attack building of the same camp [$tid].');
 					else checkOrder(a, bid);
 
@@ -123,26 +118,18 @@ class ActionSystem {
 					state.getBuildingById(bid).recruit(state, cast type);
 				case Rally(bid, x, y):
 					state.getBuildingById(bid).order = Rally(new Vec(x, y));
-				case Return(bid):
+				case Garrison(bid):
 					state.getBuildingById(bid).order = Return;
 				case Gather(bid, x, y, radius):
 					state.getBuildingById(bid).order = Gather(new Vec(x, y), radius);
-				case ConstructAt(bid, x, y, _.toPascalCase() => type):
-					state.getBuildingById(bid).order = ConstructAt(new Vec(x, y), cast type);
 				case Construct(bid, tid):
-					state.getBuildingById(bid).order = Construct(new WeakRef(state.getBuildingById(tid)));
+					state.getBuildingById(bid).order = Construct(state.getBuildingById(tid));
 				case Siege(bid, tid):
-					state.getBuildingById(bid).order = Siege(new WeakRef(state.getBuildingById(tid)));
+					state.getBuildingById(bid).order = Siege(state.getBuildingById(tid));
 				case Say(bid, onUnit, msg):
-					state.getBuildingById(bid).say(msg, onUnit > 0);
+					state.getBuildingById(bid).say(msg, onUnit > 0, state);
 				case End:
 			}
-		});
-
-		// Check Say actions expiry
-		state.buildings.iter(b -> {
-			if (b.sayInfo != null && b.sayInfo.expire-- <= 0)
-				b.sayInfo = null;
 		});
 	}
 }

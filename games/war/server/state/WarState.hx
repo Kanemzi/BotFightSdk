@@ -1,10 +1,12 @@
 package server.state;
 
-import cogpit.core.GameState;
 import cogpit.core.GameState.WeakRef;
+import cogpit.core.GameState;
 import cogpit.core.Player.PlayerId;
 import server.TerrainGen;
 import server.system.UnitBehaviourSystem.UnitBehaviourContext;
+import server.system.ReplaySystem.BuildingReplayEvent;
+import server.system.ReplaySystem.UnitReplayEvent;
 
 enum GroupOrder {
 	Return;
@@ -20,8 +22,6 @@ enum UnitPos {
 	Terrain(pos : Vec);
 }
 
-typedef Say = { msg : String, onUnit : Bool, expire : Int };
-
 @:publicFields class Vec extends State {
 	@:s var x : Float;
 	@:s var y : Float;
@@ -35,12 +35,10 @@ typedef Say = { msg : String, onUnit : Bool, expire : Int };
 	public function clone() return new Vec(x, y);
 }
 
-package server.state;
-
 enum BuildingStatus {
 	Neutral;
-	Constructing(p : WeakRef<WarPlayer>);
-	Owned(p : WeakRef<WarPlayer>);
+	Constructing(p : WeakRef<Clan>);
+	Owned(p : WeakRef<Clan>);
 }
 
 @:using(server.simulation.BuildingAction)
@@ -49,106 +47,66 @@ enum BuildingStatus {
 	@:s var kind(default, null) : Data.BuildingKind;
 	@:s var pos(default, null) : Vec;
 
-	@:s var durability(default, null) : Int;
-	@:s var status(default, null) : Int;
-	@:s var order(default, null) : GroupOrder;
-	@:s var sayInfo : Null<Say>;
+	@:s var hp(default, null) : Int;
+	@:s var status(default, null) : BuildingStatus;
 
-	var leading(get, never) : WarPlayer;
+	@:allow(server.system.ActionSystem)
+	@:s var order(default, null) : GroupOrder;
+
+	@:allow(server.system.ReplaySystem)
+	@:s var replayEvents(default, null) : Array<BuildingReplayEvent>;
+
+	public var leading(get, never) : Null<Clan>;
 	inline function get_leading() return switch (status) {
 		case Constructing(p), Owned(p): p.get();
 		default: null;
 	}
 	
-	var owner(get, never) : WarPlayer;
-	inline function get_owner() return switch (status) {
-		case Owned(p): p.get();
+	public var clan(get, never) : Null<Clan>;
+	inline function get_clan() return switch (status) {
+		case Owned(p): p;
 		default: null;
 	}
 	
-	function new(kind, pos) {
-		// @todo bid attribution
-		super();
+	public function new(kind, pos) {
+		super(); // @todo bid attribution
 		this.kind = kind;
 		this.pos = pos;
 		status = Neutral;
 		order = Rally(pos.clone());
 	}
 
-	public function recruit(state : WarState, unit : Data.UnitKind) { // @todo returns a result ?
-		if (owner == null) return;
-		final data = Data.building.get(kind);
-		final udata = Data.unit.get(unit);
-
-		if (!data.recruits.exists(s -> s.unitId == unit)) return;
-		if (state.getBuildingUnits(id).length >= data.maxUnits) return;
-		//if (owner.get().hasResources()) // @todo ensure has resources
-
-		var u = new Unit(unit, Out(pos.clone()), this);
-		state.units.push(u);
-	}
-
-	/**
-		Simulates one tick of u hitting in the building durability (combat unit or worker).
-	*/
-	function hit(u : Unit) {
-		if (u.isOrphan) throw 'Orphan $kind [${u.uid}] should not be able to hit building.';
-		final uOwner = u.building.get().owner;
-		if (player != null && uOwner == player) throw '$kind [${u.uid}] should not be able to hit ally building.';
-		changeDurability(-1, uOwner);
-	}
-
-	function changeDurability(v : Int, from : WarPlayer) {
-		final cost = getCost();
-		durability = hxd.Math.iclamp(v + durability, 0, cost);
-		if (durability == 0 && v < 0) {
-			if (owned) neutralize();
-			else player = new WeakRef(from);
-		} else if (durability == cost && v > 0) {
-			if (owned) eject(); 
-			else {
-				if (player != from) throw 'Capturing clan [$from] was not the clan at advantage on the building [${player.get()}].';
-				owned = true;
-			}
-		}
-	}
-
-	
-
-	function neutralize() {
-		player = null;
-		owned = false;
-		eject(true);
-	}
-
-	/**
-		Ejects all units from the building. If not [all], garrisoned units parented to this building will stay
-	*/
-	function eject(all = false) {
-		// @todo ejects all units from the building
-	}
-
-	function getCost() return Data.building.get(kind).cost.findMap(c -> c.itemId == Wood ? c.count : null);
+	@:pure function getCost() return (cast Data.building.get(kind).cost).findMap(c -> c.itemId == Materials ? c.count : null);
 }
 
 @:publicFields class Unit extends State {
 	@:s var uid : Int;
 	@:s var kind : Data.UnitKind;
 	@:s var pos : UnitPos;
-	@:s var building : WeakRef<Building>;
+	@:s var building : Null<WeakRef<Building>>;
 
+	@:allow(server.system.ReplaySystem)
+	@:s var replayEvents(default, null) : Array<UnitReplayEvent>;
+
+	@:allow(server.system.UnitBehaviourSystem)
 	private var behaviour : UnitBehaviourContext;
 	
-	public var isOrphan(get, never) : Bool;
-	inline function get_isOrphan() return building.get() == null;
+	var clan(get, never) : Null<Clan>;
+	@:pure inline function get_clan() return building?.get()?.clan;
 
-	// @todo units can be in garnison in their building (heal) ?
+	public var isOrphan(get, never) : Bool;
+	@:pure inline function get_isOrphan() return clan == null;
 
 	function new(kind, pos, building) {
 		super();
 		this.kind = kind;
 		this.pos = pos;
-		this.building = new WeakRef(building);
+		this.building = building;
+	}
+
+	@:pure function inside(b : Building) : Bool return switch (pos) {
+		case Garnison(bid) if (bid == b.bid): true;
+		default: false;
 	}
 }
 
@@ -165,7 +123,7 @@ enum BuildingStatus {
 	}
 }
 
-@:publicFields class WarPlayer extends State {
+@:publicFields class Clan extends State {
 	@:s var pid : PlayerId;
 	@:s var inv : Inventory;
 
@@ -177,48 +135,46 @@ enum BuildingStatus {
 }
 
 // @todo replay events as EnumFlags<Event>
-
+// @todo module for storing game statistics to display at the end (resources destroyed / consumed, units flee, etc...)
 class WarState extends GameState {
-	@:s public var players : Array<WarPlayer>;
+	@:s public var clans : Array<Clan>;
 	@:s public var units : Array<Unit>;
 	@:s public var buildings : Array<Building>;
 	@:s public var resources : Array<Resource>;
 
 	public function new(pids : ReadOnlyArray<PlayerId>, rnd : hxd.Rand) {
 		super();
-		/*
-		final sym = TerrainGen.randSym(WIDTH / 2., HEIGHT / 2., rnd);
-		*/
-		players = pids.map(id -> new WarPlayer(id));
+		clans = pids.map(id -> new Clan(id));
 		units = [];
 		buildings = [];
 		resources = [];
-
-//		generateTerrain(sym, rnd);
+		
+		/* final sym = TerrainGen.randSym(WIDTH / 2., HEIGHT / 2., rnd);
+		generateTerrain(sym, rnd);*/
 	}
 
 	/**
-		Finds a building based on its id. Will limit the search to a specific player
-		if [owner] is provided
+		Finds a building based on its id. Will limit the search to a specific
+		clan if [clan] is provided
 	*/
-	public function getBuildingById(id : Int, ?owner : PlayerId) {
-		return buildings.find(b -> b.id == id && (owner == null || b.owner.get().pid == owner)); 
+	@:pure public function getBuildingById(id : Int, ?clan : PlayerId) {
+		return buildings.find(b -> b.id == id && (clan == null || b.clan?.pid == clan)); 
 	}
 
-	public function getBuildingUnits(id : Int) {
-		return units.filter(u -> u.building.get()?.bid == id);
+	@:pure public function getBuildingUnits(id : Int) {
+		return units.filter(u -> u.building?.get()?.bid == id);
 	}
 
-	public function getPlayerBuildings(id : PlayerId) {
-		return buildings.filter(b -> b.owner.get().pid == id);
+	@:pure public function getClanBuildings(clan : PlayerId) {
+		return buildings.filter(b -> b.clan?.pid == clan);
 	}
 	
-	public function getPlayerUnits(id : PlayerId) {
-		return getPlayerBuildings(id).flatMap(b -> getBuildingUnits(b.id));
+	@:pure public function getClanUnits(clan : PlayerId) {
+		return units.filter(u -> u.clan?.pid == clan);
 	}
 	
-	public function getPlayer(id : PlayerId) {
-		return players.find(p -> p.pid == id);
+	@:pure public function getClan(clan : PlayerId) {
+		return clans.find(p -> p.pid == clan);
 	}
 
 /*

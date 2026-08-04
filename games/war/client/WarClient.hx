@@ -1,9 +1,8 @@
 package client;
 
-import server.WarState;
 import cogpit.client.VisualEventTimeline.TimelineBuilder;
-
 import cogpit.client.view.MatchView;
+import server.state.WarState;
 
 class WarClient extends cogpit.client.GameClient<WarState> {
 	function getTimelineBuilder() return new TimelineBuilder()

@@ -1,7 +1,8 @@
 package server.system;
 
-import server.WarState.Unit;
-import server.WarState.Vec;
+import server.state.WarState;
+import server.state.WarState.Unit;
+import server.state.WarState.Vec;
 
 class MovementSystem {
 	static var _tmpSlot = new Vec();

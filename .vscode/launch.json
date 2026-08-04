@@ -7,23 +7,23 @@
         {
             "name": "Mines",
             "request": "launch",
-            "port": 4771,
+            "port": 47714,
             "type": "hl",
             "cwd": "${workspaceRoot}",
             "preLaunchTask": {
-				"type": "haxe",
-				"args": "active configuration"
+				"type": "hxml",
+				"file": "mines.hxml"
 			},
             "args": [
                 "--players", "MinesBot.hl", "MinesBot.hl",
-                // "--gen",
                 "--match", "series", "3",
-                "--seed", "123456",
+                "--seed", "12313456",
+				//"--gen",
+				//"--use-gen", "./replays/gen2",
                 // "--match", "5",
-                //"--replay", "./replays/test",
-                "--out", "./replays/test-det-nozip",
+                //"--replay", "./replays/gen2-test_2",
+                "--out", "./replays/test-debug",
 				"--live",
-				//"--out",
 				//"--headless"
             ]
         },
@@ -34,11 +34,11 @@
             "type": "hl",
             "cwd": "${workspaceRoot}",
             "preLaunchTask": {
-				"type": "haxe",
-				"args": "active configuration"
+				"type": "hxml",
+				"file": "war.hxml"
 			},
             "args": [
-                "--players", "ExampleBot.hl", "ExampleBot.hl",
+                "--players", "WarExampleBot.hl", "WarExampleBot.hl",
                 // "--gen",
                 "--match", "series", "3",
                 "--seed", "123456",

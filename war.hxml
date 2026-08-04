@@ -2,8 +2,8 @@
 --each
 
 -cp games/war/bots
--main ExampleBot
--hl ExampleBot.hl
+-main WarExampleBot
+-hl WarExampleBot.hl
 
 --next
 
