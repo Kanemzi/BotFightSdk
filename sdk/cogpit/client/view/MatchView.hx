@@ -62,10 +62,8 @@ class MatchView<Ts : GameState> extends View {
 	}
 
 	override function onLiveEvent(ev : LiveEvent) {
-		switch (ev) {
-			case MatchSlotAllocated, MatchSlotReady, GameBegin, GameComplete:
-				rebuild();
-			default:
-		}
+		ev.with(MatchSlotAllocated| MatchSlotReady| GameBegin| GameComplete => {
+			rebuild()
+		});
 	}
 }

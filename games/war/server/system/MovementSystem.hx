@@ -1,13 +1,14 @@
 package server.system;
 
-import server.state.WarState;
+import server.WarSimulation.TurnContext;
 import server.state.WarState.Unit;
 import server.state.WarState.Vec;
+import server.state.WarState;
 
 class MovementSystem {
 	static var _tmpSlot = new Vec();
-	public static function tick(state : WarState) {
-		state.units.iter(u -> {
+	public static function tick(ctx : TurnContext) {
+		ctx.state.units.iter(u -> {
 			if (u.isOrphan) {
 				// @todo wander behavior
 				return;

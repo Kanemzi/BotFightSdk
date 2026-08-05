@@ -1,10 +1,12 @@
 package cogpit.utils;
 
+import haxe.macro.Expr;
+
 #if !macro
 
-import hl.Gc;
 import haxe.io.BytesBuffer;
 import haxe.io.Eof;
+import hl.Gc;
 
 class Extensions {
 
@@ -85,6 +87,29 @@ class Extensions {
 		}
 		return emax;
 	}
+
+	public static function pushUnique<T>(a : Array<T>, e : T) : Bool {
+		if (a.contains(e)) return false;
+		a.push(e);
+		return true;
+	}
 }
 
 #end
+
+class MatchUtils {
+    public static macro function with<T>(value:ExprOf<T>, m:Expr):Expr {
+        return switch m.expr {
+            case EBinop(OpArrow, pattern, body):
+                macro switch ($value) {
+                    case $pattern: $body;
+                    case null, _: cast null;
+                }
+            case _:
+                macro switch ($value) {
+                    case $m: true;
+                    case null, _: false;
+                }
+        }
+    }
+}

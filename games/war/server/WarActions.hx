@@ -1,4 +1,4 @@
-package server.system;
+package server;
 
 import cogpit.core.GameSimulation.PlayerActions;
 import cogpit.core.GameSimulation.PlayersActions;
@@ -6,6 +6,7 @@ import cogpit.core.Player.PlayerId;
 import cogpit.core.action.Action;
 import cogpit.core.action.ActionCollector;
 import cogpit.utils.Result;
+import server.WarSimulation.TurnContext;
 import server.state.WarState;
 
 // @todo macro should support multiple optional non strings params at the end of the line (default radius)
@@ -43,7 +44,7 @@ enum WarAction {
 /**
 	This system is in charge of handling players orders
 */
-class ActionSystem {
+class WarActions {
 	public static function getTurnProfile(state : WarState, pid : PlayerId) : TurnActionProfile<WarAction> {
 		var ordered = new Map<Int, Bool>();
 		var recruited = new Map<Int, Bool>();
@@ -109,13 +110,14 @@ class ActionSystem {
 		);
 	}
 
-	public static function apply(state : WarState, actions : PlayersActions<WarAction>) {
+	public static function apply(actions : PlayersActions<WarAction>, ctx : TurnContext) {
+		final state = ctx.state;
 		actions.iter( (pid, action, _) -> {
 			// At this point, all actions are considered validated by getTurnProfile()
 			// Don't need to perform more checks
 			switch (action) {
 				case Recruit(bid, _.toPascalCase() => type):
-					state.getBuildingById(bid).recruit(state, cast type);
+					state.getBuildingById(bid).recruit(cast type, ctx);
 				case Rally(bid, x, y):
 					state.getBuildingById(bid).order = Rally(new Vec(x, y));
 				case Garrison(bid):
@@ -123,11 +125,11 @@ class ActionSystem {
 				case Gather(bid, x, y, radius):
 					state.getBuildingById(bid).order = Gather(new Vec(x, y), radius);
 				case Construct(bid, tid):
-					state.getBuildingById(bid).order = Construct(state.getBuildingById(tid));
+					state.getBuildingById(bid).order = Construct(cast state.getBuildingById(tid));
 				case Siege(bid, tid):
-					state.getBuildingById(bid).order = Siege(state.getBuildingById(tid));
+					state.getBuildingById(bid).order = Siege(cast state.getBuildingById(tid));
 				case Say(bid, onUnit, msg):
-					state.getBuildingById(bid).say(msg, onUnit > 0, state);
+					state.getBuildingById(bid).say(msg, onUnit > 0, ctx);
 				case End:
 			}
 		});

@@ -1,6 +1,7 @@
 package server.system;
 
 import cogpit.core.GameState.WeakRef;
+import server.WarSimulation.TurnContext;
 import server.state.WarState.Building;
 import server.state.WarState.Unit;
 import server.state.WarState;
@@ -29,8 +30,8 @@ enum UnitReplayEvent {
 	generation related state.
 **/
 class ReplaySystem {
-	public static function tick(state : WarState) {
-		state.units.iter(u -> (u.replayEvents ??= []).resize(0));
-		state.buildings.iter(b -> (b.replayEvents ??= []).resize(0));
+	public static function tick(ctx : TurnContext) {
+		ctx.state.units.iter(u -> (u.replayEvents ??= []).resize(0));
+		ctx.state.buildings.iter(b -> (b.replayEvents ??= []).resize(0));
 	}
 }

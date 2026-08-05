@@ -7,26 +7,59 @@ import cogpit.core.Player.PlayerId;
 import cogpit.core.TurnModel;
 import cogpit.core.action.ActionCollector;
 import server.state.WarState;
-import server.system.ActionSystem;
+import server.WarActions;
+import server.TurnDeferred.TurnCommand;
+import server.TurnDeferred;
 import server.system.MovementSystem;
-import server.system.UnitBehaviourSystem;
 import server.system.ReplaySystem;
+import server.system.UnitBehaviourSystem;
+
+/**
+	Used to pass all useful game data to systems in one paremeters
+	Also registers deferred commands that will affect the state in late simulation passes
+**/
+
+@:using(server.TurnDeferred)
+class TurnContext {
+	public var state(default, null) : WarState;
+	public var turn(default, null) : Int;
+	public var rnd(default, null) : hxd.Rand;
+
+	@:allow(server.TurnDeferred)
+	var commands : Array<TurnCommand> = [];
+
+	public function new() {}
+
+	@:allow(server.WarSimulation)
+	function init(state, turn, rnd) {
+		this.state = state;
+		this.turn = turn;
+		this.rnd = rnd;
+	}
+}
 
 class WarSimulation extends GameSimulation<WarState, WarAction> {
+
+	var turnContext = new TurnContext();
 
 	function init(ctx : InitContext<WarAction>) : WarState {
 		return new WarState(ctx.getPlayers(), ctx.rnd);
 	}
 
 	function update(state : WarState, ctx : SimulationContext<WarAction>) : Void {
-		ReplaySystem.tick(state); // Should say first
-		ActionSystem.apply(state, ctx.actions);
-		UnitBehaviourSystem.tick(state, ctx.rnd);
-		MovementSystem.tick(state);
+		turnContext.init(state, ctx.turn, ctx.rnd);
+
+		WarActions.apply(ctx.actions, turnContext);
+		
+		ReplaySystem.tick(turnContext);
+		UnitBehaviourSystem.tick(turnContext);
+		MovementSystem.tick(turnContext);
+		
+		TurnDeferred.apply(turnContext);
 	}
 
 	function getTurnActionProfile(state : WarState, pid : PlayerId) : TurnActionProfile<WarAction> {
-		return ActionSystem.getTurnProfile(state, pid);
+		return WarActions.getTurnProfile(state, pid);
 	}
 
 	function getTiebreakerScore(state : WarState, pid : PlayerId) : Int {
@@ -64,7 +97,7 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 		function serializeUnit(u : Unit) {
 			final kind = u.kind.toString().charAt(0);
 			final pos = switch(u.pos) {
-				case Garnison(bid): 'G $bid';
+				case Building(bid): 'G $bid';
 				case Terrain(pos): '${pos.x} ${pos.y}';
 			}
 			final building = u.building.get()?.bid ?? -1;

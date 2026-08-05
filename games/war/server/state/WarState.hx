@@ -4,21 +4,20 @@ import cogpit.core.GameState.WeakRef;
 import cogpit.core.GameState;
 import cogpit.core.Player.PlayerId;
 import server.TerrainGen;
-import server.system.UnitBehaviourSystem.UnitBehaviourContext;
 import server.system.ReplaySystem.BuildingReplayEvent;
 import server.system.ReplaySystem.UnitReplayEvent;
+import server.system.UnitBehaviourSystem.UnitBehaviourContext;
 
 enum GroupOrder {
 	Return;
 	Rally(pos : Vec);
 	Gather(pos : Vec, radius : Float);
-	ConstructAt(pos : Vec, ?kind : Data.BuildingKind);
 	Construct(target : WeakRef<Building>); // @todo place a building imediately on construct, but hidden. Destroy if still untouch when changing order
 	Siege(target : WeakRef<Building>);
 }
 
 enum UnitPos {
-	Garnison(bid : Int);
+	Building(bid : Int);
 	Terrain(pos : Vec);
 }
 
@@ -50,23 +49,17 @@ enum BuildingStatus {
 	@:s var hp(default, null) : Int;
 	@:s var status(default, null) : BuildingStatus;
 
-	@:allow(server.system.ActionSystem)
+	@:allow(server.WarActions)
 	@:s var order(default, null) : GroupOrder;
 
 	@:allow(server.system.ReplaySystem)
-	@:s var replayEvents(default, null) : Array<BuildingReplayEvent>;
+	@:s public var replayEvents(default, null) : Array<BuildingReplayEvent>;
 
 	public var leading(get, never) : Null<Clan>;
-	inline function get_leading() return switch (status) {
-		case Constructing(p), Owned(p): p.get();
-		default: null;
-	}
+	inline function get_leading() return status.with(Constructing(p)| Owned(p) => p.get());
 	
 	public var clan(get, never) : Null<Clan>;
-	inline function get_clan() return switch (status) {
-		case Owned(p): p;
-		default: null;
-	}
+	inline function get_clan() return status.with(Owned(p) => p);
 	
 	public function new(kind, pos) {
 		super(); // @todo bid attribution
@@ -79,34 +72,35 @@ enum BuildingStatus {
 	@:pure function getCost() return (cast Data.building.get(kind).cost).findMap(c -> c.itemId == Materials ? c.count : null);
 }
 
-@:publicFields class Unit extends State {
-	@:s var uid : Int;
-	@:s var kind : Data.UnitKind;
-	@:s var pos : UnitPos;
-	@:s var building : Null<WeakRef<Building>>;
+class Unit extends State {
+	@:s public var uid(default, null) : Int;
+	@:s public var kind(default, null) : Data.UnitKind;
+	@:s public var building(default, null) : Null<WeakRef<Building>>;
+
+	@:allow(server.TurnDeferred)
+	@:s public var pos(default, null) : UnitPos;
 
 	@:allow(server.system.ReplaySystem)
-	@:s var replayEvents(default, null) : Array<UnitReplayEvent>;
+	@:s public var replayEvents(default, null) : Array<UnitReplayEvent>;
 
 	@:allow(server.system.UnitBehaviourSystem)
 	private var behaviour : UnitBehaviourContext;
 	
-	var clan(get, never) : Null<Clan>;
+	public var clan(get, never) : Null<Clan>;
 	@:pure inline function get_clan() return building?.get()?.clan;
 
 	public var isOrphan(get, never) : Bool;
 	@:pure inline function get_isOrphan() return clan == null;
 
-	function new(kind, pos, building) {
+	public function new(kind, pos, building) {
 		super();
 		this.kind = kind;
 		this.pos = pos;
 		this.building = building;
 	}
 
-	@:pure function inside(b : Building) : Bool return switch (pos) {
-		case Garnison(bid) if (bid == b.bid): true;
-		default: false;
+	@:pure public function inside(?b : Building) : Bool {
+		return pos.with(Building(bid) => b == null || bid == b.bid);
 	}
 }
 

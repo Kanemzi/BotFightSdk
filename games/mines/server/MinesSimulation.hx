@@ -24,64 +24,56 @@ class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 		}
 
 		// robot move actions
-		ctx.actions((pid, a, i) -> switch (a) {
-			case Move(x, y):
-				var r = getRobot(pid, i);
-				var t = Sim.getClosestCellAround(r.pos.x, r.pos.y, x, y);
-				if (t == null)
-					return; // @todo error can't move anywhere
-				r.pos.x = t.x;
-				r.pos.y = t.y;
-			default:
-		});
+		ctx.actions((pid, a, i) -> a.with(Move(x, y) => {
+			var r = getRobot(pid, i);
+			var t = Sim.getClosestCellAround(r.pos.x, r.pos.y, x, y);
+			if (t == null)
+				return; // @todo error can't move anywhere
+			r.pos.x = t.x;
+			r.pos.y = t.y;
+		}));
 
 		// mine drop actions
-		ctx.actions((pid, a, i) -> switch (a) {
-			case Mine(x, y):
-				if (!Sim.inGrid(x, y))
-					return;
-				var r = getRobot(pid, i);
-				var t = new Vec(x, y);
-				if (!r.pos.adjacent(t)) { // auto aim
-					var p = Sim.getClosestCellAround(r.pos.x, r.pos.y, x, y, (cx, cy) -> {
-						return state.isEmpty(cx, cy, true);
-					});
-					if (p != null) {
-						t.x = p.x;
-						t.y = p.y;
-					}
+		ctx.actions((pid, a, i) -> a.with(Mine(x, y) => {
+			if (!Sim.inGrid(x, y))
+				return;
+			var r = getRobot(pid, i);
+			var t = new Vec(x, y);
+			if (!r.pos.adjacent(t)) { // auto aim
+				var p = Sim.getClosestCellAround(r.pos.x, r.pos.y, x, y, (cx, cy) -> {
+					return state.isEmpty(cx, cy, true);
+				});
+				if (p != null) {
+					t.x = p.x;
+					t.y = p.y;
 				}
-				if (t == null)
-					return;
+			}
+			if (t == null)
+				return;
 
-				var p = state.getPlayer(pid);
-				try p.consume(Sim.MINE_COST)
-				catch (_)
-					return; // @todo error message
+			var p = state.getPlayer(pid);
+			try p.consume(Sim.MINE_COST)
+			catch (_)
+				return; // @todo error message
 
-				state.objects.push(new Object(Mine, t.x, t.y));
-
-			default:
-		});
+			state.objects.push(new Object(Mine, t.x, t.y));
+		}));
 
 		// spawn robot actions
-		ctx.actions((pid, a, i) -> switch (a) {
-			case Spawn:
-				var p = state.getPlayer(pid);
-				var r = getRobot(pid, i);
-				var sp = state.getEmptyCellAround(r.pos.x, r.pos.y);
-				if (sp != null) {
-					try { p.consume(Sim.ROBOT_COST);
-					} catch (_)
-						return; // @todo error message
+		ctx.actions((pid, a, i) -> a.with(Spawn => {
+			var p = state.getPlayer(pid);
+			var r = getRobot(pid, i);
+			var sp = state.getEmptyCellAround(r.pos.x, r.pos.y);
+			if (sp != null) {
+				try { p.consume(Sim.ROBOT_COST);
+				} catch (_)
+					return; // @todo error message
 
-					p.robots.push(new Robot(sp.x, sp.y));
-				} else {
-					// @todo log could no spawn robot around (x, y)
-				}
-
-			default:
-		});
+				p.robots.push(new Robot(sp.x, sp.y));
+			} else {
+				// @todo log could no spawn robot around (x, y)
+			}
+		}));
 
 		// items pickup on ground
 		state.forEachRobot(r -> {
