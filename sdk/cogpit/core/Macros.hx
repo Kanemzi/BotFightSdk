@@ -18,7 +18,7 @@ class Macros {
 			case TInst(_.get().superClass.params => params, _) if (params.length > 0):
 				var e = null;
 				for (p in params) switch (p) {
-					case TEnum(_, _): e = p;
+					case TEnum(_,_): e = p;
 					default:
 				}
 				e;

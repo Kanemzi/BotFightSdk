@@ -1,8 +1,10 @@
 package cogpit.core;
 
+import cogpit.core.GameServer.LogSeverity;
+import cogpit.core.GameServer.ServerLog;
 import cogpit.core.Player.PlayerId;
-import cogpit.core.Player.TeamId;
 import cogpit.core.Player.PlayerInfo;
+import cogpit.core.Player.TeamId;
 import cogpit.core.action.Action;
 import cogpit.core.action.ActionCollector;
 
@@ -38,6 +40,8 @@ final class SimulationContext<Ta : Action> {
 	var victories : Array<PlayerId> = [];
 	var defeats : Array<PlayerId> = [];
 
+	var serverLogs : Array<ServerLog>;
+
 	function new(players : ReadOnlyArray<PlayerInfo>, seed : Int) {
 		this.players = [for (p in players) p.id => p];
 		this.seed = seed;
@@ -52,6 +56,7 @@ final class SimulationContext<Ta : Action> {
 		rnd.init(seed + turn);
 		victories.resize(0);
 		defeats.resize(0);
+		serverLogs = [];
 	}
 
 	public inline function getAlivePlayers() {
@@ -83,6 +88,10 @@ final class SimulationContext<Ta : Action> {
 	public function defeat(pid : PlayerId) : Void {
 		if (!isAlive(pid)) return;
 		defeats.push(pid);
+	}
+
+	public function log(?pid : PlayerId, severity : LogSeverity, msg : String) {
+		serverLogs.push({pid : pid, severity : severity, msg : msg});
 	}
 }
 

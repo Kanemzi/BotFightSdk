@@ -63,7 +63,7 @@ class MatchView<Ts : GameState> extends View {
 
 	override function onLiveEvent(ev : LiveEvent) {
 		ev.with(MatchSlotAllocated| MatchSlotReady| GameBegin| GameComplete => {
-			rebuild()
+			rebuild();
 		});
 	}
 }

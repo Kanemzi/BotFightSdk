@@ -46,15 +46,15 @@ class UnitBehaviourSystem {
 		action(ctx -> { trace("React to attack"); return Success; }),
 		BH.fallback([
 			BH.sequence([
-				cond(ctx -> ctx.unit.kind == Worker),
+				cond(ctx -> ctx.unit.data.behaviourId == Worker),
 				action(ctx -> { trace("Do civilian stuff"); return Running; }),
 			]),
 			BH.sequence([
-				cond(ctx -> ctx.unit.kind == Bruiser),
+				cond(ctx -> ctx.unit.data.behaviourId == Melee),
 				action(ctx -> { trace("Do guard stuff"); return Running; }),
 			]),
 			BH.sequence([
-				cond(ctx -> ctx.unit.kind == Hunter),
+				cond(ctx -> ctx.unit.data.behaviourId == Ranged),
 				action(ctx -> { trace("Do hunter stuff"); return Running; }),
 			]),
 		], true),

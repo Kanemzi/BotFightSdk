@@ -8,6 +8,7 @@ import cogpit.core.action.ActionCollector;
 import cogpit.utils.Result;
 import server.WarSimulation.TurnContext;
 import server.state.WarState;
+import server.state.WarState.GroupOrder;
 
 // @todo macro should support multiple optional non strings params at the end of the line (default radius)
 
@@ -24,11 +25,12 @@ import server.state.WarState;
 	Recruit has no target, therefore we can (Siege + Say + Recruit) on 1 building in the same turn.
 **/
 
+@:using(server.WarActions.WarActionExt)
 enum WarAction {
 	/* All */
 	Recruit(bid : Int, type : Word); // Spawn a new unit in [bid]. Cost will depend on the [unit] type
-	Rally(bid : Int, x : Float, y : Float); // Units of [bid] will go and stay stationary around [x, y]
 	Garrison(bid : Int); // Units of [bid] will come back inside their building
+	Rally(bid : Int, x : Float, y : Float); // Units of [bid] will go and stay stationary around [x, y]
 
 	/* Economy*/
 	Gather(bid : Int, x : Float, y : Float, radius : Float); // Units of [bid] will gather freely in a [radius] around [x, y]
@@ -41,6 +43,87 @@ enum WarAction {
 	End; // Finishes the turn
 }
 
+class WarActionExt {
+	public static function tryGetBuilding(act : WarAction, c : Clan, state : WarState) : Result<Building, String> {
+		return switch (act) {
+			case null, End: throw 'Action $act is not related to a building.';
+			case Garrison(bid), Rally(bid, _,_), Gather(bid, _,_,_), Construct(bid, _), Siege(bid, _), Recruit(bid, _), Say(bid, _,_):
+				final b = state.getBuildingById(bid);
+				if (b == null) Error('Building [$bid] does not exists');
+				else if (b.clan != c) Error('${b.kind} [${b.id}] does not belong to clan [${c.pid}]');
+				else Ok(b);
+		}
+	}
+
+	public static function tryApply(act : WarAction, c : Clan, ctx : TurnContext) : Result<haxe.Unit, String> {
+		function canUseActionType(act : WarAction, b : Building) return switch (b.kind) {
+			case House: act.match(Recruit(_,_) | Garrison(_) | Rally(_,_,_) | Gather(_,_,_,_) | Construct(_,_) | Say(_,_,_));
+			case Outpost: act.match(Recruit(_,_) | Garrison(_) | Rally(_,_,_) | Siege(_,_) | Say(_,_,_));
+			case Laboratory: act.match(Say(_,_,_));
+		}
+
+		final state = ctx.state;
+		final res = act.tryGetBuilding(c, state);
+		if (res.match(Error(_)))
+			return res.with(Error(e) => Error(e));
+
+		final b = res.with(Ok(b) => b);
+		if (!canUseActionType(act, b))
+			return Error('${b.kind} [${b.id}] cannot use ${Type.enumConstructor(act)} actions');
+
+		switch (act) {
+			case Recruit(_, _.toPascalCase() => type):
+				final tdata = Data.unit.resolve(type.toPascalCase(), true);
+				if (tdata == null)
+					return Error('Unknown unit type $type');
+				final res = b.tryRecruit(tdata.kind, ctx);
+				if (res.match(Error(_)))
+					return res;
+
+			case Garrison(_):
+				b.order = act.toGroupOrder(state);
+
+			case Rally(_, x, y):
+				b.order = act.toGroupOrder(state);
+
+			case Gather(_, x, y, radius):
+				b.order = act.toGroupOrder(state);
+
+			case Construct(_, tid):
+				final target = state.getBuildingById(tid);
+				if (target == null)
+					return Error('Target building [$tid] does not exists');
+				else if (target.clan != null && target.clan != b.clan)
+					return Error('${b.kind} [${b.id}] cannot construct foe building [$tid]');
+				b.order = act.toGroupOrder(state);
+
+			case Siege(_, tid):
+				final target = state.getBuildingById(tid);
+				if (target == null)
+					return Error('Target building [$tid] does not exists');
+				else if (target.clan == null)
+					return Error('${b.kind} [${b.id}] cannot attack neutral ${target.kind} [$tid]');
+				else if (target.clan.pid == c.pid) // @todo ally clans check
+					return Error('${b.kind} [${b.id}] cannot attack ${target.kind} of its own clan [$tid]');
+				b.order = act.toGroupOrder(state);
+
+			case Say(_, _ > 0 => onUnit, msg):
+				b.say(msg, onUnit, ctx);
+			case End:
+		}
+		return Ok(Unit);
+	}
+
+	public static function toGroupOrder(act : WarAction, state : WarState) : GroupOrder return switch (act) {
+		case Garrison(_): Garrison;
+		case Rally(_, x, y): Rally(new Vec(x, y)); // @todo clamp closest edge if outside the map
+		case Gather(_, x, y, radius): Gather(new Vec(x, y), radius); // @todo clamp closest edge if outside the map
+		case Construct(_, tid): Construct(cast state.getBuildingById(tid));
+		case Siege(_, tid): Siege(cast state.getBuildingById(tid));
+		case Recruit(_,_), Say(_,_,_), End: throw '${Type.enumConstructor(act)} is not a group order.';
+	}
+}
+
 /**
 	This system is in charge of handling players orders
 */
@@ -51,10 +134,6 @@ class WarActions {
 		var said = new Map<Int, Bool>();
 
 		function check(map : Map<Int, Bool>, id, dupErr) : Result<haxe.Unit, String> {
-			var building = state.getBuildingById(id); 
-			if (building == null) return Error('Building [$id] does not exists.');
-			if (state.getBuildingById(id, pid) == null) return Error('Building [$id] does not belong to [$pid].');
-
 			if (map.exists(id)) return Error(dupErr + ' building [$id] on the same turn.');
 			map.set(id, true);
 			return Ok(Unit);
@@ -62,76 +141,28 @@ class WarActions {
 
 		final checkRecruit = check.bind(recruited, _, 'Cannot recruit multiple units from');
 		final checkSay = check.bind(said, _, 'Cannot say multiple messages from');
-		final checkOrder = (act, id) -> {
-			// @todo check gameplay allows (build/gather for towers, attack for houses)
-			final order = Type.enumConstructor(act);
-			final data = Data.building.get(state.getBuildingById(id)?.kind);
-			if (data != null && !data.canOrder(cast order))
-				return Error('${data.kind} [$id] cannot give order $order.');
-			return check(ordered, id, 'Cannot give multiple position orders to');
-		}
+		final checkOrder = check.bind(ordered, _, 'Cannot give multiple position orders to');
 
 		return Until(
 			a -> a.match(End), 
 			a -> switch (a) {
-				case Recruit(bid, type):
-					if (Data.unit.resolve(type.toPascalCase(), true) == null)
-						Error('Unknown unit type $type.');
-					else checkRecruit(bid);
-
-				case Rally(bid, _, _): checkOrder(a, bid);
-
-				case Garrison(bid): checkOrder(a, bid);
-
-				case Gather(bid, _, _, _): checkOrder(a, bid);
-
-				case Construct(bid, tid):
-					final target = state.getBuildingById(tid);
-					if (target == null)
-						Error('Target building [$tid] does not exists.');
-					else if (target.clan != null && target.clan.pid != pid)
-						Error('Building [$bid] cannot construct foe building [$tid].');
-					else checkOrder(a, bid);
-
-				case Siege(bid, tid):
-					final target = state.getBuildingById(tid);
-					if (target == null)
-						Error('Target building [$tid] does not exists.');
-					else if (target.clan == null)
-						Error('Cannot attack neutral building [$tid].')
-					else if (target.clan.pid == pid)
-						Error('Building [$bid] cannot attack building of the same camp [$tid].');
-					else checkOrder(a, bid);
-
-				case Say(bid, _, _): checkSay(bid);
-
+				case Recruit(bid, _): checkRecruit(bid);
+				case Garrison(bid), Rally(bid, _,_), Gather(bid, _,_,_), Construct(bid, _), Siege(bid, _): checkOrder(bid);
+				case Say(bid, _,_): checkSay(bid);
 				case End: Ok(Unit);
-			}		
+			}
 		);
 	}
 
 	public static function apply(actions : PlayersActions<WarAction>, ctx : TurnContext) {
 		final state = ctx.state;
 		actions.iter( (pid, action, _) -> {
-			// At this point, all actions are considered validated by getTurnProfile()
-			// Don't need to perform more checks
-			switch (action) {
-				case Recruit(bid, _.toPascalCase() => type):
-					state.getBuildingById(bid).recruit(cast type, ctx);
-				case Rally(bid, x, y):
-					state.getBuildingById(bid).order = Rally(new Vec(x, y));
-				case Garrison(bid):
-					state.getBuildingById(bid).order = Return;
-				case Gather(bid, x, y, radius):
-					state.getBuildingById(bid).order = Gather(new Vec(x, y), radius);
-				case Construct(bid, tid):
-					state.getBuildingById(bid).order = Construct(cast state.getBuildingById(tid));
-				case Siege(bid, tid):
-					state.getBuildingById(bid).order = Siege(cast state.getBuildingById(tid));
-				case Say(bid, onUnit, msg):
-					state.getBuildingById(bid).say(msg, onUnit > 0, ctx);
-				case End:
-			}
+			final clan = state.getClan(pid);
+			action.tryApply(clan, ctx)
+				.with(Error(e) => {
+					final as = ActionParser.toString(action); 
+					ctx.log(pid, Error, 'Action "$as" failed : $e.');
+				});
 		});
 	}
 }

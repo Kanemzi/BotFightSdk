@@ -218,7 +218,7 @@
 				},
 				{
 					"typeStr": "6:behavior",
-					"name": "behavior",
+					"name": "behaviour",
 					"opt": null
 				},
 				{
@@ -234,14 +234,17 @@
 			],
 			"lines": [
 				{
-					"kind": "Worker",
+					"kind": "Craftsman",
 					"cost": [
 						{
 							"item": "Food",
-							"count": 5
+							"amount": 5
+						},
+						{
+							"item": "Bravery",
+							"amount": 20
 						}
 					],
-					"behavior": "Worker",
 					"baseStats": [
 						{
 							"stat": "MoveSpeed",
@@ -249,21 +252,25 @@
 						}
 					],
 					"name": "Petite main",
-					"doc": "Gather resources, construct and repair buildings. They move quickly when not carrying resources so they can easily escape [Bruisers]."
+					"doc": "Gather resources, construct and repair buildings. They move quickly when not carrying resources so they can easily escape [Bruisers].",
+					"behaviour": "Worker"
 				},
 				{
 					"kind": "Bruiser",
 					"cost": [
 						{
 							"item": "Food",
-							"count": 7
+							"amount": 7
 						},
 						{
 							"item": "Materials",
-							"count": 3
+							"amount": 3
+						},
+						{
+							"item": "Bravery",
+							"amount": 50
 						}
 					],
-					"behavior": "Melee",
 					"baseStats": [
 						{
 							"stat": "MoveSpeed",
@@ -271,21 +278,25 @@
 						}
 					],
 					"name": "Cogneur",
-					"doc": "Fight with a club and a shield. They are slow but have better resistance to arrows due to their [Armor]. When in garrison, they fight by throwing pebbles."
+					"doc": "Fight with a club and a shield. They are slow but have better resistance to arrows due to their [Armor]. When in garrison, they fight by throwing pebbles.",
+					"behaviour": "Melee"
 				},
 				{
 					"kind": "Hunter",
 					"cost": [
 						{
 							"item": "Food",
-							"count": 7
+							"amount": 7
 						},
 						{
 							"item": "Materials",
-							"count": 1
+							"amount": 1
+						},
+						{
+							"item": "Bravery",
+							"amount": 40
 						}
 					],
-					"behavior": "Ranged",
 					"baseStats": [
 						{
 							"stat": "MoveSpeed",
@@ -293,7 +304,8 @@
 						}
 					],
 					"name": "Chasseur",
-					"doc": "Fights with a bow. They move quickly and attack from a distance, making them effective at hunting [Workers]."
+					"doc": "Fights with a bow. They move quickly and attack from a distance, making them effective at hunting [Workers].",
+					"behaviour": "Ranged"
 				}
 			],
 			"separators": [],
@@ -353,11 +365,6 @@
 					"opt": false
 				},
 				{
-					"typeStr": "8",
-					"name": "orders",
-					"opt": null
-				},
-				{
 					"name": "cost",
 					"opt": null,
 					"structRef": "types@resources"
@@ -374,27 +381,13 @@
 					"cost": [
 						{
 							"item": "Materials",
-							"count": 20
+							"amount": 20
 						}
 					],
 					"maxUnits": 10,
-					"orders": [
-						{
-							"order": "Garrison"
-						},
-						{
-							"order": "Rally"
-						},
-						{
-							"order": "Gather"
-						},
-						{
-							"order": "Construct"
-						}
-					],
 					"recruits": [
 						{
-							"unit": "Worker"
+							"unit": "Craftsman"
 						}
 					],
 					"name": "Habitation",
@@ -405,21 +398,10 @@
 					"cost": [
 						{
 							"item": "Materials",
-							"count": 30
+							"amount": 30
 						}
 					],
 					"maxUnits": 40,
-					"orders": [
-						{
-							"order": "Garrison"
-						},
-						{
-							"order": "Rally"
-						},
-						{
-							"order": "Siege"
-						}
-					],
 					"recruits": [
 						{
 							"unit": "Bruiser"
@@ -436,21 +418,10 @@
 					"name": "Laboratoire",
 					"maxUnits": 5,
 					"recruits": [],
-					"orders": [
-						{
-							"order": "Garrison"
-						},
-						{
-							"order": "Rally"
-						},
-						{
-							"order": "Siege"
-						}
-					],
 					"cost": [
 						{
 							"item": "Materials",
-							"count": 60
+							"amount": 60
 						}
 					],
 					"doc": "Allows researching new upgrades for units and buildings.",
@@ -475,21 +446,6 @@
 				{
 					"typeStr": "6:unit",
 					"name": "unit",
-					"opt": null
-				}
-			]
-		},
-		{
-			"name": "building@orders",
-			"props": {
-				"hide": true
-			},
-			"separators": [],
-			"lines": [],
-			"columns": [
-				{
-					"typeStr": "6:order",
-					"name": "order",
 					"opt": null
 				}
 			]
@@ -570,7 +526,7 @@
 					"cost": [
 						{
 							"item": "Food",
-							"count": 0
+							"amount": 0
 						}
 					],
 					"any": {
@@ -600,7 +556,7 @@
 				},
 				{
 					"typeStr": "3",
-					"name": "count",
+					"name": "amount",
 					"opt": null
 				}
 			]

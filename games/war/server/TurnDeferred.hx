@@ -13,7 +13,7 @@ using server.TurnDeferred;
 **/
 enum TurnCommand {
 	@priority(500) UnitFlee(u : Unit);
-	@priority(100) UnitSpawn(u : Unit);
+	@priority(100) UnitRecruit(u : Unit);
 	@priority(50) UnitLeaveBuilding(u : Unit, b : Building, p : Vec);
 	@priority(10) UnitEnterBuilding(u : Unit, b : Building);
 	@priority(1) UnitMove(u : Unit, p : Vec);
@@ -29,10 +29,16 @@ class TurnDeferred {
 
 		final prio = cmd.getPriority();
 		final unit = cmd.getUnit();
-		ctx.commands.keep(c -> unit == null || c.getUnit() != unit || c.getPriority() >= prio);
 
-		if (ctx.commands.exists(c -> c.getUnit() == unit && c.getPriority() > prio) )
-			return;
+		var foundBetter = false;
+		ctx.commands.keep(c -> {
+			if (unit == null || c.getUnit() != unit) return true;
+			var better = c.getPriority() > prio;
+			foundBetter = foundBetter || better;
+			return better;
+		});
+
+		if (foundBetter) return;
 
 		ctx.commands.push(cmd);
 	}
@@ -44,7 +50,7 @@ class TurnDeferred {
 	static function assertCommand(ctx : TurnContext, cmd : TurnCommand) {
 		final state = ctx.state;
 		switch (cmd) {
-			case UnitSpawn(u): assert(!state.units.contains(u));
+			case UnitRecruit(u): assert(!state.units.contains(u));
 			case UnitFlee(u): assert(state.units.contains(u));
 			case UnitEnterBuilding(u, b): assert(!u.inside()); // @todo can't if flee
 			case UnitLeaveBuilding(u, b, p): assert(u.inside(b)); // @todo can't if flee
@@ -65,7 +71,7 @@ class TurnDeferred {
 			true;
 		}));
 
-		commands.keep(c -> !c.with(UnitSpawn(u) => {
+		commands.keep(c -> !c.with(UnitRecruit(u) => {
 			assert(!state.units.contains(u));
 			state.units.push(u);
 			true;
@@ -99,7 +105,7 @@ class TurnDeferred {
 	}
 
 	@:pure public static function getUnit(cmd : TurnCommand) : Unit {
-		return cmd.with(UnitSpawn(u)| UnitFlee(u)| UnitEnterBuilding(u, _)| UnitLeaveBuilding(u, _, _)| UnitMove(u, _) => u);
+		return cmd.with(UnitRecruit(u) | UnitFlee(u) | UnitEnterBuilding(u, _) | UnitLeaveBuilding(u, _,_) | UnitMove(u, _) => u);
 	}
 
 	@:pure public static function getPriority(cmd : TurnCommand) : Int {

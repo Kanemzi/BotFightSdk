@@ -24,6 +24,9 @@ typedef ServerConfig = {
 	var ?storageMode : Storage.StorageMode;
 }
 
+enum LogSeverity { Info; Warning; Error; }
+typedef ServerLog = { ?pid : PlayerId, severity : LogSeverity, msg : String };
+
 final class GameServer<Ts : GameState, Ta : Action> {
 	var config(default, null) : ServerConfig;
 	var seed(default, null) : Int;
@@ -70,7 +73,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 		var sim = Type.createInstance(simuClass, []);
 		var ctx = new SimulationContext(players.map(p -> p.info), seed);
 
-		history.addTurn(sim.init(ctx), []);
+		history.addTurn(sim.init(ctx), [], ctx.serverLogs);
 
 		dispose();
 		return history.lock();
@@ -93,7 +96,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 		var ctx = new SimulationContext(players.map(p -> p.info), seed);
 
 		final initState = usedGen ?? sim.init(ctx);
-		history.addTurn(initState, []);
+		history.addTurn(initState, [], ctx.serverLogs);
 
 		onBegin(history);
 		live?.notify(GameBegin);
@@ -135,7 +138,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 
 			// @todo the status should be updated in the results (defeat / victory) ?
 
-			history.addTurn(newState, res);
+			history.addTurn(newState, res, ctx.serverLogs);
 			live?.notify(GameTurn);
 
 			if (ctx.getAlivePlayers().empty() || !ctx.victories.empty())

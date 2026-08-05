@@ -49,7 +49,7 @@ class ActionCollectorTest
 		
 		var collector = Sequence([
 			Fixed(2, t -> t == Wait),
-			Fixed(1, t -> t.match(Move(_, _)))
+			Fixed(1, t -> t.match(Move(_,_)))
 		]);
 
 		var res = player.collectActions(collector, TIMEOUT, parser);

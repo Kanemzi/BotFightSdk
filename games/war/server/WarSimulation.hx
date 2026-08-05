@@ -1,15 +1,16 @@
 package server;
 
 import client.WarClient;
+import cogpit.core.GameServer.LogSeverity;
 import cogpit.core.GameSimulation.PlayersActions;
 import cogpit.core.GameSimulation;
 import cogpit.core.Player.PlayerId;
 import cogpit.core.TurnModel;
 import cogpit.core.action.ActionCollector;
-import server.state.WarState;
-import server.WarActions;
 import server.TurnDeferred.TurnCommand;
 import server.TurnDeferred;
+import server.WarActions;
+import server.state.WarState;
 import server.system.MovementSystem;
 import server.system.ReplaySystem;
 import server.system.UnitBehaviourSystem;
@@ -25,16 +26,20 @@ class TurnContext {
 	public var turn(default, null) : Int;
 	public var rnd(default, null) : hxd.Rand;
 
+	// Hook for logging info to the replay from any system
+	public var log(default, null) : (Null<PlayerId>, LogSeverity, String) -> Void;
+
 	@:allow(server.TurnDeferred)
 	var commands : Array<TurnCommand> = [];
 
 	public function new() {}
 
 	@:allow(server.WarSimulation)
-	function init(state, turn, rnd) {
+	function init(state, ctx) {
 		this.state = state;
-		this.turn = turn;
-		this.rnd = rnd;
+		this.turn = ctx.turn;
+		this.rnd = ctx.rnd;
+		this.log = ctx.log;
 	}
 }
 
@@ -47,7 +52,7 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 	}
 
 	function update(state : WarState, ctx : SimulationContext<WarAction>) : Void {
-		turnContext.init(state, ctx.turn, ctx.rnd);
+		turnContext.init(state, ctx);
 
 		WarActions.apply(ctx.actions, turnContext);
 		

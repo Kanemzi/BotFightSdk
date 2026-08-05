@@ -9,10 +9,10 @@ import server.system.ReplaySystem.UnitReplayEvent;
 import server.system.UnitBehaviourSystem.UnitBehaviourContext;
 
 enum GroupOrder {
-	Return;
+	Garrison;
 	Rally(pos : Vec);
 	Gather(pos : Vec, radius : Float);
-	Construct(target : WeakRef<Building>); // @todo place a building imediately on construct, but hidden. Destroy if still untouch when changing order
+	Construct(target : WeakRef<Building>);
 	Siege(target : WeakRef<Building>);
 }
 
@@ -48,6 +48,7 @@ enum BuildingStatus {
 
 	@:s var hp(default, null) : Int;
 	@:s var status(default, null) : BuildingStatus;
+	@:s var inv(default, null) : Inventory;
 
 	@:allow(server.WarActions)
 	@:s var order(default, null) : GroupOrder;
@@ -55,21 +56,25 @@ enum BuildingStatus {
 	@:allow(server.system.ReplaySystem)
 	@:s public var replayEvents(default, null) : Array<BuildingReplayEvent>;
 
+	public var data(get, null) : Data.Building;
+	inline function get_data() return data ??= Data.building.get(kind);
+
 	public var leading(get, never) : Null<Clan>;
-	inline function get_leading() return status.with(Constructing(p)| Owned(p) => p.get());
-	
+	inline function get_leading() return status.with(Constructing(p) | Owned(p) => p.get());
+
 	public var clan(get, never) : Null<Clan>;
 	inline function get_clan() return status.with(Owned(p) => p);
-	
+
 	public function new(kind, pos) {
 		super(); // @todo bid attribution
 		this.kind = kind;
 		this.pos = pos;
 		status = Neutral;
+		inv = new Inventory();
 		order = Rally(pos.clone());
 	}
 
-	@:pure function getCost() return (cast Data.building.get(kind).cost).findMap(c -> c.itemId == Materials ? c.count : null);
+	@:pure function getCost() return (cast data.cost).findMap(c -> c.itemId == Materials ? c.amount : null);
 }
 
 class Unit extends State {
@@ -85,18 +90,21 @@ class Unit extends State {
 
 	@:allow(server.system.UnitBehaviourSystem)
 	private var behaviour : UnitBehaviourContext;
-	
+
+	public var data(get, null) : Data.Unit;
+	inline function get_data() return data ??= Data.unit.get(kind);
+
 	public var clan(get, never) : Null<Clan>;
 	@:pure inline function get_clan() return building?.get()?.clan;
 
 	public var isOrphan(get, never) : Bool;
 	@:pure inline function get_isOrphan() return clan == null;
 
-	public function new(kind, pos, building) {
+	public function new(kind, building) {
 		super();
 		this.kind = kind;
-		this.pos = pos;
-		this.building = building;
+		this.pos = Building(building.bid);
+		this.building = cast building;
 	}
 
 	@:pure public function inside(?b : Building) : Bool {

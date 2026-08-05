@@ -1,11 +1,12 @@
 package cogpit.core;
 
-import cogpit.core.action.Action;
-import cogpit.core.action.ActionsResult;
+import cogpit.core.GameServer.ServerLog;
+import cogpit.core.GameSimulation.SimulationContext;
+import cogpit.core.GameSimulation;
 import cogpit.core.Player.PlayerId;
 import cogpit.core.Storage;
-import cogpit.core.GameSimulation;
-import cogpit.core.GameSimulation.SimulationContext;
+import cogpit.core.action.Action;
+import cogpit.core.action.ActionsResult;
 
 enum PlayerOutcome {
 	Defeat(turn : Int, ?tiebreak : Int);
@@ -17,9 +18,11 @@ enum PlayerOutcome {
 class HistoryTurn<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 	@:s @:noPrivateAccess var actions : Array<ActionsResult<Ta>>;
 	@:s @:noPrivateAccess var _state : GameState;
+	@:s var serverLogs : Array<ServerLog>;
 
-	public function new(state : Ts, actions : Array<ActionsResult<Ta>>) {
+	public function new(state : Ts, actions : Array<ActionsResult<Ta>>, serverLogs : Array<ServerLog>) {
 		this.actions = actions;
+		this.serverLogs = serverLogs;
 		_state = state;
 	}
 
@@ -64,10 +67,10 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 		complete = false;
 	}
 
-	public function addTurn(state : Ts, actions : Array<ActionsResult<Ta>>) {
+	public function addTurn(state : Ts, actions : Array<ActionsResult<Ta>>, serverLogs : Array<ServerLog>) {
 		if (complete)
 			throw 'Cannot add new turns to a locked history';
-		turns.push(new HistoryTurn(state, actions));
+		turns.push(new HistoryTurn(state, actions, serverLogs));
 	}
 
 	public function outcome(pid : PlayerId, out : PlayerOutcome) {
@@ -116,10 +119,6 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 		}];
 	}
 
-	public inline function getPlayerActions(pid : PlayerId) : Array<ActionsResult<Ta>> {
-		return turns.filterMap(t -> t.actions.find(a -> a.pid == pid));
-	}
-
 	@:access(cogpit.core.GameSimulation)
 	@:access(cogpit.core.SimulationContext)
 	public function recover(cl : Class<GameSimulation<Ts, Ta>>, match : Match<Ts, Ta>) {
@@ -132,10 +131,12 @@ class History<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 				var ctx = new SimulationContext(match.players, header.seed);
 				var initState = sim.init(ctx);
 				turns[0]._state = initState;
+				turns[0].serverLogs = ctx.serverLogs;
 				for (t in 1...turns.length) {
 					turns[t]._state = GameServer.cloneState(turns[t - 1].state);
 					ctx.initTurn(t, getAlivePlayers(t), ActionsResult.toPlayersActions(turns[t].actions));
 					sim.update(turns[t].state, ctx);
+					turns[t].serverLogs = ctx.serverLogs;
 				}
 		}
 	}

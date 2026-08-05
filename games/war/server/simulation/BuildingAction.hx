@@ -1,12 +1,13 @@
 package server.simulation;
 
+import cogpit.utils.Result;
 import server.TurnDeferred.TurnCommand;
 import server.WarSimulation.TurnContext;
+import server.state.Inventory.Resources;
 import server.state.WarState.Building;
 import server.state.WarState.Clan;
 import server.state.WarState.Unit;
 import server.state.WarState;
-
 
 /**
 	Operations that can be applied to a building
@@ -36,7 +37,10 @@ import server.state.WarState;
 
 		if (b.hp == cost && v > 0) { 
 			if (b.clan != null) b.kick(ctx); // repairing just finished, only kick workers
-			else b.status = Owned(from);
+			else {
+				b.status = Owned(from);
+				b.inv.fallbackTo(b.clan.inv);
+			}
 		}
 		else if (b.hp == 0 && v < 0) {
 			if (b.clan != null) b.neutralize(ctx); // building was just destroyed
@@ -56,10 +60,10 @@ import server.state.WarState;
 		assert(b.leading == null || b.leading == clan);
 		assert(u.inside(b));
 
-		final cost = b.getCost();
+		final cost = Const.ConstructStep;
 		if (!clan.inv.has(Materials, cost)) return false;
 
-		final added = b.updateHp(Const.ConstructStep, clan, ctx);
+		final added = b.updateHp(cost, clan, ctx);
 		if (added > 0) {
 			clan.inv.consume(Materials, added);
 			b.replayEvents.push(WasConstructed);
@@ -73,6 +77,7 @@ import server.state.WarState;
 	static function hit(b : Building, u : Unit, ctx : TurnContext) : Bool {
 		assert(!u.isOrphan);
 		assert(b.leading != null && b.leading != u.clan);
+		assert((b.clan == null) == (u.inside(b))); // Owned buildings must be attacked from outside. Neutral building must be attacked from inside
 	
 		b.updateHp(-1, u.clan, ctx); // @todo -1 must take [u] stats into account
 		b.replayEvents.push(u.inside(b) ? WasHitInside : WasHitOutside);
@@ -86,6 +91,7 @@ import server.state.WarState;
 	static function neutralize(b : Building, ctx : TurnContext) {
 		b.status = Neutral;
 		b.kick(true, ctx);
+		b.inv.fallbackTo(null);
 	}
 
 	/**
@@ -106,20 +112,24 @@ import server.state.WarState;
 		});
 	}
 
-
-	static function recruit(b : Building, unit : Data.UnitKind, ctx : TurnContext) : Bool { // @todo returns a result ?
+	static function tryRecruit(b : Building, unit : Data.UnitKind, ctx : TurnContext) : Result<haxe.Unit, String> {
 		assert(b.clan != null);
 
-		final data = Data.building.get(b.kind);
+		if (!b.data.recruits.exists(r -> r.unitId == unit))
+			return Error('${b.kind} [${b.id}] cannot recruit ${unit}s');
+
+		final max = b.data.maxUnits;
+		if (ctx.state.getBuildingUnits(b.bid).length >= max)
+			return Error('Max unit count $max reached for ${b.kind} [${b.id}]');
+		
 		final udata = Data.unit.get(unit);
+		final res : Resources = udata.cost;
+		if (!b.inv.hasAll(res)) // @todo check bravery in building
+			return Error('Not enough resources available to recruit ${b.kind} [${b.id}]. Has ${b.clan.inv}, need $res');
 
-		if (!data.recruits.exists(s -> s.unitId == unit)) return false;
-		if (ctx.state.getBuildingUnits(b.bid).length >= data.maxUnits) return false;
-		//if (owner.get().hasResources()) // @todo ensure has resources
-
-		var u = new Unit(unit, Terrain(b.pos.clone()), cast b);
-		ctx.command(UnitSpawn(u));
+		var u = new Unit(unit, cast b);
+		ctx.command(UnitRecruit(u));
 		b.replayEvents.push(HasRecruited(cast u));
-		return true;
+		return Ok(Unit);
 	}
 }
