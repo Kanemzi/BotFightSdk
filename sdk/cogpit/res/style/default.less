@@ -53,6 +53,41 @@ replay-view {
 	}
 }
 
+@logInfoColor : #a9a9d7;
+@logWarningColor : #e3951b;
+@logErrorColor : #c0002d;
+console {
+	layout: vertical;
+	align: right;
+	valign: top;
+	margin-right: 10;
+	margin-top: @head-height + 20;
+
+	> #toggle-btn {
+		align: right;
+		width: 70;
+		height: 30;
+	}
+
+	.panel {
+		layout: vertical;
+		width: 700;
+		height: 500;
+		overflow: scroll;
+		padding: 10;
+		spacing: 3;
+
+		background: black;
+		background-alpha: 0.8;
+
+		.log {
+			&.info { color: @logInfoColor; }
+			&.warning { color: @logWarningColor; }
+			&.error { color: @logErrorColor; }
+		}
+	}
+}
+
 control-bar {
 	valign: bottom;
 	background: red;
@@ -84,7 +119,7 @@ control-bar {
 	.track {
 		background: darken(green, 20%);
 		fill-width: true;
-		margin-left: 260;
+		margin-left: 320;
 		height: @controlbar-height - 20;
 
 		.fill {
@@ -125,7 +160,7 @@ button {
 	cursor: button;
 	
 	&:hover {
-		filter: brightness(0.2);
+		filter: brightness(0.1);
 	}
 	&:active {
 		filter: brightness(0.3);

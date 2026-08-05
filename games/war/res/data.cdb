@@ -589,6 +589,11 @@
 					"typeStr": "19",
 					"name": "curve",
 					"opt": true
+				},
+				{
+					"typeStr": "11",
+					"name": "color",
+					"opt": true
 				}
 			]
 		},

@@ -1,6 +1,7 @@
 package server;
 
 import cogpit.core.Player.PlayerId;
+import cogpit.core.GameServer.LogSeverity;
 import cogpit.core.GameSimulation;
 import cogpit.core.GameSimulation.PlayersActions;
 import cogpit.core.TurnModel;
@@ -27,16 +28,21 @@ class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 		ctx.actions((pid, a, i) -> a.with(Move(x, y) => {
 			var r = getRobot(pid, i);
 			var t = Sim.getClosestCellAround(r.pos.x, r.pos.y, x, y);
-			if (t == null)
-				return; // @todo error can't move anywhere
+			if (t == null) {
+				ctx.log(pid, Warning, 'Robot $i could not find a path towards ($x, $y)');
+				return;
+			}
+			ctx.log(pid, Info, 'Robot $i moved to (${t.x}, ${t.y})');
 			r.pos.x = t.x;
 			r.pos.y = t.y;
 		}));
 
 		// mine drop actions
 		ctx.actions((pid, a, i) -> a.with(Mine(x, y) => {
-			if (!Sim.inGrid(x, y))
+			if (!Sim.inGrid(x, y)) {
+				ctx.log(pid, Warning, 'Robot $i tried to drop a mine outside the grid at ($x, $y)');
 				return;
+			}
 			var r = getRobot(pid, i);
 			var t = new Vec(x, y);
 			if (!r.pos.adjacent(t)) { // auto aim
@@ -53,9 +59,12 @@ class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 
 			var p = state.getPlayer(pid);
 			try p.consume(Sim.MINE_COST)
-			catch (_)
-				return; // @todo error message
+			catch (_) {
+				ctx.log(pid, Warning, 'Robot $i could not afford to drop a mine (needs ${Sim.MINE_COST} scrap)');
+				return;
+			}
 
+			ctx.log(pid, Warning, 'Robot $i dropped a mine at (${t.x}, ${t.y})');
 			state.objects.push(new Object(Mine, t.x, t.y));
 		}));
 
@@ -66,12 +75,15 @@ class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 			var sp = state.getEmptyCellAround(r.pos.x, r.pos.y);
 			if (sp != null) {
 				try { p.consume(Sim.ROBOT_COST);
-				} catch (_)
-					return; // @todo error message
+				} catch (_) {
+					ctx.log(pid, Warning, 'Robot $i could not afford to spawn a new robot (needs ${Sim.ROBOT_COST} scrap)');
+					return;
+				}
 
+				ctx.log(pid, Info, 'Robot $i spawned a new robot at (${sp.x}, ${sp.y})');
 				p.robots.push(new Robot(sp.x, sp.y));
 			} else {
-				// @todo log could no spawn robot around (x, y)
+				ctx.log(pid, Warning, 'Robot $i found no empty cell around to spawn a new robot');
 			}
 		}));
 
@@ -83,6 +95,7 @@ class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 			var p = state.getOwner(r);
 			var qty = p.resources.get(o.k);
 			p.resources.set(o.k, qty + 1);
+			ctx.log(p.pid, Info, 'Robot picked up a ${o.k} at (${r.pos.x}, ${r.pos.y}), now has ${qty + 1}');
 			state.objects.remove(o);
 		});
 
@@ -98,6 +111,7 @@ class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 				var r = state.getRobotAt(x, y);
 				if (r != null) {
 					var p = state.getOwner(r);
+					ctx.log(p.pid, Error, 'Robot destroyed by a mine explosion at ($x, $y)');
 					p.robots.remove(r);
 					state.destroyRobotAt(r.pos.x, r.pos.y, ctx.rnd);
 				}
@@ -107,7 +121,7 @@ class MinesSimulation extends GameSimulation<MinesState, MinesAction> {
 		});
 
 		// spawn objects on the ground
-		state.turnDrops(ctx.rnd);
+		state.turnDrops(ctx.rnd, (k, x, y) -> ctx.log(null, Info, '$k spawned on the ground at ($x, $y)'));
 
 		// check loses / wins
 		inline function countRobots(pid : PlayerId) {

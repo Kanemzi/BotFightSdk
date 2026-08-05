@@ -8,6 +8,7 @@ class Widget extends h2d.Flow implements h2d.domkit.Object {
 
 	var ui(get,never) : ViewManager;
 	var view(get, never) : View;
+	var capturing = false;
 
 	public dynamic function onClick(right : Bool) {}
 	public dynamic function onPush() {}
@@ -39,16 +40,19 @@ class Widget extends h2d.Flow implements h2d.domkit.Object {
 			
 			final sx = e.relX;
 			final sy = e.relY;
+			capturing = true;
 			interactive.startCapture( se -> {
 				switch (se.kind) {
-					case ERelease: interactive.stopCapture();
+					case ERelease:
+						capturing = false;
+						interactive.stopCapture();
 					case EMove:
 						final dx = se.relX - sx;
 						final dy = se.relY - sy;
 						onDrag(se.relX, se.relY, dx, dy);
 					default:
 				}
-			});
+			}, () -> capturing = false);
 
 			onPush();
 		}
@@ -70,6 +74,14 @@ class Widget extends h2d.Flow implements h2d.domkit.Object {
 			dom?.hover = false;
 			onOut();
 		}
+	}
+
+	override function onRemove() {
+		if (capturing) {
+			capturing = false;
+			interactive.stopCapture();
+		}
+		super.onRemove();
 	}
 
 	function set_enable(b) {

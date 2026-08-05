@@ -157,14 +157,15 @@ class Simulation {
 		}, true, rnd);
 	}
 
-	public static function turnDrops(st : MinesState, rnd : hxd.Rand) {
+	public static function turnDrops(st : MinesState, rnd : hxd.Rand, ?onDrop : (ObjectKind, Int, Int) -> Void) {
 		function tryDrop(k : ObjectKind) {
 			if (rnd.rand() >= TURN_DROPRATES.get(k)) return;
-			
+
 			var p = getRandomCell(isEmpty.bind(st, _, _, false), rnd);
 			if (p == null) return;
 
 			st.objects.push(new Object(k, p.x, p.y));
+			if (onDrop != null) onDrop(k, p.x, p.y);
 		}
 		tryDrop(Scrap);
 		tryDrop(Microship);

@@ -34,6 +34,8 @@ final class GameViewport extends Widget {
 	var viewport : h2d.Scene3D;
 	var fpsGraph : FpsGraph;
 
+	var eventsEnabled : Bool = true;
+
 	final timeline : VisualEventTimeline;
 	final gameScene : GameScene;
 	var time : Float = 0.;
@@ -55,6 +57,7 @@ final class GameViewport extends Widget {
 		gameScene.gizmos2d = Gizmos.make2d(viewport.s2d);
 
 		fpsGraph = new FpsGraph(viewport.s2d);
+		fpsGraph.visible = false;
 
 		final _onAfterReflow = viewport.onAfterReflow;
 		viewport.onAfterReflow = () -> {
@@ -82,6 +85,10 @@ final class GameViewport extends Widget {
 	}
 
 	override function sync(ctx : h2d.RenderContext) {
+		// @todo find a better way to focused game scene
+		if (!eventsEnabled) {
+			@:privateAccess viewport.events.pendingEvents.keep(e -> !e.kind.match(EWheel | EPush));
+		}
 		viewport.events.checkEvents();
 		fpsGraph.update(ctx.elapsedTime);
 		gameScene.gizmos.refresh();

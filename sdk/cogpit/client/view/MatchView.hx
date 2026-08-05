@@ -4,6 +4,7 @@ import cogpit.client.widget.Button;
 
 import cogpit.core.GameState;
 import cogpit.core.History;
+import cogpit.core.GameServer.ServerLog;
 import cogpit.core.action.Action;
 import cogpit.live.MatchHandle;
 import cogpit.client.VisualEventTimeline;
@@ -48,13 +49,14 @@ class MatchView<Ts : GameState> extends View {
 			}
 			final history = g.history;
 			var tl = tb.bake(history);
-			r ? openTimeline(tl) : openReplay(history.header, tl, gscFactory);
+			r ? openTimeline(tl) : openReplay(history.header, tl, history.turns.map(t -> t.serverLogs), gscFactory);
 		}
 		initComponent();
 	}
 
-	function openReplay(info : HistoryHeader, timeline : VisualEventTimeline, gscFactory : Void -> GameScene) {
-		ui.push(new ReplayView(info, timeline , gscFactory));
+	// @todo wrap every relevant replay info in a single structure
+	function openReplay(info : HistoryHeader, timeline : VisualEventTimeline, serverLogs : Array<ReadOnlyArray<ServerLog>>, gscFactory : Void -> GameScene) {
+		ui.push(new ReplayView(info, timeline, serverLogs, gscFactory));
 	}
 
 	function openTimeline(timeline : VisualEventTimeline) {

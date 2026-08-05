@@ -123,6 +123,13 @@ class FpsGraph {
 		root.setPosition(x, y);
 	}
 
+	public var visible(get, set) : Bool;
+	inline function get_visible() return root.visible;
+	function set_visible(v : Bool) {
+		root.visible = v;
+		return v;
+	}
+
 	public function update( dt : Float ) {
 		// var fps = dt == 0.0 ? Math.NaN : Math.round(1.0 / dt);
 		var fps = h3d.Engine.getCurrent().fps;
