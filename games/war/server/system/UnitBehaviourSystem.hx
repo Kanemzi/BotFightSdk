@@ -43,19 +43,10 @@ class UnitBehaviourSystem {
 	}
 
 	static final unitBehaviour = BH.fallback([
-		action(ctx -> { trace("React to attack"); return Success; }),
 		BH.fallback([
 			BH.sequence([
 				cond(ctx -> ctx.unit.data.behaviourId == Worker),
 				action(ctx -> { trace("Do civilian stuff"); return Running; }),
-			]),
-			BH.sequence([
-				cond(ctx -> ctx.unit.data.behaviourId == Melee),
-				action(ctx -> { trace("Do guard stuff"); return Running; }),
-			]),
-			BH.sequence([
-				cond(ctx -> ctx.unit.data.behaviourId == Ranged),
-				action(ctx -> { trace("Do hunter stuff"); return Running; }),
 			]),
 		], true),
 	], true);

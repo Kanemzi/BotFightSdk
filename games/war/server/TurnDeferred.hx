@@ -25,8 +25,6 @@ class TurnDeferred {
 		Queue a new command for the end of the turn
 	**/
 	public static function command(ctx : TurnContext, cmd : TurnCommand) {
-		ctx.assertCommand(cmd);
-
 		final prio = cmd.getPriority();
 		final unit = cmd.getUnit();
 
@@ -41,21 +39,6 @@ class TurnDeferred {
 		if (foundBetter) return;
 
 		ctx.commands.push(cmd);
-	}
-
-	/**
-		Ensure the command is valid. Using asserts since these situations should not
-		happen if the system pushing it is correct.
-	**/
-	static function assertCommand(ctx : TurnContext, cmd : TurnCommand) {
-		final state = ctx.state;
-		switch (cmd) {
-			case UnitRecruit(u): assert(!state.units.contains(u));
-			case UnitFlee(u): assert(state.units.contains(u));
-			case UnitEnterBuilding(u, b): assert(!u.inside()); // @todo can't if flee
-			case UnitLeaveBuilding(u, b, p): assert(u.inside(b)); // @todo can't if flee
-			case UnitMove(u, p): assert(!u.inside()); // @todo can't if flee || enter
-		}
 	}
 
 	/**

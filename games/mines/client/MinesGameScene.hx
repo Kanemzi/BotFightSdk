@@ -224,7 +224,9 @@ class MinesGameScene extends GameScene {
 				}
 			}
 
-			gizmos.line(new h3d.col.Point(close.x, close.y, .1), new h3d.col.Point(v.mesh.x, v.mesh.y, .1));
+			if (close != null) {
+				gizmos.line(new h3d.col.Point(close.x, close.y, .1), new h3d.col.Point(v.mesh.x, v.mesh.y, .1));
+			}
 			gizmos.text(new h3d.col.Point(v.mesh.x, v.mesh.y, 2.0), 'Robot ${Std.random((1 << 31) - 1)}', 0x334400);
 		}
 	}
