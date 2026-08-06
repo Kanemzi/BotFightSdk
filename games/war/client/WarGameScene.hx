@@ -62,7 +62,7 @@ class WarGameScene extends GameScene {
 		return pid == null ? NEUTRAL_COLOR : TEAM_COLORS[pid % TEAM_COLORS.length];
 
 	function makeUnitMesh(kind : Data.UnitKind, color : Int) : h3d.scene.Mesh {
-		var p = new h3d.prim.Cube(0.6, 0.6, 1.2, true);
+		var p = new h3d.prim.Cube(0.6, 0.6, 1.2);
 		p.translate(-0.3, -0.3, 0);
 		p.addNormals();
 
@@ -78,7 +78,7 @@ class WarGameScene extends GameScene {
 			case Outpost: 2.5;
 			case Laboratory: 2.2;
 		}
-		var p = new h3d.prim.Cube(size, size, size * 0.8, true);
+		var p = new h3d.prim.Cube(size, size, size * 0.8);
 		p.translate(-size / 2, -size / 2, 0);
 		p.addNormals();
 
@@ -105,12 +105,18 @@ class WarGameScene extends GameScene {
 		return m;
 	}
 
-	// A garrisoned unit has no visual event (hidden), so its lifetime event is only ever
-	// active while UnitPos.Terrain(pos) holds.
 	function resolveUnitPos(u : Unit) : Vec {
 		return switch (u.pos) {
 			case Terrain(pos): pos;
 			case Building(_): null;
+		}
+	}
+
+	function resolveOrderTarget(b : Building) : Vec {
+		return b == null ? null : switch (b.order) {
+			case Garrison: b.pos;
+			case Rally(pos): pos;
+			default: null;
 		}
 	}
 
@@ -166,18 +172,22 @@ class WarGameScene extends GameScene {
 		final t1 = hxd.Math.ceil(t);
 		final k = t - t0;
 
+		gizmos.clear();
+		gizmos2d.clear();
+		gizmos2d.text(new h3d.col.Point(10, 10, 0), 'Turn $t1', 0xFFFFFF);
+
 		for (ev in events) {
 			final v = visuals.get(ev.id);
 			if (v == null) continue;
 
-			// Bâtiments/ressources sont statiques (placés une fois dans onEventBegin) ;
-			// seul le clan propriétaire d'un bâtiment peut changer, donc on relit sa couleur.
 			final b = Std.downcast(ev, BuildingLifetimeEvent);
 			if (b != null) {
 				final building = b.resolve(t1) ?? b.resolve(t0);
 				final mesh = Std.downcast(v.mesh, h3d.scene.Mesh);
 				if (building != null && mesh != null)
 					mesh.material.color.setColor(teamColor(building.clan?.pid));
+				if (building != null && building.clan != null)
+					gizmos.circle(new h3d.col.Point(building.pos.x, building.pos.y, 0.2), Const.ArrivalRadius, 16, teamColor(building.clan.pid));
 				continue;
 			}
 
@@ -194,6 +204,15 @@ class WarGameScene extends GameScene {
 
 			v.mesh.x = hxd.Math.lerp(p0.x, p1.x, k);
 			v.mesh.y = hxd.Math.lerp(p0.y, p1.y, k);
+
+			final unit = unit1 ?? unit0;
+			gizmos.text(new h3d.col.Point(v.mesh.x, v.mesh.y, 1.5), '#${unit.id}', teamColor(unit.clan?.pid));
+
+			final target = resolveOrderTarget(unit.building.get());
+			if (target != null) {
+				gizmos.line(new h3d.col.Point(v.mesh.x, v.mesh.y, 0.2), new h3d.col.Point(target.x, target.y, 0.2), 0xFFCC00);
+				gizmos.circle(new h3d.col.Point(target.x, target.y, 0.2), Const.ArrivalRadius, 12, 0xFFCC00);
+			}
 		}
 	}
 

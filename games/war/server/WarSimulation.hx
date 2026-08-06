@@ -74,18 +74,6 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 	}
 
 	function serializeForPlayer(state : WarState, pid : PlayerId) : Array<String> {
-		// @todo players need confirmation that their order was taken into account
-		// @todo give unit ids for micro decisions & better tracking ?
-		// First prototype : only buildings and units are sent
-		/*
-			BUILDING [count]
-			[BID] [T|H|L] [PID | -1] [X] [Y] @todo info de construction, avancée
-			...
-			UNIT [count]
-			[UID] [C|G|H] [BID | -1] ([G] [BID] | [X] [Y]) @todo hp, combat target
-			...
-		*/
-
 		function serializeUnit(u : Unit) {
 			final kind = u.kind.toString().charAt(0);
 			final pos = switch(u.pos) {

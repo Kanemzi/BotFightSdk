@@ -51,9 +51,10 @@ class UnitBehaviourSystem {
 		if (u.inside(b))
 			return Success;
 
-		if (MovementSystem.hasArrived(u, b.pos))
+		if (MovementSystem.hasArrived(u, b.pos)) {
 			ctx.turnContext.command(UnitEnterBuilding(u, b));
-		else
+			ctx.turnContext.log(u.clan?.pid, Info, 'Unit [${u.id}] entered garrison in ${b.kind} [${b.id}].');
+		} else
 			ctx.turnContext.command(UnitMoveTo(u, b.pos));
 		return Running;
 	}

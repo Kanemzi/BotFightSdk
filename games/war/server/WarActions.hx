@@ -82,9 +82,11 @@ class WarActionExt {
 
 			case Garrison(_):
 				b.order = act.toGroupOrder(state);
+				ctx.log(c.pid, Info, '${b.kind} [${b.id}] ordered to garrison.');
 
 			case Rally(_, x, y):
 				b.order = act.toGroupOrder(state);
+				ctx.log(c.pid, Info, '${b.kind} [${b.id}] ordered to rally at ($x, $y).');
 
 			case Gather(_, x, y, radius):
 				b.order = act.toGroupOrder(state);

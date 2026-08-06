@@ -5,6 +5,8 @@ class WarExampleBot {
 
 	public static inline function getName() return "Michel~" + Std.random(10000);
 
+	public static inline function debug(msg : String) Sys.stderr().writeString('$msg\n');
+
 	static final stdin = Sys.stdin();
 	static final stdout = Sys.stdout();
 
@@ -67,6 +69,7 @@ class WarExampleBot {
 
 		PID = readInt();
 		readDims();
+		debug('Player $PID on a ${WIDTH}x$HEIGHT map');
 
 		while (true) loop();
 	}
@@ -81,16 +84,19 @@ class WarExampleBot {
 		turn++;
 
 		final buildings = readSection("BUILDING", parseBuilding);
-		readSection("UNIT", parseUnit);
+		final units = readSection("UNIT", parseUnit);
+		debug('Turn $turn : ${buildings.length} buildings, ${units.length} units');
 
 		final house = buildings.filter(b -> b.kind == "H" && b.clan == PID)[0];
 		if (house != null) {
 			final t = (turn - 1) % CYCLE_TURNS;
 			if (t == ROAM_TURNS) {
+				debug('House ${house.bid} heading back to garrison');
 				stdout.writeString('GARRISON ${house.bid}\n');
 			} else if (t < ROAM_TURNS && t % DIRECTION_CHANGE_TURNS == 0) {
 				final x = Std.random(Std.int(WIDTH));
 				final y = Std.random(Std.int(HEIGHT));
+				debug('House ${house.bid} rallying towards ($x, $y)');
 				stdout.writeString('RALLY ${house.bid} $x $y\n');
 			}
 		}
