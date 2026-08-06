@@ -87,7 +87,8 @@ class TimelineBuilder<Ts : GameState> {
 			final turnName = i == 0 ? 'Initialization' : 'Turn $i';
 			turnLogs.push(Timeline('$headerBar $turnName $headerBar'));
 
-			for (ar in turn.actions) {
+			var acts = turn.actions.copy();
+			for (ar in acts.ssort(a -> a.pid)) {
 				final playerLogs : Array<PlayerLog> = [];
 
 				if (ar.error != null)

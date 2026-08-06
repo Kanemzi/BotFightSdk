@@ -66,6 +66,7 @@ final class GameViewport extends Widget {
 		}
 
 		gameScene.init(@:privateAccess timeline.sortedEvents.copy());
+		seek(0);
 	}
 
 	inline function advance(dt : Float) : Void { seek(time + dt); }

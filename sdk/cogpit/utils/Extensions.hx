@@ -49,7 +49,7 @@ class Extensions {
 		return res;
 	}
 
-	public static inline function findMap<T, U>(array : Iterable<T>, func : T -> U) : Null<U> {
+	public static function findMap<T, U>(array : Iterable<T>, func : T -> U) : Null<U> {
 		for (e in array) {
 			final m = func(e);
 			if (m != null) return m;
@@ -88,10 +88,18 @@ class Extensions {
 		return emax;
 	}
 
-	public static function pushUnique<T>(a : Array<T>, e : T) : Bool {
-		if (a.contains(e)) return false;
-		a.push(e);
+	public static function pushUnique<T>(arr : Array<T>, e : T) : Bool {
+		if (arr.contains(e)) return false;
+		arr.push(e);
 		return true;
+	}
+
+	public static function ssort<T>(arr : Array<T>, f : T -> Float) {
+		arr.sort((a, b) -> {
+			final d = f(a) - f(b); 
+			return d == 0 ? 0 : d > 0 ? 1 : -1;
+		});
+		return arr;
 	}
 }
 
