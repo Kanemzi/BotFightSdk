@@ -60,13 +60,7 @@ class Storage {
 		}
 	}
 
-	@:access(cogpit.Match)
-	public static function saveMatch<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>, ?mode : StorageMode) {
-		// Save a deep copy of the match when a live client is attached to it, to avoid breaking references during optimize
-		if (match.live != null)
-			match = cast serializer.unserialize(cast serializer.serialize(match), Match);
-
-		for (g in match.games) g.history.optimize(mode);
+	public static function saveMatch<Ts : GameState, Ta : Action>(out : String, match : Match<Ts, Ta>) {
 		writeMatch(out, match, REPLAY_EXT);
 	}
 

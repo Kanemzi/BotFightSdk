@@ -21,10 +21,10 @@ typedef TeamId = Int;
 
 @:publicFields @:structInit
 class PlayerInfo implements hxbit.Serializable {
-	var id : PlayerId;
-	var team : TeamId;
-	var name : String;
-	var path : String;
+	@:s var id : PlayerId;
+	@:s var team : TeamId;
+	@:s var name : String;
+	@:s var path : String;
 }
 
 final class Player<Ta : Action> {

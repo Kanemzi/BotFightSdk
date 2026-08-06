@@ -141,6 +141,13 @@ final class Runner {
 		// @todo load multiple gen an distribute them on series games
 		var preset : Ts = genPath == null ? null : Storage.loadGen(genPath);
 
+		function optimizeMatch(match : Match<Ts, Ta>) {
+			var mode = config.storageMode ?? Full;
+			if (mode == Deterministic && (genPath != null || debugGen))
+				mode = Delta; // Would not be able to regenerate first state from seed with use-gen
+			for (g in match.games) g.history.optimize(mode);
+		}
+
 		function runMatch(match : Match<Ts, Ta>) : Void {
 			trace('Starting match on [${match.toString()}] format with ${match.players.length} players (seed=${match.seed})');
 			final gsFactory = g -> {
@@ -150,16 +157,22 @@ final class Runner {
 			}
 
 			if (debugGen) gen(match, gsFactory);
-			else match.run(gsFactory);
+			else {
+				match.run(gsFactory);
+				if (!liveMode) optimizeMatch(match);
+			}
 
 			if (args.has("out")) {
 				final out = args.getParam("out");
 				if (debugGen) Storage.saveGen(out, match);
 				else {
-					var storageMode = config.storageMode;
-					if (storageMode == Deterministic && genPath != null)
-						storageMode = Delta; // Would not be able to regenerate first state from seed with use-gen
-					Storage.saveMatch(out, match, storageMode);
+					var m = match;
+					if (liveMode ) { // In live mode, do not touch the previewed ref, save an optimized copy instead
+						final ser = Storage.serializer;
+						m = cast ser.unserialize(cast ser.serialize(m), Match);
+						optimizeMatch(m);
+					}
+					Storage.saveMatch(out, m);
 				}
 			}
 		}
@@ -170,7 +183,8 @@ final class Runner {
 				return;
 			}
 
-			if (!liveMode) { // do not touch history, the game might be running
+			 // Do not touch history if its a fresh game. It might be previewed right now
+			if (replayPath != null || !liveMode) {
 				for (g in match.games) g.history.recover(simcl, match); 
 			}
 			var client = Type.createInstance(clicl, [match, live]);

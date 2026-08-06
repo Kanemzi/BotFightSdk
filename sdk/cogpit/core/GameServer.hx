@@ -86,7 +86,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 		turnWorkers = new ElasticThreadPool(players.length, wto / 1000.);
 
 		// Do not apply storageMode optimizations when a live client is attached
-		final storageMode = live != null ? Full : config.storageMode;
+		final optimizeState = live == null && config.storageMode == Deterministic;
 
 		final turnModel = Type.createInstance(config.turnModel, []);
 
@@ -110,7 +110,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 
 		while (getTurn() <= config.maxTurns) { // Not counting initial state as turn
 			final turn = getTurn();
-			var newState = storageMode == Deterministic ? getState() : cloneState(getState());
+			var newState = optimizeState ? getState() : cloneState(getState());
 			ctx.initTurn(turn, history.getAlivePlayers());
 
 			//Sys.sleep(0.015); // @todo remove used for debugging live mode

@@ -51,7 +51,6 @@ class GameSlot<Ts : GameState, Ta : Action> implements hxbit.Serializable {
 
 // @todo live mode
 // - [ ] still save a file when the match is complete
-// - [ ] can't optimize Deterministic because of rollbacks, delta used instead, only the file is optimized
 
 @:allow(cogpit.core.History)
 abstract class Match<Ts : GameState, Ta : Action> implements hxbit.Serializable {
