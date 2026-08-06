@@ -7,7 +7,7 @@
         {
             "name": "Mines",
             "request": "launch",
-            "port": 47714,
+            "port": 4774,
             "type": "hl",
             "cwd": "${workspaceRoot}",
             "preLaunchTask": {
@@ -21,7 +21,7 @@
 				//"--gen",
 				//"--use-gen", "./replays/gen2",
                 // "--match", "5",
-                //"--replay", "./replays/gen2-test_2",
+                //"--replay", "./replays/test-debug",
                 "--out", "./replays/test-debug",
 				"--live",
 				//"--headless"
@@ -30,7 +30,7 @@
 		{
             "name": "War",
             "request": "launch",
-            "port": 4127,
+            "port": 4150,
             "type": "hl",
             "cwd": "${workspaceRoot}",
             "preLaunchTask": {
@@ -39,7 +39,7 @@
 			},
             "args": [
                 "--players", "WarExampleBot.hl", "WarExampleBot.hl",
-                // "--gen",
+                //"--gen",
                 "--match", "series", "3",
                 "--seed", "123456",
                 // "--match", "5",
@@ -47,6 +47,7 @@
                 "--out", "./replays/war/",
 				//"--out",
 				//"--headless"
+				"--live"
             ]
         }
     ]

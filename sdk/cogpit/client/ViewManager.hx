@@ -33,8 +33,8 @@ class ViewManager extends h2d.Flow {
 		style.useSmartCache = true;
 		style.loadComponents("style", [cogpit.Res.style.global]);
 		#if hl
-		if (hl.Api.hasDebugger())
-			style.allowInspect = true;
+		// if (hl.Api.hasDebugger())
+		// 	style.allowInspect = true;
 		#end
 		hxd.res.Loader.currentInstance = loader;
 	}

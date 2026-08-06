@@ -1,13 +1,16 @@
 package server.system;
 
 import cogpit.core.GameState.SUID;
+import server.TurnDeferred.TurnCommand;
 import server.WarSimulation.TurnContext;
 import server.behaviour.Behaviour as BH;
 import server.behaviour.Behaviour.BehaviourContext;
 import server.behaviour.Node.Action;
 import server.behaviour.Node.Condition;
 import server.behaviour.Node.Status;
+import server.state.WarState.Building;
 import server.state.WarState.Unit;
+import server.state.WarState.Vec;
 import server.state.WarState;
 
 @:allow(server.system.UnitBehaviourSystem)
@@ -42,13 +45,41 @@ class UnitBehaviourSystem {
 		return unit.behaviour;
 	}
 
+	static function garrisonBehaviour(ctx : UnitBehaviourContext) : Status {
+		final u = ctx.unit;
+		final b = u.building.get();
+		if (u.inside(b))
+			return Success;
+
+		if (MovementSystem.hasArrived(u, b.pos))
+			ctx.turnContext.command(UnitEnterBuilding(u, b));
+		else
+			ctx.turnContext.command(UnitMoveTo(u, b.pos));
+		return Running;
+	}
+
+	static function rallyBehaviour(ctx : UnitBehaviourContext) : Status {
+		final u = ctx.unit;
+		final b = u.building.get();
+
+		if (u.inside(b)) {
+			ctx.turnContext.command(UnitLeaveBuilding(u, b, b.pos.clone()));
+			return Running;
+		}
+
+		final target = b.order.with(Rally(pos) => pos);
+		ctx.turnContext.command(UnitMoveTo(u, MovementSystem.computeTargetSlot(target, u, Const.RallySpread, new Vec())));
+		return Running;
+	}
+
 	static final unitBehaviour = BH.fallback([
-		BH.fallback([
-			BH.sequence([
-				cond(ctx -> ctx.unit.data.behaviourId == Worker),
-				action(ctx -> { trace("Do civilian stuff"); return Running; }),
-			]),
-		], true),
+		BH.sequence([
+			cond(ctx -> ctx.unit.data.behaviourId == Worker),
+			BH.fallback([
+				BH.sequence([cond(ctx -> ctx.unit.building.get().order.match(Garrison)), action(garrisonBehaviour)]),
+				BH.sequence([cond(ctx -> ctx.unit.building.get().order.match(Rally(_))), action(rallyBehaviour)]),
+			], true),
+		]),
 	], true);
 
 	public static function tick(ctx : TurnContext) {

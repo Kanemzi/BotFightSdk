@@ -3,6 +3,8 @@ package server.state;
 import cogpit.core.GameState.WeakRef;
 import cogpit.core.GameState;
 import cogpit.core.Player.PlayerId;
+import haxe.ds.Option;
+import server.TerrainGen.Sym;
 import server.TerrainGen;
 import server.system.ReplaySystem.BuildingReplayEvent;
 import server.system.ReplaySystem.UnitReplayEvent;
@@ -65,22 +67,27 @@ enum BuildingStatus {
 	public var clan(get, never) : Null<Clan>;
 	inline function get_clan() return status.with(Owned(p) => p);
 
-	public function new(kind, pos) {
-		super(); // @todo bid attribution
+	public function new(kind, pos, ?owner : Clan) {
+		super();
+		bid = id; // @todo used specific and shorter ids
 		this.kind = kind;
 		this.pos = pos;
-		status = Neutral;
+		status = owner == null ? Neutral : Owned(owner);
+		hp = owner == null ? 0 : getCost();
 		inv = new Inventory();
 		order = Rally(pos.clone());
 	}
 
-	@:pure function getCost() return (cast data.cost).findMap(c -> c.itemId == Materials ? c.amount : null);
+	@:pure function getCost() {
+		return (data.cost : Iterable<Data.Building_cost>)
+			.findMap(c -> c.itemId == Materials ? c.amount : null);
+	}
 }
 
 class Unit extends State {
 	@:s public var uid(default, null) : Int;
 	@:s public var kind(default, null) : Data.UnitKind;
-	@:s public var building(default, null) : Null<WeakRef<Building>>;
+	@:s public var building(default, null) : WeakRef<Building>;
 
 	@:allow(server.TurnDeferred)
 	@:s public var pos(default, null) : UnitPos;
@@ -100,15 +107,20 @@ class Unit extends State {
 	public var isOrphan(get, never) : Bool;
 	@:pure inline function get_isOrphan() return clan == null;
 
-	public function new(kind, building) {
+	public function new(kind : Data.UnitKind, building : Building, ?pos : Vec) {
 		super();
 		this.kind = kind;
-		this.pos = Building(building.bid);
-		this.building = cast building;
+		this.pos = pos == null ? Building(building.bid) : Terrain(pos);
+		this.building = (building : WeakRef<Building>);
 	}
 
 	@:pure public function inside(?b : Building) : Bool {
 		return pos.with(Building(bid) => b == null || bid == b.bid);
+	}
+
+	@:pure public function getStat(kind : Data.StatKind) : Float {
+		return (data.baseStats : Iterable<Data.Unit_baseStats>)
+			.findMap(s -> s.statId == kind ? s.val : null) ?? Data.stat.get(kind).def;
 	}
 }
 
@@ -150,9 +162,9 @@ class WarState extends GameState {
 		units = [];
 		buildings = [];
 		resources = [];
-		
-		/* final sym = TerrainGen.randSym(WIDTH / 2., HEIGHT / 2., rnd);
-		generateTerrain(sym, rnd);*/
+
+		final sym = TerrainGen.randSym(Const.Width / 2., Const.Height / 2., rnd);
+		generateTerrain(sym, rnd);
 	}
 
 	/**
@@ -179,45 +191,51 @@ class WarState extends GameState {
 		return clans.find(p -> p.pid == clan);
 	}
 
-/*
 	function generateTerrain(sym : Sym, rnd : hxd.Rand) {
-		final MARGIN = 10.;
-		final RES_RATIO = switch (sym.k) {
-			case Axe(true): 0.5;
-			default: 1;
-		}
-		final WOOD_COUNT : Int = Std.int(10 * RES_RATIO);
-		final FOOD_COUNT : Int = Std.int(10 * RES_RATIO);
+		final MARGIN = 5.;
+		final WORKER_SPREAD = 3.;
 
-		function genResSpawns(n: Int, f : (Float, Float) -> Void) {
+		function spreadAround(center : Vec) {
+			final angle = rnd.rand() * hxd.Math.PI * 2;
+			final r = rnd.rand() * WORKER_SPREAD;
+			return new Vec(center.x + hxd.Math.cos(angle) * r, center.y + hxd.Math.sin(angle) * r);
+		}
+
+		final px = MARGIN + rnd.rand() * (Const.Width / 4 - MARGIN);
+		final py = Const.Height / 2 + (rnd.rand() * MARGIN * 2) - MARGIN;
+		final playerSpots = [];
+		TerrainGen.iterSym(sym, px, py, (x, y) -> playerSpots.push(new Vec(x, y)), true);
+
+		for (i in 0...clans.length) {
+			final clan = clans[i];
+			final house = new Building(House, playerSpots[i % playerSpots.length], clan);
+			buildings.push(house);
+
+			for (_ in 0...5)
+				units.push(new Unit(Craftsman, house, spreadAround(house.pos)));
+		}
+
+		final cx = sym.c.x - Const.Width / 8;
+		final cy = sym.c.y + (rnd.rand() * MARGIN * 2) - MARGIN;
+		final neutralSpots = [];
+		TerrainGen.iterSym(sym, cx, cy, (x, y) -> neutralSpots.push(new Vec(x, y)), true);
+		for (pos in neutralSpots)
+			buildings.push(new Building(House, pos));
+
+		final RES_RATIO = switch (sym.k) { case Axe(true): 0.5; default: 1.; }
+		final FOOD_COUNT = Std.int(4 * RES_RATIO);
+		final MATERIALS_COUNT = Std.int(4 * RES_RATIO);
+
+		function genResSpawns(kind : Data.ResourceKind, n : Int) {
 			for (_ in 0...n) {
-				var x = (rnd.rand() * (WIDTH / 2 - MARGIN)) + MARGIN;
-				var y = (rnd.rand() * (HEIGHT / 2 - MARGIN * 2)) + MARGIN;
-				TerrainGen.iterSym(sym, x, y, f);
+				final x = MARGIN + rnd.rand() * (Const.Width / 2 - MARGIN);
+				final y = MARGIN + rnd.rand() * (Const.Height / 2 - MARGIN);
+				final amount = 40 + rnd.random(40);
+				TerrainGen.iterSym(sym, x, y, (x, y) -> resources.push(new Resource(kind, new Vec(x, y), amount)));
 			}
 		}
 
-		genResSpawns(WOOD_COUNT, (x, y) -> {
-			final amount = 100 + rnd.random(100);
-			final r = MARGIN * ((amount + 30) / 230);
-			resources.push(new Resource(Wood, new Vec(x, y), r, amount));
-		});
-
-		genResSpawns(FOOD_COUNT, (x, y) -> {
-			final amount = 100 + rnd.random(100);
-			final r = MARGIN * ((amount + 30) / 230);
-			resources.push(new Resource(Food, new Vec(x, y), r, amount));
-		});
-
-		var px = MARGIN + rnd.rand() * (WIDTH / 4 - MARGIN);
-		var py = HEIGHT / 2 + (rnd.rand() * MARGIN * 2) - MARGIN;
-		var ps = [];
-		TerrainGen.iterSym(sym, px, py, (x, y) -> ps.push(new Vec(x, y)), true);
-		for (p in players) {
-			p.buildings.push(new Building(House, ps.shift(), this));
-		}
-		
-		// @todo compute the total amount of resources based on unit and building costs and game difficulty
+		genResSpawns(Food, FOOD_COUNT);
+		genResSpawns(Materials, MATERIALS_COUNT);
 	}
-	*/
 }

@@ -30,11 +30,11 @@ class Inventory extends State {
 	}
 
 	public function fallbackTo(fallback : Null<Inventory>) {
-		this.fallback = cast fallback;
+		this.fallback = (fallback : Null<WeakRef<Inventory>>);
 	}
 
 	public function get(k : Data.ResourceKind, local = false) : Int {
-		return (res.get(k) ?? 0) + (local ? 0 : (cast fallback)?.get(k, true) ?? 0);
+		return (res.get(k) ?? 0) + (local ? 0 : fallback?.get()?.get(k, true) ?? 0);
 	}
 
 	public function has(k : Data.ResourceKind, amount : Int, local = false) {
@@ -60,7 +60,7 @@ class Inventory extends State {
 			return true;
 		}
 
-		if (fallback == null || !(cast fallback)?.add(k, remain))
+		if (fallback == null || !fallback.get()?.add(k, remain))
 			return false;
 
 		res.remove(k);
@@ -92,6 +92,6 @@ class Inventory extends State {
 
 	function listItemKinds(out : Array<Data.ResourceKind>, local : Bool) {
 		for (i in res.keys()) out.pushUnique(i);
-		if (!local) (cast fallback)?.listItemKinds(out, false);
+		if (!local) fallback?.get()?.listItemKinds(out, false);
 	}
 }

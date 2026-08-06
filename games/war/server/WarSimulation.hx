@@ -11,7 +11,6 @@ import server.TurnDeferred.TurnCommand;
 import server.TurnDeferred;
 import server.WarActions;
 import server.state.WarState;
-import server.system.MovementSystem;
 import server.system.ReplaySystem;
 import server.system.UnitBehaviourSystem;
 
@@ -58,8 +57,7 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 		
 		ReplaySystem.tick(turnContext);
 		UnitBehaviourSystem.tick(turnContext);
-		MovementSystem.tick(turnContext);
-		
+
 		TurnDeferred.apply(turnContext);
 	}
 
@@ -72,32 +70,21 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 	}
 
 	function serializeHeaderForPlayer(initialState : WarState, pid : PlayerId) : Array<String> {
-		return ['$pid'];
+		return ['$pid', '${Const.Width} ${Const.Height}'];
 	}
 
 	function serializeForPlayer(state : WarState, pid : PlayerId) : Array<String> {
 		// @todo players need confirmation that their order was taken into account
 		// @todo give unit ids for micro decisions & better tracking ?
+		// First prototype : only buildings and units are sent
 		/*
-			PLAYER [PID] [FOOD] [WOOD] (n following lines) 
-			BUILDING : [BID] [T|H] [PID | -1] [X] [Y] @todo info de construction, avancée
-			UNIT : [UID] [C|G|H] [BID | -1] ([G] [BID] | [X] [Y]) @todo hp, combat target
-			RES : [W|F] [AMOUNT] [X] [Y]
-		
-			[PLAYER]
+			BUILDING [count]
+			[BID] [T|H|L] [PID | -1] [X] [Y] @todo info de construction, avancée
 			...
-			[BUILDING]
-			... 
-			[UNIT]
-			...
-			[RES]
+			UNIT [count]
+			[UID] [C|G|H] [BID | -1] ([G] [BID] | [X] [Y]) @todo hp, combat target
 			...
 		*/
-		
-		function serializeResource(r : Resource) {
-			final kind = r.kind.toString().charAt(0);
-			return '$kind ${r.amount} ${r.pos.x} ${r.pos.y}';
-		}
 
 		function serializeUnit(u : Unit) {
 			final kind = u.kind.toString().charAt(0);
@@ -111,21 +98,14 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 
 		function serializeBuilding(b : Building) {
 			final kind = b.kind.toString().charAt(0);
-			var clan = b.clan?.pid ?? -1; 
+			var clan = b.clan?.pid ?? -1;
 			return '${b.bid} $kind $clan ${b.pos.x} ${b.pos.y}';
 		}
 
-		function serializeClan(p : Clan) {
-			return '${p.pid} ${p.inv.get(Food)} ${p.inv.get(Materials)}';
-		}
-
-		final clan = state.getClan(pid);
-		var clans = state.clans.filter(p -> p.pid != pid);
-		clans.unshift(clan);
-		return (clans.map(serializeClan))
+		return ['BUILDING ${state.buildings.length}']
 			.concat(state.buildings.map(serializeBuilding))
-			.concat(state.units.map(serializeUnit))
-			.concat(state.resources.map(serializeResource));
+			.concat(['UNIT ${state.units.length}'])
+			.concat(state.units.map(serializeUnit));
 	}
 
 	public static function main() {
@@ -133,7 +113,7 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 		Data.load(hxd.Res.data.entry.getText());
 		new cogpit.Runner(WarSimulation, WarClient, Sys.args(), {
 			version : 1,
-			maxTurns : 10,
+			maxTurns : 400,
 			firstTurnTimeout : 1.0,
 			turnTimeout : 0.5,
 			turnModel : TurnModel.SimultaneousTurn,

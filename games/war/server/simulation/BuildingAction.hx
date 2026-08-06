@@ -108,7 +108,7 @@ import server.state.WarState;
 			if (!all && u.building.get() == b) return;
 
 			ctx.command(UnitLeaveBuilding(u, b, b.pos.clone())); // @todo dispatch poses
-			u.replayEvents.push(WasKickedOut(cast b));
+			u.replayEvents.push(WasKickedOut(b));
 		});
 	}
 
@@ -127,9 +127,9 @@ import server.state.WarState;
 		if (!b.inv.hasAll(res)) // @todo check bravery in building
 			return Error('Not enough resources available to recruit ${b.kind} [${b.id}]. Has ${b.clan.inv}, need $res');
 
-		var u = new Unit(unit, cast b);
+		var u = new Unit(unit, b);
 		ctx.command(UnitRecruit(u));
-		b.replayEvents.push(HasRecruited(cast u));
+		b.replayEvents.push(HasRecruited(u));
 		return Ok(Unit);
 	}
 }

@@ -217,8 +217,7 @@ class WeakRefImpl implements hxbit.Serializable {
 
 @:access(cogpit.core.WeakRefImpl)
 abstract WeakRef<T : State>(WeakRefImpl) {
-	//public function new(state : T) this = new WeakRefImpl(state);
-	@:from static function fromT<T : State>(state : T) return cast new WeakRefImpl(state);
+	@:from static function fromT<T : State>(state : T) : WeakRef<T> return cast new WeakRefImpl(state);
 	@:to public function get() : T return cast this.get();
 }
 

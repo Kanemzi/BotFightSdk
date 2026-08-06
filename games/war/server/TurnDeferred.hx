@@ -4,6 +4,7 @@ import server.WarSimulation.TurnContext;
 import server.state.WarState.Building;
 import server.state.WarState.Unit;
 import server.state.WarState.Vec;
+import server.system.MovementSystem;
 
 using server.TurnDeferred;
 
@@ -16,7 +17,7 @@ enum TurnCommand {
 	@priority(100) UnitRecruit(u : Unit);
 	@priority(50) UnitLeaveBuilding(u : Unit, b : Building, p : Vec);
 	@priority(10) UnitEnterBuilding(u : Unit, b : Building);
-	@priority(1) UnitMove(u : Unit, p : Vec);
+	@priority(1) UnitMoveTo(u : Unit, p : Vec);
 }
 
 class TurnDeferred {
@@ -74,13 +75,15 @@ class TurnDeferred {
 			true;
 		}));
 
-		commands.keep(c -> !c.with(UnitMove(u, p) => {
+		commands.keep(c -> !c.with(UnitMoveTo(u, p) => {
 			assert(state.units.contains(u));
 			assert(!u.inside());
-			u.pos.with(Terrain(pos) => {
-				pos.x = p.x;
-				pos.y = p.y;
-			});
+			final next = MovementSystem.resolveStep(u, p);
+			if (next != null)
+				u.pos.with(Terrain(pos) => {
+					pos.x = next.x;
+					pos.y = next.y;
+				});
 			true;
 		}));
 
@@ -88,7 +91,7 @@ class TurnDeferred {
 	}
 
 	@:pure public static function getUnit(cmd : TurnCommand) : Unit {
-		return cmd.with(UnitRecruit(u) | UnitFlee(u) | UnitEnterBuilding(u, _) | UnitLeaveBuilding(u, _,_) | UnitMove(u, _) => u);
+		return cmd.with(UnitRecruit(u) | UnitFlee(u) | UnitEnterBuilding(u, _) | UnitLeaveBuilding(u, _,_) | UnitMoveTo(u, _) => u);
 	}
 
 	@:pure public static function getPriority(cmd : TurnCommand) : Int {

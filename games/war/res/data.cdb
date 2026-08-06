@@ -138,6 +138,20 @@
 					}
 				},
 				{
+					"name": "ArrivalRadius",
+					"val": {
+						"float": 3
+					},
+					"doc": "How close a unit must be to its movement target to be considered arrived (rally point or building)."
+				},
+				{
+					"name": "RallySpread",
+					"val": {
+						"float": 3
+					},
+					"doc": "Radius around a Rally order's point in which each unit of the group picks its target."
+				},
+				{
 					"name": "ConstructStep",
 					"val": {
 						"integer": 1

@@ -1,27 +1,30 @@
 package server.system;
 
-import server.WarSimulation.TurnContext;
 import server.state.WarState.Unit;
 import server.state.WarState.Vec;
 import server.state.WarState;
 
 class MovementSystem {
-	static var _tmpSlot = new Vec();
-	public static function tick(ctx : TurnContext) {
-		ctx.state.units.iter(u -> {
-			if (u.isOrphan) {
-				// @todo wander behavior
-				return;
-			}
+	public static function hasArrived(u : Unit, target : Vec) : Bool {
+		return switch (u.pos) {
+			case Building(_): false;
+			case Terrain(pos): hxd.Math.distance(target.x - pos.x, target.y - pos.y) <= Const.ArrivalRadius;
+		}
+	}
 
-			final b = u.building.get();
-			switch (b.order) {
-				case Rally(t):
-					computeTargetSlot(t, u, 0, _tmpSlot);
-					// @todo compute movement towards target slot 
-				default:
-			}
-		});
+	public static function resolveStep(u : Unit, target : Vec) : Null<Vec> {
+		return switch (u.pos) {
+			case Building(_): null;
+			case Terrain(pos):
+				final dx = target.x - pos.x;
+				final dy = target.y - pos.y;
+				final dist = hxd.Math.distance(dx, dy);
+				if (dist <= Const.ArrivalRadius) null
+				else {
+					final step = hxd.Math.min(u.getStat(MoveSpeed), dist);
+					new Vec(pos.x + dx / dist * step, pos.y + dy / dist * step);
+				}
+		}
 	}
 
 	// @todo only used for testing, needs to be improved later

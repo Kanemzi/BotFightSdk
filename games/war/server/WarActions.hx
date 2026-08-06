@@ -118,8 +118,8 @@ class WarActionExt {
 		case Garrison(_): Garrison;
 		case Rally(_, x, y): Rally(new Vec(x, y)); // @todo clamp closest edge if outside the map
 		case Gather(_, x, y, radius): Gather(new Vec(x, y), radius); // @todo clamp closest edge if outside the map
-		case Construct(_, tid): Construct(cast state.getBuildingById(tid));
-		case Siege(_, tid): Siege(cast state.getBuildingById(tid));
+		case Construct(_, tid): Construct(state.getBuildingById(tid));
+		case Siege(_, tid): Siege(state.getBuildingById(tid));
 		case Recruit(_,_), Say(_,_,_), End: throw '${Type.enumConstructor(act)} is not a group order.';
 	}
 }
@@ -156,7 +156,7 @@ class WarActions {
 
 	public static function apply(actions : PlayersActions<WarAction>, ctx : TurnContext) {
 		final state = ctx.state;
-		actions.iter( (pid, action, _) -> {
+		actions.iter( (pid, action, _) -> if (!action.match(End)) {
 			final clan = state.getClan(pid);
 			action.tryApply(clan, ctx)
 				.with(Error(e) => {
