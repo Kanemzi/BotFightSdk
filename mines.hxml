@@ -7,6 +7,12 @@
 
 --next
 
+-cp games/mines/bots
+-hl MinesClaudeBot.hl
+-main MinesClaudeBot
+
+--next
+
 -D hl_profile
 -D dump=pretty
 -cp games/mines/

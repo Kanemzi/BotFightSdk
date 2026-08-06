@@ -15,7 +15,7 @@
 				"file": "mines.hxml"
 			},
             "args": [
-                "--players", "MinesBot.hl", "MinesBot.hl",
+                "--players", "MinesBot.hl", "MinesClaudeBot.hl",
                 "--match", "series", "3",
                 "--seed", "12313456",
 				//"--gen",

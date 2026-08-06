@@ -21,7 +21,7 @@ class EventDisplay {
 // @todo clean
 
 class TimelineDebug extends Widget {
-	static var SRC = <timeline-debug>
+	static var SRC = <timeline-debug class="closable-view">
 	</timeline-debug>
 
 	static inline var ROW_HEIGHT = 4;

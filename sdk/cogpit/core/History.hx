@@ -16,8 +16,8 @@ enum PlayerOutcome {
 
 @:generic @:allow(cogpit.core.History)
 class HistoryTurn<Ts : GameState, Ta : Action> implements hxbit.Serializable {
-	@:s @:noPrivateAccess var actions : ReadOnlyArray<ActionsResult<Ta>>;
 	@:s @:noPrivateAccess var _state : GameState;
+	@:s public var actions(default, null) : ReadOnlyArray<ActionsResult<Ta>>;
 	@:s public var serverLogs(default, null) : ReadOnlyArray<ServerLog>;
 
 	public function new(state : Ts, actions : ReadOnlyArray<ActionsResult<Ta>>, serverLogs : ReadOnlyArray<ServerLog>) {

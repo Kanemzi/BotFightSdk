@@ -1,10 +1,11 @@
 package cogpit.client.view;
 
-import cogpit.core.GameState;
-import cogpit.core.History.HistoryHeader;
+import cogpit.client.VisualEventTimeline.TurnLogs;
+import cogpit.client.replay.GameScene;
 import cogpit.core.GameServer.LogSeverity;
 import cogpit.core.GameServer.ServerLog;
-import cogpit.client.replay.GameScene;
+import cogpit.core.GameState;
+import cogpit.core.History.HistoryHeader;
 
 // @todo clean
 class ControlBar extends h2d.Flow implements h2d.domkit.Object {
@@ -115,13 +116,13 @@ class Console extends h2d.Flow implements h2d.domkit.Object {
 		<flow class="panel" id="log-panel" />
 	</console>
 
-	final logs : Array<ReadOnlyArray<ServerLog>>;
+	final logs : ReadOnlyArray<TurnLogs>;
 	var opened(default, set) : Bool = false;
 	var turn : Int = -1;
 
 	public dynamic function onToggle(opened : Bool) {}
 
-	public function new(logs : Array<ReadOnlyArray<ServerLog>>, ?parent) {
+	public function new(logs : ReadOnlyArray<TurnLogs>, ?parent) {
 		this.logs = logs;
 		super(parent);
 		initComponent();
@@ -148,36 +149,47 @@ class Console extends h2d.Flow implements h2d.domkit.Object {
 		logPanel.removeChildren();
 		for (log in logs[turn]) {
 			final line = new h2d.Text(hxd.res.DefaultFont.get(), logPanel);
-			final pre = log.pid != null ? '[Player ${log.pid}] ' : "";
-			line.text = '$pre${log.msg}';
 			line.dom = domkit.Properties.create("text", line);
+			final kind = Type.enumConstructor(log).toLowerCase();
 			line.dom.addClass("log");
-			line.dom.addClass(Type.enumConstructor(log.severity).toLowerCase());
+			line.dom.addClass(kind);
+
+			switch (log) {
+				case Timeline(msg):
+					if (msg == null) line.dom.addClass("split");
+					else line.text = msg;
+				case GameServer(log):
+					final pre = log.pid != null ? '[Player ${log.pid}] ' : "";
+					line.text = '$pre ${log.msg}';
+					line.dom.addClass(Type.enumConstructor(log.severity).toLowerCase());
+				case Player(log):
+					final st = log.st != null ? '[${log.st}]' : "";
+					line.text = '[Player ${log.id}] $st ${log.msg}';
+					line.dom.addClass(Type.enumConstructor(log.k).toLowerCase());
+			}
 		}
 	}
 }
 
 class ReplayView<Ts : GameState> extends View {
-	static var SRC = <replay-view>
+	static var SRC = <replay-view class="closable-view">
 		<flow class="head">
 			<text text={'Game - ${info.seed}'} />
 			<button id="leave-btn" text="X" />
 		</flow>
 		<game-viewport(timeline, view) id="viewport" />
-		<console(serverLogs) id="console" />
+		<console(timeline.logs) id="console" />
 		<control-bar(timeline.duration) id="control-bar" />
 	</replay-view>
 
 	var info : HistoryHeader;
 	var timeline : VisualEventTimeline;
-	var serverLogs : Array<ReadOnlyArray<ServerLog>>;
 	var gscFactory : Void -> GameScene;
 
-	public function new(info : HistoryHeader, timeline : VisualEventTimeline, serverLogs : Array<ReadOnlyArray<ServerLog>>, gscFactory : Void -> GameScene) {
+	public function new(info : HistoryHeader, timeline : VisualEventTimeline, gscFactory : Void -> GameScene) {
 		super();
 		this.info = info;
 		this.timeline = timeline;
-		this.serverLogs = serverLogs;
 		this.gscFactory = gscFactory;
 	}
 
@@ -188,6 +200,7 @@ class ReplayView<Ts : GameState> extends View {
 		controlBar.onSeek = t -> {
 			viewport.seek(t);
 			console.setTurn(hxd.Math.floor(t));
+			console.dom.applyStyle(ui.style);
 		}
 		controlBar.onToggleFps = () -> viewport.fpsGraph.visible = !viewport.fpsGraph.visible;
 		console.onToggle = opened -> viewport.eventsEnabled = !opened;

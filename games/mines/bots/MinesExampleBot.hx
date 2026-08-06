@@ -205,7 +205,7 @@ class MinesExampleBot {
 		var spawned = false;
 		var scrapLeft = state.inv.scrap;
 		var microshipLeft = state.inv.microship;
-		debug('[$PID][$t] I got $actionCount actions to play');
+		debug('I got $actionCount actions to play');
 
 		var targets = state.scraps.concat(state.microships).map(o -> o.pos);
 		var foes = state.foes.robots.map(f -> f.pos);
@@ -261,7 +261,7 @@ class MinesExampleBot {
 
 			if (canSpawn) {
 				if (!spawned && scrapLeft >= 5 && microshipLeft >= 1) {
-					debug('[$PID][$t] Spawned');
+					debug('Spawned');
 					stdout.writeString('SPAWN\n');
 					spawned = true;
 					scrapLeft -= 5;

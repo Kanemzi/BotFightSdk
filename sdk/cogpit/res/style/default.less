@@ -1,4 +1,3 @@
-@head-height : 50;
 
 .head {
 	fill-width: true;
@@ -24,113 +23,11 @@ match-view {
 		.game-btn {
 			align: middle middle;
 
-			&.empty { background: #75837f; }
-			&.ready { background: #448d9a; }
-			&.running { background: #9e8d37; }
-			&.complete { background: #369936; }
-			&.failed { background: #993636; }
-		}
-	}
-}
-
-replay-view, timeline-debug-view {
-	> .head {
-		layout: stack;
-		> #leave-btn {
-			align: right;
-			height: @head-height - 20;
-			width: @head-height - 20;
-			margin: (@head-height - 20) / 2;
-		}
-	}
-}
-replay-view {
-	layout: stack;
-	game-viewport {
-		fill-height: true;
-		margin-top: 60;
-		margin-bottom: 70;
-	}
-}
-
-@logInfoColor : #a9a9d7;
-@logWarningColor : #e3951b;
-@logErrorColor : #c0002d;
-console {
-	layout: vertical;
-	align: right;
-	valign: top;
-	margin-right: 10;
-	margin-top: @head-height + 20;
-
-	> #toggle-btn {
-		align: right;
-		width: 70;
-		height: 30;
-	}
-
-	.panel {
-		layout: vertical;
-		width: 700;
-		height: 500;
-		overflow: scroll;
-		padding: 10;
-		spacing: 3;
-
-		background: black;
-		background-alpha: 0.8;
-
-		.log {
-			&.info { color: @logInfoColor; }
-			&.warning { color: @logWarningColor; }
-			&.error { color: @logErrorColor; }
-		}
-	}
-}
-
-control-bar {
-	valign: bottom;
-	background: red;
-	@controlbar-height : 50;
-	fill-width: true;
-	height: @controlbar-height;
-	layout: stack;
-	content-align: middle middle;
-
-	padding: 10;
-	spacing: 10;
-
-	background: darken(gray, 30%);
-
-	> .controls {
-		spacing: 5;
-		height: 50;
-		content-valign: middle;
-		align: left;
-		button {
-			width: 60;
-		}
-		> #turn {
-			margin-left: 10;
-		}
-	}
-	
-
-	.track {
-		background: darken(green, 20%);
-		fill-width: true;
-		margin-left: 320;
-		height: @controlbar-height - 20;
-
-		.fill {
-			fill-height: true;
-			background: darken(green, 0%);
-		}
-		
-		.handle {
-			width: 10;
-			height: @controlbar-height - 10;
-			background: yellow;
+			&.empty { background: @game-empty-col; }
+			&.ready { background: @game-ready-col; }
+			&.running { background: @game-running-col; }
+			&.complete { background: @game-complete-col; }
+			&.failed { background: @game-failed-col; }
 		}
 	}
 }

@@ -31,10 +31,10 @@ class ViewManager extends h2d.Flow {
 		hxd.res.Loader.currentInstance = Res.loader;
 		style = new h2d.domkit.Style();
 		style.useSmartCache = true;
-		style.loadComponents("style");
+		style.loadComponents("style", [cogpit.Res.style.global]);
 		#if hl
-		// if (hl.Api.hasDebugger())
-		// 	style.allowInspect = true;
+		if (hl.Api.hasDebugger())
+			style.allowInspect = true;
 		#end
 		hxd.res.Loader.currentInstance = loader;
 	}

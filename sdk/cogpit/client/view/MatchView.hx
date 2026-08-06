@@ -49,14 +49,14 @@ class MatchView<Ts : GameState> extends View {
 			}
 			final history = g.history;
 			var tl = tb.bake(history);
-			r ? openTimeline(tl) : openReplay(history.header, tl, history.turns.map(t -> t.serverLogs), gscFactory);
+			r ? openTimeline(tl) : openReplay(history.header, tl, gscFactory);
 		}
 		initComponent();
 	}
 
 	// @todo wrap every relevant replay info in a single structure
-	function openReplay(info : HistoryHeader, timeline : VisualEventTimeline, serverLogs : Array<ReadOnlyArray<ServerLog>>, gscFactory : Void -> GameScene) {
-		ui.push(new ReplayView(info, timeline, serverLogs, gscFactory));
+	function openReplay(info : HistoryHeader, timeline : VisualEventTimeline, gscFactory : Void -> GameScene) {
+		ui.push(new ReplayView(info, timeline, gscFactory));
 	}
 
 	function openTimeline(timeline : VisualEventTimeline) {

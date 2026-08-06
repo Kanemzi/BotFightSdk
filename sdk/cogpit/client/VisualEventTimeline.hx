@@ -1,12 +1,16 @@
 package cogpit.client;
 
-import cogpit.core.GameState;
-import cogpit.core.GameState.State;
-import cogpit.core.action.Action;
-import cogpit.core.History;
 import cogpit.client.VisualEvent.EventId;
 import cogpit.client.VisualEvent.StateVisualEvent;
 import cogpit.client.replay.StateRegistry;
+import cogpit.core.GameServer.ServerLog;
+import cogpit.core.GameState.State;
+import cogpit.core.GameState;
+import cogpit.core.History;
+import cogpit.core.Player.PlayerId;
+import cogpit.core.Player.Status;
+import cogpit.core.action.Action;
+import haxe.ds.ReadOnlyArray;
 
 /*
 	When loading a replay. Everything happening during the game 
@@ -20,17 +24,31 @@ import cogpit.client.replay.StateRegistry;
 
 typedef StateExtractor<Ts : GameState, T : State> = Ts -> Array<T>;
 
+enum PlayerLogKind { Error; Action; Debug; }
+typedef PlayerLog = { k : PlayerLogKind, id : PlayerId, ?st : Status, msg : String }
+
+enum TimelineLog {
+	Timeline(?msg : String);
+	GameServer(log : ServerLog);
+	Player(log : PlayerLog);
+}
+
+typedef TurnLogs = ReadOnlyArray<TimelineLog>;
+
 @:allow(cogpit.client.TimelineBuilder)
 class VisualEventTimeline {
 	public var duration(default, null) : Float;
+	public var logs(default, null) : ReadOnlyArray<TurnLogs>;
 	var eventMap : Map<EventId, VisualEvent>;
-	var sortedEvents : Array<VisualEvent>;
+	var sortedEvents : ReadOnlyArray<VisualEvent>;
 
-	function new(events : ReadOnlyArray<VisualEvent>, duration : Float) {
+	function new(events : ReadOnlyArray<VisualEvent>, logs : ReadOnlyArray<TurnLogs>, duration : Float) {
 		this.duration = duration;
+		this.logs = logs;
 		eventMap = [for (ev in events) ev.id => ev];
-		sortedEvents = [for (ev in events) ev];
-		sortedEvents.sort((a, b) -> a.begin > b.begin ? 1 : -1);
+		final sorted = [for (ev in events) ev];
+		sorted.sort((a, b) -> a.begin > b.begin ? 1 : -1);
+		sortedEvents = sorted;
 	}
 
 	public function activeEventsAt(t : Float) : ReadOnlyArray<VisualEvent> {
@@ -61,7 +79,40 @@ class TimelineBuilder<Ts : GameState> {
 			}
 		}
 
-		return new VisualEventTimeline(events, history.length);
+		final logs : Array<TurnLogs> = [];
+		final headerBar = "".rpad("_", 40);
+		for (i in 0...history.length) {
+			final turnLogs : Array<TimelineLog> = [];
+			final turn = history.turns[i];
+			final turnName = i == 0 ? 'Initialization' : 'Turn $i';
+			turnLogs.push(Timeline('$headerBar $turnName $headerBar'));
+
+			for (ar in turn.actions) {
+				final playerLogs : Array<PlayerLog> = [];
+
+				if (ar.error != null)
+					playerLogs.push({k : Error, id : ar.pid, st : ar.status, msg : ar.error });
+
+				for (a in ar.actions)
+					playerLogs.push({k : Action, id : ar.pid, msg : ActionParser.toString(a)});
+				
+				for (l in ar.logs)
+					playerLogs.push({k : Debug, id : ar.pid, msg : l});
+
+				if (!playerLogs.empty()) {
+					turnLogs.push(Timeline());
+					turnLogs.push(Timeline('[Player ${ar.pid}]')); // @todo find a way to access playerInfos to display name
+					playerLogs.iter(l -> turnLogs.push(Player(l)));
+				}
+			}
+
+			turnLogs.push(Timeline());
+			turnLogs.push(Timeline('[Server]'));
+			turn.serverLogs.iter(l -> turnLogs.push(GameServer(l)));
+			logs.push(turnLogs);
+		}
+
+		return new VisualEventTimeline(events, logs, history.length - 1);
 	}
 }
 

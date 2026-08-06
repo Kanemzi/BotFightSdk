@@ -108,7 +108,7 @@ final class GameServer<Ts : GameState, Ta : Action> {
 			p.sendLines(sim.serializeHeaderForPlayer(initState, p.id));
 		});
 
-		while (getTurn() < config.maxTurns) {
+		while (getTurn() <= config.maxTurns) { // Not counting initial state as turn
 			final turn = getTurn();
 			var newState = storageMode == Deterministic ? getState() : cloneState(getState());
 			ctx.initTurn(turn, history.getAlivePlayers());

@@ -1,0 +1,29 @@
+// out: false
+
+@head-height : 50;
+
+
+@game-empty-col: #75837f;
+@game-ready-col: #448d9a;
+@game-running-col: #9e8d37;
+@game-complete-col: #369936;
+@game-failed-col: #993636;
+
+@log-timeline-col : #a5a5a5;
+@log-player-debug-col : #80ecff;
+@log-info-col : #80b7ff;
+@log-warning-col : #ffb948;
+@log-error-col : #ff4f78;
+
+
+.closable-view {
+	> .head {
+		layout: stack;
+		> #leave-btn {
+			align: right;
+			height: @head-height - 20;
+			width: @head-height - 20;
+			margin: (@head-height - 20) / 2;
+		}
+	}
+}
