@@ -13,9 +13,24 @@ import server.state.WarState.Unit;
 import server.state.WarState.Vec;
 import server.state.WarState;
 
+@:using(server.system.UnitBehaviourSystem.UnitMemoryUtils)
+@:publicFields @:structInit
+class UnitMemory {
+	@:optional var buildingTarget : Null<Vec>;
+	@:optional var wantedTarget : Null<Vec>;
+}
+
+class UnitMemoryUtils {
+	public static function isTargetDirty(mem : UnitMemory, curTarget : Vec) {
+		if ((curTarget == null) != (mem.buildingTarget == null)) return true;
+		return !mem.buildingTarget.eq(curTarget);
+	}
+}
+
 @:allow(server.system.UnitBehaviourSystem)
 class UnitBehaviourContext extends BehaviourContext {
 	final uid : SUID;
+	final bs : UnitBehaviourSystem;
 	var unit(default, null) : Unit;
 	var turnContext : TurnContext;
 
@@ -25,24 +40,39 @@ class UnitBehaviourContext extends BehaviourContext {
 	var state(get, never) : WarState;
 	inline function get_state() return turnContext.state;
 
-	function new(unit : Unit) {
+	var mem : UnitMemory;
+
+	function new(unit : Unit, bs : UnitBehaviourSystem) {
 		super();
 		this.uid = unit.id;
+		this.bs = bs;
+		mem = {};
 	}
 }
 
 class UnitBehaviourSystem {
 
+	var contexts : Map<Int, UnitBehaviourContext>;
+
+	public function new() {
+		contexts = new Map();
+	}
+
 	// For typing in wrapped functions
 	static inline function action(f : UnitBehaviourContext -> Status) return new Action(cast f);
 	static inline function cond(f : UnitBehaviourContext -> Bool) return new Condition(cast f);
 
-	@:access(server.Unit) // Should remain the only way to retrieve a context, to ensure it's initialized correctly for this turn
-	static inline function getContext(unit : Unit, ctx : TurnContext) {
-		unit.behaviour ??= new UnitBehaviourContext(unit);
-		unit.behaviour.unit = ctx.state.units.find(u -> u.id == unit.id);
-		unit.behaviour.turnContext = ctx;
-		return unit.behaviour;
+	function getContext(unit : Unit, ctx : TurnContext) {
+		var b = contexts.get(unit.id);
+		if (b == null) {
+			b = new UnitBehaviourContext(unit, this);
+			contexts.set(unit.id, b);
+		}
+		if (b.unit != unit) { // Context is dirty
+			b.unit = ctx.state.units.find(u -> u.id == unit.id);
+			b.turnContext = ctx;
+		}
+		return b;
 	}
 
 	static function garrisonBehaviour(ctx : UnitBehaviourContext) : Status {
@@ -62,14 +92,29 @@ class UnitBehaviourSystem {
 	static function rallyBehaviour(ctx : UnitBehaviourContext) : Status {
 		final u = ctx.unit;
 		final b = u.building.get();
+		final mem = ctx.mem;
 
 		if (u.inside(b)) {
+			mem.wantedTarget = null;
 			ctx.turnContext.command(UnitLeaveBuilding(u, b, b.pos.clone()));
 			return Running;
 		}
 
 		final target = b.order.with(Rally(pos) => pos);
-		ctx.turnContext.command(UnitMoveTo(u, MovementSystem.computeTargetSlot(target, u, Const.RallySpread, new Vec())));
+		if (mem.isTargetDirty(target)) { // Recompute target
+			final memories = ctx.turnContext.state.getBuildingUnits(b.bid)
+				.filterMap(u -> {
+					final m = ctx.bs.getContext(u, ctx.turnContext).mem;
+					return m == mem || m.isTargetDirty(target) ? null : m; 
+				});
+			ctx.turnContext.log(null, Info, '$memories');
+			final wt = MovementSystem.computeTargetSlot(target, u, Const.RallySpread, new Vec());
+			mem.buildingTarget = target;
+			mem.wantedTarget = wt;
+		}
+		if (mem.wantedTarget != null)
+			ctx.turnContext.command(UnitMoveTo(u, mem.wantedTarget));
+
 		return Running;
 	}
 
@@ -83,7 +128,15 @@ class UnitBehaviourSystem {
 		]),
 	], true);
 
-	public static function tick(ctx : TurnContext) {
+	function clean(units : ReadOnlyArray<Unit>) {
+		for (k => v in contexts) {
+			if (!units.exists(u -> u.id == k))
+				contexts.remove(k);
+		}
+	}
+
+	public function tick(ctx : TurnContext) {
+		clean(ctx.state.units);
 		ctx.state.units.iter(u -> {
 			final bctx = getContext(u, ctx);
 			unitBehaviour.tick(bctx);

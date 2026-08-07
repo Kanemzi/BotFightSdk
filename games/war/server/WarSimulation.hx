@@ -44,6 +44,7 @@ class TurnContext {
 
 class WarSimulation extends GameSimulation<WarState, WarAction> {
 
+	var behaviourSystem = new UnitBehaviourSystem();
 	var turnContext = new TurnContext();
 
 	function init(ctx : InitContext<WarAction>) : WarState {
@@ -56,7 +57,7 @@ class WarSimulation extends GameSimulation<WarState, WarAction> {
 		WarActions.apply(ctx.actions, turnContext);
 		
 		ReplaySystem.tick(turnContext);
-		UnitBehaviourSystem.tick(turnContext);
+		behaviourSystem.tick(turnContext);
 
 		TurnDeferred.apply(turnContext);
 	}

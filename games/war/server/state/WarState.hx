@@ -8,7 +8,6 @@ import server.TerrainGen.Sym;
 import server.TerrainGen;
 import server.system.ReplaySystem.BuildingReplayEvent;
 import server.system.ReplaySystem.UnitReplayEvent;
-import server.system.UnitBehaviourSystem.UnitBehaviourContext;
 
 enum GroupOrder {
 	Garrison;
@@ -34,6 +33,7 @@ enum UnitPos {
 	}
 
 	public function clone() return new Vec(x, y);
+	public function eq(o) return o != null && x == o.x && y == o.y;
 }
 
 enum BuildingStatus {
@@ -94,9 +94,6 @@ class Unit extends State {
 
 	@:allow(server.system.ReplaySystem)
 	@:s public var replayEvents(default, null) : Array<UnitReplayEvent>;
-
-	@:allow(server.system.UnitBehaviourSystem)
-	private var behaviour : UnitBehaviourContext;
 
 	public var data(get, null) : Data.Unit;
 	inline function get_data() return data ??= Data.unit.get(kind);

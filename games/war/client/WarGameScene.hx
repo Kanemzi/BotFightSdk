@@ -26,7 +26,7 @@ class WarGameScene extends GameScene {
 
 		var light = new h3d.scene.fwd.DirLight(new h3d.Vector(0.5, 0.5, -1), s3d);
 		light.enableSpecular = true;
-		cast(s3d.lightSystem, h3d.scene.fwd.LightSystem).ambientLight.set(0.3, 0.3, 0.3);
+		cast(s3d.lightSystem, h3d.scene.fwd.LightSystem).ambientLight.set(1.1, 1.0, 0.7);
 
 		final thickness = 0.1;
 		var groundPrim = new h3d.prim.Cube(Const.Width, Const.Height, thickness, true);
@@ -64,6 +64,7 @@ class WarGameScene extends GameScene {
 	function makeUnitMesh(kind : Data.UnitKind, color : Int) : h3d.scene.Mesh {
 		var p = new h3d.prim.Cube(0.6, 0.6, 1.2);
 		p.translate(-0.3, -0.3, 0);
+		p.unindex();
 		p.addNormals();
 
 		var m = new h3d.scene.Mesh(p, s3d);
@@ -80,6 +81,7 @@ class WarGameScene extends GameScene {
 		}
 		var p = new h3d.prim.Cube(size, size, size * 0.8);
 		p.translate(-size / 2, -size / 2, 0);
+		p.unindex();
 		p.addNormals();
 
 		var m = new h3d.scene.Mesh(p, s3d);
@@ -205,8 +207,15 @@ class WarGameScene extends GameScene {
 			v.mesh.x = hxd.Math.lerp(p0.x, p1.x, k);
 			v.mesh.y = hxd.Math.lerp(p0.y, p1.y, k);
 
+			var offK = unit0.id /. hxd.Math.PI * 2; 
+			var off = hxd.Math.sin(offK + k * hxd.Math.PI * 2);
+			var dx = p1.x - p0.x;
+			var dy = p1.y - p0.y;
+			var vel = dx * dx + dy * dy;
+			v.mesh.z = hxd.Math.pow(off, 2) * (vel * 0.3); 
+
 			final unit = unit1 ?? unit0;
-			gizmos.text(new h3d.col.Point(v.mesh.x, v.mesh.y, 1.5), '#${unit.id}', teamColor(unit.clan?.pid));
+			gizmos.text(new h3d.col.Point(v.mesh.x, v.mesh.y, 1.5), '#${unit.id}', 0xffffff);
 
 			final target = resolveOrderTarget(unit.building.get());
 			if (target != null) {
